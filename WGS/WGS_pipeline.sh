@@ -17,10 +17,10 @@ fi
 GATK=${Software}/GenomeAnalysisTK-nightly-2014-03-30/GenomeAnalysisTK.jar
 novoalign=${Software}/novocraft3/novoalign
 novosort=${Software}/novocraft3/novosort
-
+samblaster=${Software}/samblaster/samblaster
 
 ##samtools
-samtools=${Software}/samtools-1.0/samtools
+samtools=${Software}/samtools-1.1/samtools
 
 ## Picard
 picardDup=${Software}/picard-tools-1.100/MarkDuplicates.jar
@@ -64,16 +64,9 @@ until [ -z "$1" ]; do
 		inputFiles[ $f ]=$1
 		echo $f $1
 	    done;;
-	--fullPileup )
-	    fullPileup="yes";;	
 	--extraID )
 	    shift
 	    extraID="$1_";;
-	--PCRamplicons)
-	    PCRamplicons=TRUE;;
-	--haploplex)
-	    haploplex=TRUE
-	    PCRamplicons=TRUE;;
 	--filtDup )
 	    shift
 	    filtDup=$1;;
@@ -95,18 +88,12 @@ until [ -z "$1" ]; do
 	--align)
 	    shift
 	    align=$1;;
-	--summaryStats)
-	    shift
-	    summaryStats=$1;;
 	--projectID)
 	    shift
 	    projectID=$1;;
 	--mainTable)
 	    shift
 	    mainTable=$1;;
-	--reduceReads)
-	    shift
-	    reduceReads=$1;;
 	--format)
 	    shift
 	    format=$1;;
@@ -116,13 +103,6 @@ until [ -z "$1" ]; do
 	--fasta)
 	    shift
 	    fasta=$1;;
-	--baitFile)
-	    shift
-	    baitFile=$1;;
-	--noclean)
-	    clean=FALSE;;
-	--notpaired)
-	    paired=FALSE;;
 	--inputFormat)
 	    shift
 	    inputFormat=$1;;
@@ -148,15 +128,6 @@ Input format: $inputFormat\n\n\n
 
 
 extra="--rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam}"
-
-
-##The extra set of parameters for novoalign
-if [[ "$PCRamplicons" == "TRUE" ]]; then filtDup=FALSE; fi
-if [[ "$haploplex" == "TRUE" ]]; then 
-    P1=AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
-    P2=AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
-    extra="--rOQ --hdrhd 3 -H -k -a $P1 $P2 -o Soft -t ${tparam}"
-fi
 
 
 ########################### choice of reference sequence
@@ -195,7 +166,7 @@ queue=queue6
 
 if [[ "$summaryStats" == "yes" ]]; then ((nhours=nhours+2)); vmem=3; fi
 if [[ "$fixUnique" == "yes" ]]; then ((nhours=nhours+24)); vmem=14; memory=12; fi
-if [[ "$align" == "yes" ]]; then ((nhours=nhours+240)); ncores=12; vmem=1.3; memory=3; memory2=9; fi ##10 days?
+if [[ "$align" == "yes" ]]; then ((nhours=nhours+240)); ncores=12; vmem=1.3; memory=3; memory2=7; fi ##10 days?
 
 
 
@@ -234,12 +205,12 @@ if [[ "$computer" == "CS" ]]; then
 fi
 
 
-
-
 script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
 
 echo "
-export PERL5LIB=${Software}/vcftools_0.1.8/lib:${PERL5LIB}
+
+##start of script
+
 " > $script
 
 
@@ -247,207 +218,42 @@ echo $script >> $mainTable
 
 
 if [[ "$align" == "yes" ]]; then
-
-    nfiles=${inputFiles[0]}
-
-    if [[ "$paired" == "TRUE" ]]; then 
-	((npairs=nfiles/2))
-	for i in `seq 1 $nfiles`; do
-	    ls -ltrh ${inputFiles[ $i ]}
-	    
-	    if [ ! -e "${inputFiles[ $i ]}" ]; then 
-		echo "Error, file ${inputFiles[ $i ]} does not exist"
-		exit
-	    fi	
-	done
-    fi
     
-    for file in ${fasta}i; do
-	if [ ! -e "${file}" ]; then echo "Error, file ${file} does not exist"; exit; fi
-    done
-    
-    if [[ "$inputFormat" == "BAMPE" ]]; then
+    if [ ! -e ${tempFolder}/${code} ]; then mkdir ${tempFolder}/${code}; fi
 
-	echo "
-
-$novosort -n -f -t $tempFolder -c $ncores -m ${memory}G ${inputFiles[ 1 ]} -o ${output}_sorted_read_name.bam
-
-" >> $script
-	
-	nfiles=1
-	inputFiles[ 1 ]=${output}_sorted_read_name.bam
-    fi
-
-
-    ########################################## single end data
-    if [[ "$inputFormat" == "BAMPE" ]]; then
-	
-	if [[ "$nfiles" == "1" ]]; then
-
-	    echo "
-$novoalign -c $ncores -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${inputFiles[ 1 ]} -d $reference > ${output}.sam
-
-$samtools view -bS -t ${fasta}i -o ${output}.bam ${output}.sam  ## make BAM file
-
-$novosort -t $tempFolder -c $ncores -m ${memory}G  ${output}.bam -o ${output}_sorted.bam
-
-" >> $script
-	else   ##multiple single end files
-	    
-	    allBAMfiles=""
-	    allBAMsofiles=""
-	    allSAMfiles=""
-	    
-	    for i in `seq 1 $nfiles`; do
-		ls -ltrh ${inputFiles[ i ]}
-
-		echo "
-$novoalign -c $ncores -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${inputFiles[ i ]} -d $reference > ${output}_${i}.sam
-
-$samtools view -bS -t ${fasta}i -o ${output}_${i}.bam ${output}_${i}.sam  ## make BAM file
-
-$samtools sort -m ${memory2}000000000 ${output}_${i}.bam ${output}_sorted_${i}  ## sort
-
-" >> $script
-    
-		
-		allBAMfiles="$allBAMfiles ${output}_${i}.bam"
-		allBAMsofiles="$allBAMsofiles ${output}_sorted_${i}.bam"
-		allSAMfiles="$allSAMfiles ${output}_${i}.sam"
-	    done
-
-	    echo "
-$samtools merge -f ${output}_sorted.bam $allBAMsofiles 
-
-rm $allBAMfiles $allSAMfiles $allBAMsofiles
-
-" >> $script
-
-	fi
-
-	if [[ "$inputFormat" == "BAMPE" ]]; then
-	    
-echo "
-
-rm ${output}_sorted_read_name.bam
-
-" >> $script
-	fi
-    fi
-    
-
-
-
-    if [[ "$paired" == "TRUE" && ! "$inputFormat" == "BAMPE" ]]; then      #################################### now analysis of paired end data
-			
-	if [[ "$npairs" == "1" ]]; then   ###first option only one set of files
-	  
-	  echo "
-
-$novoalign -c 11 -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${inputFiles[ 1 ]} ${inputFiles[ 2 ]}  -d $reference | $samtools view -Sb -o ${output}.bam - 
-
-$novosort ${output}.bam -t ${tempFolder} -c 11 -m ${memory2}G -i -o ${output}_sorted.bam 
-
-" >> $script
-
-      else 
-	  allBAMfiles=""
-	  allBAMsofiles=""
-	  allSAMfiles=""
-	  
-	  for i in `seq 1 $npairs`; do
-	      ((p1=2*i - 1))
-	      ((p2=2*i - 0))
-	      #echo $p1 $p2
-	      echo "
-$novoalign -c $ncores -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${inputFiles[ $p1 ]} ${inputFiles[ $p2 ]} -d $reference | $samtools view -Su - | $novosort - -t ${tempFolder} -c 1 -m 3G -i -o ${output}_sorted_${i}.bam
-
-" >> $script
-	      
-	      allBAMsofiles="$allBAMsofiles ${output}_sorted_${i}.bam"
-	  done
-	  
-	  echo "
-$samtools merge -f ${output}_sorted.bam $allBAMsofiles 
-
-rm $allBAMsofiles
-
-${samtools} index  ${output}_sorted.bam   ##build index
-
-" >> $script
-      fi
-    fi
-    
-    if [[ "$filtDup" == "TRUE" ]]; then
-	echo "
-## Now remove duplicates using PICARD
-java -Xmx${memory2}g -jar ${picardDup} ${picardJavaTemp} ASSUME_SORTED=true REMOVE_DUPLICATES=FALSE INPUT=${output}_sorted.bam OUTPUT=${output}_sorted_unique.bam METRICS_FILE=${output}_picard_metrics.out
-${samtools} index  ${output}_sorted_unique.bam   ##build index
-
-rm ${output}_sorted.bam ${output}_sorted.bam.bai
-
-" >> $script
-	else
-echo "
-mv ${output}_sorted.bam ${output}_sorted_unique.bam
-mv ${output}_sorted.bam.bai ${output}_sorted_unique.bam.bai
-
-" >> $script	
-    fi
-    
-    
-      if [[ "$clean" == "TRUE" ]]; then
-	  echo "
-rm ${output}.bam ${output}.sam 
-" >> $script	  
-      fi
-
-fi
-
-
-if [[ "$fixUnique" == "yes" ]]; then ## a fix if I forgot to run the clonality stuff
-    
     echo "
-java -Xmx${memory}g -jar ${picardDup} ${picardJavaTemp} ASSUME_SORTED=true REMOVE_DUPLICATES=FALSE INPUT=${output}_sorted_unique.bam OUTPUT=${output}_sorted_unique2.bam METRICS_FILE=${output}_picard_metrics.out
 
-mv ${output}_sorted_unique2.bam ${output}_sorted_unique.bam
+#$novoalign -c 11 -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${inputFiles[ 1 ]} ${inputFiles[ 2 ]}  -d $reference | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - | $novosort - -t ${tempFolder} -c 8 -m ${memory2}G -i -o ${output}_sorted_unique.bam   ###this line is too ambitious, and I am now breaking it down into smaller pieces
 
-${samtools} index  ${output}_sorted_unique.bam   ##build index
+$novoalign -c 11 -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${inputFiles[ 1 ]} ${inputFiles[ 2 ]}  -d $reference | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - > ${output}.bam
+
+${samtools} view -Sb ${output}_disc.sam | $novosort - -t ${tempFolder} -c 11 -m ${memory2}G -i -o ${output}_disc_sorted.bam
+
+$novosort -t ${tempFolder}/${code} -c 11 -m ${memory2}G -i -o ${output}_sorted_unique.bam ${output}.bam
+
+#rm ${output}_disc.sam ${output}.bam
+
 
 " >> $script
-
 fi
 
-if [[ "${summaryStats}" == "yes" ]]; then
-    
-    if [ -e ${baitFile} ]; then  ### summary stats if there is an interval list file 
-	echo "
-java -Xmx${memory}g -jar ${picardMetrics} BAIT_INTERVALS=${baitFile} TARGET_INTERVALS=${baitFile}  INPUT=${output}_sorted_unique.bam  OUTPUT=${output}.hybridMetrics
-" >> $script
-    else 
-	echo "Baitfile ${baitFile} does not exist"	
-    fi
-    
-fi
-    
 
 
 if [[ "$makegVCF" == "yes" ]]; then
+##           --dbsnp ${bundle}/dbsnp_137.b37.vcf \
 
-echo "
-$java17 -Djava.io.tmpdir=${tempFolder} -Xmx8g  -jar $GATK -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam \
-     --dbsnp ${bundle}/dbsnp_137.b37.vcf \
-     --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
-     -stand_call_conf 30.0 \
-     -stand_emit_conf 10.0 \
-     -L $target \
-     --activeRegionExtension 100 \
-     -o ${output}.gvcf
+    echo "
+$java17 -Djava.io.tmpdir=${tempFolder} -Xmx7g -jar $GATK -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
+       --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
+       -stand_call_conf 30.0 \
+       -stand_emit_conf 10.0 \
+       --activeRegionExtension 100 \
+       --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 60 \
+       -o ${output}.gvcf.gz
 " >> $script
 
 fi
 
-
-echo "date" >> $script  ##to measure the duration
+echo "$date" >> $script  ##to measure the duration
 echo $script
 
