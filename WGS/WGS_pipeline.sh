@@ -5,7 +5,7 @@ java17=java
 
 if [[ "$computer" == "CS" ]]; then
     Software=/cluster/project8/vyp/vincent/Software
-    java17=/share/apps/jdk1.7.0_25/jre/bin/java
+    java17=/share/apps/jdk1.7.0_45/jre/bin/java
     bundle=/scratch2/vyp-scratch2/GATK_bundle
     target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/merged_exome_target_cleaned.bed
     tempFolder=/scratch2/vyp-scratch2/vincent/temp/novoalign
@@ -14,7 +14,7 @@ fi
 
 
 
-GATK=${Software}/GenomeAnalysisTK-nightly-2014-03-30/GenomeAnalysisTK.jar
+GATK=${Software}/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
 novoalign=${Software}/novocraft3/novoalign
 novosort=${Software}/novocraft3/novosort
 samblaster=${Software}/samblaster/samblaster
@@ -45,7 +45,6 @@ ispool="no"
 poolSAM=""
 poolnovoPile=""
 fasta="default.fasta"
-baitFile="default.bait"
 extraID=""
 
 align=no
@@ -137,7 +136,6 @@ extra="--rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam}"
 #    extra="-t ${tparam} -o Soft -a -v 20 0 200 \"[>]([^_]*)_\""
 #fi
 
-if [[ "$baitFile" == "default.bait" ]]; then baitFile=${query}.intList; fi
 code=`basename $output`
 
 ############################### creates basic folders
@@ -163,9 +161,10 @@ vmem=1
 memory=2
 memory2=5  ##used for the sort function, seem to crash when using 10
 queue=queue6
+scratch=0
 
 if [[ "$summaryStats" == "yes" ]]; then ((nhours=nhours+2)); vmem=3; fi
-if [[ "$fixUnique" == "yes" ]]; then ((nhours=nhours+24)); vmem=14; memory=12; fi
+if [[ "$makegVCF" == "yes" ]]; then ((nhours=nhours+24)); vmem=6; memory=6; fi
 if [[ "$align" == "yes" ]]; then ((nhours=nhours+240)); ncores=12; vmem=1.3; memory=3; memory2=7; fi ##10 days?
 
 
@@ -195,7 +194,7 @@ echo "
 if [[ "$computer" == "CS" ]]; then
     
 	echo "#$ -pe smp ${ncores}
-#$ -l scr=20G
+#$ -l scr=${scratch}G
 #$ -l tmem=${vmem}G,h_vmem=${vmem}G
 #$ -l h_rt=${nhours}:0:0
 #$ -tc 20
@@ -205,19 +204,19 @@ if [[ "$computer" == "CS" ]]; then
 fi
 
 
-script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
 
-echo "
 
+
+
+if [[ "$align" == "yes" ]]; then
+
+    script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
+    echo $script >> $mainTable
+    echo "
 ##start of script
 
 " > $script
 
-
-echo $script >> $mainTable
-
-
-if [[ "$align" == "yes" ]]; then
     
     if [ ! -e ${tempFolder}/${code} ]; then mkdir ${tempFolder}/${code}; fi
 
@@ -240,17 +239,30 @@ fi
 
 
 if [[ "$makegVCF" == "yes" ]]; then
-##           --dbsnp ${bundle}/dbsnp_137.b37.vcf \
 
-    echo "
-$java17 -Djava.io.tmpdir=${tempFolder} -Xmx7g -jar $GATK -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
+    for chrCode in `seq 1 24`;  do
+
+	cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y )
+	
+	chrCleanCode=${cleanChr[ $chrCode ]}
+
+	script=`echo $mainScript | sed -e 's/.sh$//'`_chr${chrCode}_${code}.sh
+	echo $script >> $mainTable
+
+	echo "
+
+$java17 -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
        --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
        -stand_call_conf 30.0 \
        -stand_emit_conf 10.0 \
-       --activeRegionExtension 100 \
-       --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 60 \
-       -o ${output}.gvcf.gz
-" >> $script
+       -L chr${chrCleanCode} \
+       --downsample_to_coverage 200 \
+       --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
+       -o ${output}_chr${chrCleanCode}.gvcf.gz
+
+" > $script
+	
+    done
 
 fi
 
