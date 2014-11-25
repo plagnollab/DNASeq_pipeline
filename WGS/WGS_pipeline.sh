@@ -179,7 +179,7 @@ mainTable=cluster/submission/${projectID}_table.tab
 
 
 ########################### Now writing the script
-
+### I think I write and over-write this file many times (once per sample) but that's not a big deal
 echo "---------------------- Main script $mainScript"
 
 echo "
@@ -240,17 +240,18 @@ fi
 
 if [[ "$makegVCF" == "yes" ]]; then
 
-    for chrCode in `seq 1 24`;  do
+    for chrCode in `seq 1 24`;  do  ##one job per chromosome to save time
 
 	cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y )
 	
 	chrCleanCode=${cleanChr[ $chrCode ]}
 
-	script=`echo $mainScript | sed -e 's/.sh$//'`_chr${chrCode}_${code}.sh
-	echo $script >> $mainTable
+	if [ ! -s ${output}_chr${chrCleanCode}.gvcf.gz.tbi ]; then  ##if the index is not there, we assume that we have to do the whole job
 
-	echo "
-
+	    script=`echo $mainScript | sed -e 's/.sh$//'`_chr${chrCode}_${code}.sh
+	    echo $script >> $mainTable
+	    
+	    echo "
 $java17 -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
        --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
        -stand_call_conf 30.0 \
@@ -259,9 +260,9 @@ $java17 -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK -T HaplotypeCaller -R $
        --downsample_to_coverage 200 \
        --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
        -o ${output}_chr${chrCleanCode}.gvcf.gz
-
 " > $script
-	
+
+	fi
     done
 
 fi
