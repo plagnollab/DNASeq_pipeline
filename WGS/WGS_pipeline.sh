@@ -234,15 +234,19 @@ $novosort -t ${tempFolder}/${code} -c 11 -m ${memory2}G -i -o ${output}_sorted_u
 
 
 " >> $script
+
+    echo "$date" >> $script  ##to measure the duration
+    echo $script
+
 fi
 
 
 
 if [[ "$makegVCF" == "yes" ]]; then
 
-    for chrCode in `seq 1 24`;  do  ##one job per chromosome to save time
+    for chrCode in `seq 1 25`;  do  ##one job per chromosome to save time
 
-	cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y )
+	cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
 	
 	chrCleanCode=${cleanChr[ $chrCode ]}
 
@@ -265,8 +269,8 @@ $java17 -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK -T HaplotypeCaller -R $
 	fi
     done
 
+    echo $script
 fi
 
-echo "$date" >> $script  ##to measure the duration
-echo $script
+
 

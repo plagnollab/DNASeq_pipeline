@@ -172,7 +172,7 @@ process.multiVCF <- function(calls,
     calls <- calls[ correct.ids, , drop = FALSE]
     depth <- depth[ , correct.ids , drop = FALSE]
     my.sum <- col.summary(calls)
-    poly.in.cases <- my.sum$MAF > 0 & !is.na(my.sum$MAF) & my.sum$Calls > 0
+    poly.in.cases <- (my.sum$RAF == 1 | my.sum$MAF > 0) & !is.na(my.sum$MAF) & my.sum$Calls > 0  ##this seems overly complicated. I think I really only need RAF > 0 ?
     depth <- depth[ poly.in.cases, , drop = FALSE]
     calls <- calls[, poly.in.cases, drop = FALSE ]
     annotations <- annotations[ poly.in.cases, ]
@@ -189,7 +189,8 @@ process.multiVCF <- function(calls,
   annotations$ncarriers.cases <- round(my.sum$Calls*(my.sum$P.AB + my.sum$P.BB))
   annotations$non.ref.calls.cases <- round( my.sum$Calls * my.sum$RAF*2  )
   annotations$missing.rate.cases <- 1 - my.sum$Call.rate
-  
+
+
 ################### define the basic output folders, check what IDs are present
   if (is.null(explained.cases)) explained.cases <- rep(FALSE, length(my.cases))
   explained.cases <- subset(explained.cases, good.ids)
@@ -391,7 +392,8 @@ process.multiVCF <- function(calls,
         message('Outputting hom mapping regions in ', output.regions, ', nregions: ', nrow(regions))      
       }
     }
-    
+
+
 ##### now the somewhat.rare homs- note that I exclude chrX calls for now in that list
     rare.homs <- subset(annotations.loc, (! Chr %in% c('X', 'Y'))  & somewhat.rare & calls.loc == 2 & (non.syn | splicing | lof) & !remove.bad.transcripts & (depth.loc >= depth.threshold.conf.homs))
     rare.homs <- rare.homs[, my.names2]
