@@ -67,8 +67,12 @@ A very useful parameter to set is "extraID" to know the batch.
 This generates the scripts:
  - cluster/submission/align.sh
  - cluster/submission/align_table.sh
+ 
+*align.sh* is submitted to the queue using qsub and reads its job from the job array in *align_table.sh*.
 
-The alignment is done using [novoalign](http://www.novocraft.com/main/page.php?s=novoalign) on the specified [reference build](reference), piped to [samblaster](https://github.com/GregoryFaust/samblaster) to mark duplicates and extract discordant and split reads from SAM files, piped to [samtools]() which generates the BAM file.
+The alignment is done using [novoalign](http://www.novocraft.com/main/page.php?s=novoalign) on the specified [reference build](reference) which generates a SAM.
+The SAM is piped to [samblaster](https://github.com/GregoryFaust/samblaster) to mark duplicates and extract discordant and split reads.
+The output is then piped to [samtools]() which generates the BAM file.
 Finally [novosort]() is ran on the BAM.
 
 The default output folder is:
@@ -88,8 +92,8 @@ The variant calling is done by [GATK](http://www.broadinstitute.org/partnerships
 - Alignment
   - novoalign
   - samblaster
-  - samtools
-  - Picard
+  - [samtools]()
+  - [Picard]()
 - Variant calling
   - GATK
 
