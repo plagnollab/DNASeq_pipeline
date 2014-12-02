@@ -1,5 +1,6 @@
+# Whole Genome Sequencing Pipeline
 
-
+## Overview
 The two main scripts are:
 - WGS_submission_script.sh
 - WGS_pipeline.sh
@@ -9,35 +10,76 @@ The two main scripts are:
 with.
 
 `
-sh ${pipeline} --supportFrame ${supportFrame} --reference ${reference} --align ${align}  --tparam 320  --inputFormat STDFQ  --extraID $extraID --makeVCF ${makeVCF} --makegVCF ${makegVCF}  --projectID ${projectID}
+sh WGS_pipeline.sh --supportFrame ${supportFrame} --reference ${reference} --align ${align}  --tparam 320  --inputFormat STDFQ  --extraID $extraID --makeVCF ${makeVCF} --makegVCF ${makegVCF}  --projectID ${projectID}
 `
-
-
-The pipeline submission script assumes that you have written a "support" data frame.
-The format of the first row is:
-> code f1 f2 
-where f1 and f2 are the paired end fastq files and code is an identifier for the exome of interest.
-
-The running options are:
+The two modes of running the pipeline are either for alignment or for variant calling:
+- align
 - makegVCF
 - makeVCF
-- align
 
-Depending on the arguments *WGS_pipeline* will generate the following bash
+If ran for alignment, *WGS_pipeline* will generate the following bash
 scripts:
 
 - cluster/submission/align.sh
 - cluster/submission/align_table.sh
 
-or
+If ran for variant calling, the following bash scripts will be generated:
 
 - cluster/submission/makeVCF.sh
 - cluster/submission/makeVCF_table.sh
 
+Some parameters are common to both modes.
+Following is an explanation of those parameters.
+
+## Options
+
+### supportFrame
+
+The pipeline submission script assumes that you have written a "support" data frame.
+The format of the first row is:
+
+> code f1 f2 
+
+where f1 and f2 are the paired end fastq files and code is an identifier for the exome of interest.
+
+### reference
+
+The reference build on which to do the alignment.
+Two reference builds are supported:
+- hg38_noAl
+- 1kg
+
+### extraID
+
+A very useful parameter to set is "extraID" to know the batch.
+
+## Alignment
+
+This generates the scripts:
+ - cluster/submission/align.sh
+ - cluster/submission/align_table.sh
+
+The alignment is done using [novoalign](http://www.novocraft.com/main/page.php?s=novoalign) on the specified [reference build](reference), piped to [samblaster](https://github.com/GregoryFaust/samblaster) to mark duplicates and extract discordant and split reads from SAM files, piped to [samtools]() which generates the BAM file.
+Finally [novosort]() is ran on the BAM.
 
 The default output folder is:
 > aligned
 
-A very useful parameter to set is "extraID" to know the batch.
+## Variant calling
+
+This generates scripts:
+- cluster/submission/makeVCF.sh
+- cluster/submission/makeVCF_table.sh
+
+The variant calling is done by [GATK](http://www.broadinstitute.org/partnerships/education/broade/best-practices-variant-calling-gatk).
+
+
+## Dependencies
+
+- GATK
+- novoalign
+- samblaster
+- samtools
+- Picard
 
 
