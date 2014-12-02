@@ -81,9 +81,6 @@ until [ -z "$1" ]; do
         --reference)
             shift
             reference=$1;;
-	--fasta)
-	    shift
-	    fasta=$1;;
 	--force)
 	    shift
 	    force=$1;;
@@ -106,8 +103,17 @@ done
 extra="--rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam}"
 
 ########################### choice of reference sequence
+fasta=none
+novoalignRef=none
+if [[ "$reference" == "hg38_noAlt" ]]; then
+    fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+    novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.k15.s2.novoindex
+fi
 
-
+if [[ "$reference" == "1kg" ]]; then
+    fasta=/cluster/project8/vyp/vincent/data/reference_genomes/human_g1k_v37.fasta
+    novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta.k15.s2.novoindex
+fi
 
 
 ############################### creates basic folders
@@ -116,7 +122,7 @@ for folder in cluster cluster/out cluster/error cluster/submission; do
 done
 
 ###############  now let us check that the reference exists
-for file in $reference; do
+for file in $fasta $novoalignRef; do
     ls -lh $file
     if [ ! -e "$file" ]; then 
 	echo "Error, reference file $file does not exist"
@@ -195,9 +201,9 @@ if [[ "$align" == "yes" ]]; then
 	    
 	    echo "
 
-#$novoalign -c 11 -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${f1} ${f2}  -d $reference | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - | $novosort - -t ${tempFolder} -c 8 -m ${memory2}G -i -o ${output}_sorted_unique.bam   ###this line is too ambitious, and I am now breaking it down into smaller pieces
+#$novoalign -c 11 -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - | $novosort - -t ${tempFolder} -c 8 -m ${memory2}G -i -o ${output}_sorted_unique.bam   ###this line is too ambitious, and I am now breaking it down into smaller pieces
 
-$novoalign -c 11 -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${f1} ${f2}  -d $reference | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - > ${output}.bam
+$novoalign -c 11 -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - > ${output}.bam
 
 ${samtools} view -Sb ${output}_disc.sam | $novosort - -t ${tempFolder} -c 11 -m ${memory2}G -i -o ${output}_disc_sorted.bam
 
