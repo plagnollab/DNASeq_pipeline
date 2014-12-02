@@ -166,6 +166,8 @@ if [[ "$align" == "yes" ]]; then
 
     tail -n +2 $supportFrame | while read code f1 f2; do
 	
+	if [ ! -e ${oFolder}/${code} ]; then mkdir ${oFolder}/${code}; fi
+
 	output=${oFolder}/${code}/${code}
 	script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
 
@@ -297,31 +299,41 @@ if [[ "$makeVCF" == "yes" ]]; then
     for chrCode in `seq 1 25`;  do  ##one job per chromosome to save time
 	
 	chrCleanCode=${cleanChr[ $chrCode ]}
-	script=`echo $mainScript | sed -e 's/.sh$//'`_chr${chrCleanCode}.sh	
-	echo "$script" >> $mainTable
+	output=${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz
+	
+	if [ ! -s ${output}.tbi | "$force" == "yes" ]; then  ##if the index is missing, or we use the "force" option
 
-	echo "
+	    script=`echo $mainScript | sed -e 's/.sh$//'`_chr${chrCleanCode}.sh	
+	    
+	    echo "$script" >> $mainTable
+	    
+	    echo "
 $java17 -Xmx2g -jar $GATK \\
    -R $fasta \\
    -T GenotypeGVCFs \\
    -L chr${chrCleanCode}  --interval_padding 100  \\
    --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore --annotation MappingQualityRankSumTest --annotation ReadPosRankSumTest --annotation FisherStrand \\" > $script
-
-	tail -n +2 $supportFrame | while read code f1 f2; do  ### now look at each gVCF file
-	    output=${oFolder}/${code}/${code}
-	    gVCF="${output}_chr${chrCleanCode}.gvcf.gz"
-	    if [[ "$enforceStrict" == "yes" && ! -s $gVCF ]]; then echo "Cannot find $gVCF"; exit; fi
-	    if [ -s $gVCF ]; then 
-		echo "   --variant $gVCF \\" >> $script; 
-	    fi
-	done
-	
+	    
+	    tail -n +2 $supportFrame | while read code f1 f2; do  ### now look at each gVCF file
+		output=${oFolder}/${code}/${code}
+		gVCF="${output}_chr${chrCleanCode}.gvcf.gz"
+		if [[ "$enforceStrict" == "yes" && ! -s $gVCF ]]; then echo "Cannot find $gVCF"; exit; fi
+		if [ -s $gVCF ]; then 
+		    echo "   --variant $gVCF \\" >> $script; 
+		fi
+	    done
+	    
 	#echo "   --dbsnp ${bundle}/dbsnp_137.b37.vcf \\
    #-o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
-
-	echo "   -o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
-	
+	    
+	    echo "   -o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
+	fi    
     done
+
+    #### compute the nb of jobs 
+    njobs=`wc -l $mainTable | cut -f1 -d' '`
+    ((njobs=njobs-1))
+
 
     echo "
 #!/bin/bash
@@ -347,6 +359,7 @@ echo \$script
 sh \$script
 
 " > $mainScript
+
 
     echo "Main submission scripts and tables for the align module:"
     wc -l $mainScript $mainTable
