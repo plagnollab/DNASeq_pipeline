@@ -10,12 +10,21 @@ The two main scripts are:
 with.
 
 `
-sh WGS_pipeline.sh --supportFrame ${supportFrame} --reference ${reference} --align ${align}  --tparam 320  --inputFormat STDFQ  --extraID $extraID --makeVCF ${makeVCF} --makegVCF ${makegVCF}  --projectID ${projectID}
+sh WGS_pipeline.sh 
+     --supportFrame 
+     --reference 
+     --align 
+     --tparam 320
+     --inputFormat STDFQ 
+     --extraID 
+     --makeVCF 
+     --makegVCF 
+     --projectID 
 `
+
 The two modes of running the pipeline are either for alignment or for variant calling:
 - align
-- makegVCF
-- makeVCF
+- makegVCF / makeVCF
 
 If ran for alignment, *WGS_pipeline* will generate the following bash
 scripts:
@@ -71,15 +80,16 @@ This generates scripts:
 - cluster/submission/makeVCF.sh
 - cluster/submission/makeVCF_table.sh
 
-The variant calling is done by [GATK](http://www.broadinstitute.org/partnerships/education/broade/best-practices-variant-calling-gatk).
+The variant calling is done by [GATK](http://www.broadinstitute.org/partnerships/education/broade/best-practices-variant-calling-gatk) using HaplotypeCaller and GenotypeGVCFs.
 
 
 ## Dependencies
 
-- GATK
-- novoalign
-- samblaster
-- samtools
-- Picard
-
+- Alignment
+  - novoalign
+  - samblaster
+  - samtools
+  - Picard
+- Variant calling
+  - GATK
 
