@@ -52,6 +52,7 @@ The format of the first row is:
 > code f1 f2 
 
 where f1 and f2 are the paired end fastq files and code is an identifier for the exome of interest.
+The code is used to create a subdirectory under aligned where the output goes.
 
 ### reference
 
