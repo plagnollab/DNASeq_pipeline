@@ -11,20 +11,21 @@ with.
 
 `
 sh WGS_pipeline.sh 
-     --supportFrame 
-     --reference 
-     --align 
+     --supportFrame < >
+     --reference [hg38_noAl|1kg]
+     --align [yes|no]
      --tparam 320
      --inputFormat STDFQ 
-     --extraID 
-     --makeVCF 
-     --makegVCF 
-     --projectID 
+     --extraID < >
+     --makeVCF [yes|no]
+     --makegVCF [yes|no]
+     --projectID < >
 `
 
 The two modes of running the pipeline are either for alignment or for variant calling:
 - align
-- makegVCF / makeVCF
+- makegVCF
+- makeVCF
 
 If ran for alignment, *WGS_pipeline* will generate the following bash
 scripts:
@@ -37,6 +38,7 @@ If ran for variant calling, the following bash scripts will be generated:
 - cluster/submission/makeVCF.sh
 - cluster/submission/makeVCF_table.sh
 
+The first bash script is submitted to the cluster and uses the second script to specify the SGE job array.
 Some parameters are common to both modes.
 Following is an explanation of those parameters.
 
