@@ -228,8 +228,6 @@ output.pca <- paste(fig.folder, '/', code, '_pca.pdf', sep = '')
 pdf(output.pca)
 
 
-
-
 for (i in 1:2) {
   message('PCA ', i)
   col <- 'black'

@@ -15,15 +15,17 @@ deseq.compute <- TRUE
 extra.plots <- TRUE
 keep.dups <- FALSE
 
-annotation.file <- '/cluster/project8/vyp/vincent/Software/pipeline/RNASeq/bundle/mouse/biomart/biomart_annotations_mouse.tab'
-iFolder <- '/scratch2/vyp-scratch2/Bochukova_RNASeq/processed'
-support.frame <- 'support/Bochukova.tab'
-code <- 'Bochukova'
+#annotation.file <- '/cluster/project8/vyp/vincent/Software/pipeline/RNASeq/bundle/mouse/biomart/biomart_annotations_mouse.tab'
+#iFolder <- '/scratch2/vyp-scratch2/Bochukova_RNASeq/processed'
+#support.frame <- 'support/Bochukova.tab'
+#code <- 'Bochukova'
 
-#iFolder <- '/home/ucbtvyp/vyp-scratch/vincent/temp/Cirak_RNASeq/muscle/'
-#annotation.file <- '/cluster/project2/vyp/vincent/data/reference_genomes/annotations/biomart/HomoSapiens_biomart_hg19.tab'
-#support.frame <- 'data/Cirak_muscle.tab'
-#code <- 'Cirak'
+annotation.file <- '/cluster/project8/vyp/vincent/Software/pipeline/RNASeq/bundle/mouse/biomart/biomart_annotations_mouse.tab'
+iFolder <- '/scratch2/vyp-scratch2/IoN_RNASeq/Natalia/processed'
+support.frame <- 'support/Natalia.tab'
+code <- 'Natalia'
+
+
 
 
 
@@ -64,7 +66,7 @@ message('After removing chr XY probes: ', nrow(genes.counts))
 #genes.counts <- genes.counts[1:1000,]
 
 ###loop over all proposed conditions
-for (condition in list.conditions) {
+for (condition in list.conditions[2]) {
 
   genes.counts.loc <- genes.counts[, !is.na(support[, condition]) ]
 
@@ -94,8 +96,47 @@ for (condition in list.conditions) {
   
   if (keep.dups) output.file <- paste(loc.deseq.folder, '/deseq_', code, '_differential_expression_keep_dups.tab', sep = '')
   if (!keep.dups) output.file <- paste(loc.deseq.folder, '/deseq_', code, '_differential_expression.tab', sep = '')
-  
 
+######### Now add a PCA for the subset of individuals being considered
+  my.sd <- apply(genes.counts.loc, MAR = 1, FUN = sd)
+  mat.for.pca <- t(genes.counts.loc[my.sd > median(my.sd), ])
+  pca.data <- prcomp(mat.for.pca, scale = TRUE)  
+
+  output.pca <- paste(deseq.figs, '/', loc.code, '_pca.pdf', sep = '')
+  pdf(output.pca)
+
+  for (i in 1:2) {
+    message('PCA ', i)
+    if (length(unique(condition)) <= 4) {
+      col <- c('black', 'red', 'green', 'blue')[ as.numeric(factor(support.loc[, condition ])) ]
+    } else {
+      col <- as.numeric(factor(support.loc[, condition ]))
+    }
+
+    
+    plot(x = pca.data$x[,2*i-1],
+         y = pca.data$x[,2*i],
+         xlab = ifelse (i == 1, 'PC1', 'PC3'),
+         ylab = ifelse (i == 1, 'PC2', 'PC4'),
+         col = col,
+         pch = '+')
+    
+    text(x = pca.data$x[,2*i -1],
+         y = pca.data$x[,2*i],
+         labels = as.character(support.loc$sample),
+         pos = 3)
+
+    my.levels <- levels(factor(support.loc[, condition]))
+    legend(col = 1:length(my.levels),
+           legend = my.levels,
+           pch = '+',
+           x = 'bottomright')
+     
+  }
+  print(output.pca)
+  dev.off()
+
+  
 ###################
   method <- 'pooled'
   use.type <- FALSE
