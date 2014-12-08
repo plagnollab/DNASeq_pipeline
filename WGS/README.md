@@ -12,7 +12,7 @@ with.
 `
 sh WGS_pipeline.sh 
      --supportFrame < >
-     --reference [hg38_noAl|1kg]
+     --reference [hg38_noAlt|1kg]
      --align [yes|no]
      --tparam 320
      --inputFormat STDFQ 
@@ -58,7 +58,7 @@ The code is used to create a subdirectory under aligned where the output goes.
 
 The reference build on which to do the alignment.
 Two reference builds are supported:
-- hg38_noAl
+- hg38_noAlt
 - 1kg
 
 ### extraID
