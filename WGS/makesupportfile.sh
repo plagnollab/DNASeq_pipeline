@@ -1,6 +1,5 @@
 # *************************************************************
-#
-#
+# bash makesupportfile.sh <dir to fastq files>
 # *************************************************************
 # Directory where your paired end fq.gz lie.
 DIR=$1
