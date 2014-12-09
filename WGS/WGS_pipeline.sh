@@ -113,6 +113,11 @@ if [[ "$reference" == "1kg" ]]; then
     novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta.k15.s2.novoindex
 fi
 
+if [[ "$reference" == "hg19" ]]; then
+    fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/hg19_UCSC.fa
+    novoalignRef=none
+fi
+
 
 ############################### creates basic folders
 for folder in cluster cluster/out cluster/error cluster/submission; do
