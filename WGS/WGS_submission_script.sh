@@ -12,11 +12,8 @@ find /SAN/biomed/biomed2/biomed2/ingest/ -name *1.fastq.gz -exec basename {} .fa
 myIDs=`cat support/listIDs.tab | grep 14`
 
 
-
 #################### key parameters to choose
 projectID=HardcastleStep2
-mainScript=cluster/submission/${projectID}_main.sh
-mainTable=cluster/submission/${projectID}_table.tab
 extraID=Hardcastle_October2014
 reference=hg38_noAlt
 
@@ -31,10 +28,11 @@ supportFrame=support/Hardcastle_October2014.tab
 
 ########################## end of parameter file
 
-
-
-
 njobs=0
 echo "scriptNames" > $mainTable
 
+mkdir -p aligned/${projectID}
+
 sh ${pipeline} --supportFrame ${supportFrame} --reference ${reference} --align ${align}  --tparam 320  --inputFormat STDFQ  --extraID $extraID --makeVCF ${makeVCF} --makegVCF ${makegVCF}  --projectID ${projectID}
+
+
