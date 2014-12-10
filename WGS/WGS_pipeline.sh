@@ -127,7 +127,7 @@ mkdir -p cluster cluster/out cluster/err cluster/submission
 #done
 
 ###############  now let us check that the reference exists
-for file in $fasta $novoalignRef; do
+for file in $fasta; do
     ls -lh $file
     if [ ! -e "$file"  ] && [ "$file" != "none" ]
     then 
@@ -167,7 +167,18 @@ if [[ "$mustBeF2" != "f2" ]]; then echo "The third column of the file $supportFr
 ########################### Now writing the script
 
 if [[ "$align" == "yes" ]]
-then
+    then
+    
+    for file in $novoalignRef; do
+	ls -lh $file
+	if [ ! -e "$file"  ] && [ "$file" != "none" ]
+	    then 
+	    echo "Error, reference file $file does not exist"
+	    exit
+	fi
+    done
+
+
     mainScript=cluster/submission/align.sh
     mainTable=cluster/submission/align_table.sh
     echo "listScripts" > $mainTable
@@ -250,6 +261,10 @@ fi
 # Take as input the sorted, unique BAM files and produces the gVCF files
 if [[ "$makegVCF" == "yes" ]]
 then
+
+    mainScript=cluster/submission/makegVCF.sh
+    mainTable=cluster/submission/makegVCF_table.sh
+
     cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
     #sart of while loop
     tail -n +2 $supportFrame | while read code f1 f2

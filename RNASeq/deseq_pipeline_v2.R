@@ -66,7 +66,7 @@ message('After removing chr XY probes: ', nrow(genes.counts))
 #genes.counts <- genes.counts[1:1000,]
 
 ###loop over all proposed conditions
-for (condition in list.conditions[2]) {
+for (condition in list.conditions) {
 
   genes.counts.loc <- genes.counts[, !is.na(support[, condition]) ]
 
