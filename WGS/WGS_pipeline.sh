@@ -4,7 +4,8 @@
 computer=CS
 java17=java
 
-if [[ "$computer" == "CS" ]]; then
+if [[ "$computer" == "CS" ]]
+then
     Software=/cluster/project8/vyp/vincent/Software
     java17=/share/apps/jdk1.7.0_45/jre/bin/java
     bundle=/scratch2/vyp-scratch2/GATK_bundle
@@ -119,16 +120,18 @@ if [[ "$reference" == "hg19" ]]; then
 fi
 
 
-############################### creates basic folders
-for folder in cluster cluster/out cluster/error cluster/submission; do
-    if [ ! -e $folder ]; then mkdir $folder; fi
-done
+############################### creates folders required for qsub and writing logs
+mkdir -p cluster cluster/out cluster/err cluster/submission
+#for folder in cluster cluster/out cluster/error cluster/submission; do
+    #if [ ! -e $folder ]; then mkdir $folder; fi
+#done
 
 ###############  now let us check that the reference exists
 for file in $fasta $novoalignRef; do
     ls -lh $file
-    if [ ! -e "$file" ]; then 
-	echo "Error, reference file $file does not exist"
+    if [ ! -e "$file"  ] && [ "$file" != "none" ]
+    then 
+        echo "Error, reference file $file does not exist"
 	exit
     fi
 done
@@ -161,9 +164,7 @@ if [[ "$mustBeF2" != "f2" ]]; then echo "The third column of the file $supportFr
 
 
 
-
 ########################### Now writing the script
-
 
 if [[ "$align" == "yes" ]]
 then
@@ -173,9 +174,10 @@ then
     #start of while loop
     tail -n +2 $supportFrame | while read code f1 f2
     do
-	if [ ! -e ${oFolder}/${code} ]; then mkdir ${oFolder}/${code}; fi
-	output=${oFolder}/${code}/${code}
-	script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
+        mkdir -p ${oFolder}/${code}
+        #if [ ! -e ${oFolder}/${code} ]; then mkdir ${oFolder}/${code}; fi
+        output=${oFolder}/${code}/${code}
+        script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
 	echo "
 ##start of script
 
