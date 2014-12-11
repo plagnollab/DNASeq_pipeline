@@ -1,5 +1,4 @@
-###
-###
+#! /bin/bash
 
 computer=CS
 java17=java
@@ -127,7 +126,7 @@ mkdir -p cluster cluster/out cluster/err cluster/submission
 #done
 
 ###############  now let us check that the reference exists
-for file in $fasta $novoalignRef; do
+for file in $fasta; do
     ls -lh $file
     if [ ! -e "$file"  ] && [ "$file" != "none" ]
     then 
@@ -167,7 +166,18 @@ if [[ "$mustBeF2" != "f2" ]]; then echo "The third column of the file $supportFr
 ########################### Now writing the script
 
 if [[ "$align" == "yes" ]]
-then
+    then
+    
+    for file in $novoalignRef; do
+	ls -lh $file
+	if [ ! -e "$file"  ] && [ "$file" != "none" ]
+	    then 
+	    echo "Error, reference file $file does not exist"
+	    exit
+	fi
+    done
+
+
     mainScript=cluster/submission/align.sh
     mainTable=cluster/submission/align_table.sh
     echo "listScripts" > $mainTable
@@ -246,10 +256,43 @@ sh \$script
 fi
 
 
+if [[ "$makesinglegVCF" == "yes" ]]
+then
+
+    mainScript=cluster/submission/makesinglegVCF.sh
+    mainTable=cluster/submission/makesinglegVCF_table.sh
+    
+    #sart of while loop
+    tail -n +2 $supportFrame | while read code f1 f2
+      do
+	output=${oFolder}/${code}/${code}
+	##one job per chromosome to save time
+	    ##if the index is not there, we assume that we have to do the whole job
+	if [ ! -s ${output}.gvcf.gz.tbi | "$force" == "yes" ]
+	    then
+	    script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
+	    echo $script >> $mainTable
+           #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
+	    echo "
+           $java17 -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
+           --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
+           -stand_call_conf 30.0 \
+           -stand_emit_conf 10.0 \
+           --downsample_to_coverage 200 \
+           --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
+           -o ${output}.gvcf.gz
+            " > $script
+	fi
+    done
+fi
 
 # Take as input the sorted, unique BAM files and produces the gVCF files
 if [[ "$makegVCF" == "yes" ]]
 then
+
+    mainScript=cluster/submission/makegVCF.sh
+    mainTable=cluster/submission/makegVCF_table.sh
+
     cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
     #sart of while loop
     tail -n +2 $supportFrame | while read code f1 f2
@@ -296,7 +339,7 @@ if [[ "$makeVCF" == "yes" ]]; then
         chrCleanCode=${cleanChr[ $chrCode ]}
         output=${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz
         ##if the index is missing, or we use the "force" option
-        if [ ! -s ${output}.tbi | "$force" == "yes" ]
+        if [[ ! -s ${output}.tbi | "$force" == "yes" ]]
         then 
 	    script=`echo $mainScript | sed -e 's/.sh$//'`_chr${chrCleanCode}.sh	
 	    echo "$script" >> $mainTable
