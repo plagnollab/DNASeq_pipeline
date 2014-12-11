@@ -145,10 +145,9 @@ memory2=5  ##used for the sort function, seem to crash when using 10
 queue=queue6
 scratch=0
 
-if [[ "$summaryStats" == "yes" ]]; then ((nhours=nhours+2)); vmem=3; fi
-if [[ "$makeVCF" == "yes" ]]; then ((nhours=nhours+12)); vmem=4; memory2=noneed; fi
-if [[ "$makegVCF" == "yes" ]]; then ((nhours=nhours+24)); vmem=6; memory2=6; fi
-if [[ "$align" == "yes" ]]; then ((nhours=nhours+240)); ncores=6; vmem=2.6; memory2=7; fi ##10 days?
+if [[ "$makeVCF" == "yes" ]]; then nhours=12; vmem=4; memory2=noneed; fi
+if [[ "$makegVCF" == "yes" ]]; then nhours=24; vmem=6; memory2=6; fi
+if [[ "$align" == "yes" ]]; then nhours=240; ncores=6; vmem=2.3; memory2=7; fi ##10 days? Perhaps more.
 
 
 ### running checks
