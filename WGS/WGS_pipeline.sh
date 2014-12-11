@@ -1,9 +1,16 @@
 #! /bin/bash
 # this script has only been tested with bash and may not work with other shells
 
-computer=CS
-java17=java
+# This script does the following three tasks:
+# 1) Run alignment to generate BAM and SAM files.
+#    Novoalign and samtools are used for this purpose.
+# 2) Genotype calling with the GATK HaplotypeCaller.  This generates the gVCF file.
+# 3) Jointly call VCFs using the GATK GenotypeGVCFs . This generates a multi-sample combined VCF file.
 
+
+# If you run this in a different environment than the UCL CS cluster
+# then you need to set the env variables.
+computer=CS
 if [[ "$computer" == "CS" ]]
 then
     Software=/cluster/project8/vyp/vincent/Software
@@ -31,16 +38,14 @@ picardSamToFastq=${Software}/picard-tools-1.100/SamToFastq.jar
 inputFormat=STDFQ
 tparam=250
 
-
 ####
 force=no
 enforceStrict=no
 
-
 ##### list of action parameters below
 align=no
 makegVCF=no
-makeVCF=no
+makeJointVCF=no
 
 # current default output folder is aligned
 oFolder=aligned
@@ -57,7 +62,7 @@ do
 	--extraID )
 	    shift
 	    extraID="$1_";;
-        --tempFolder )   ##specify a temp directory for the java picard code
+     --tempFolder )   ##specify a temp directory for the java picard code
 	    shift
 	    tempFolder=$1;;
 	--supportFrame )    ### critical to specify the output file
@@ -66,15 +71,18 @@ do
 	--tparam )
 	    shift
 	    tparam=$1;;
-	--makegVCF )
-	    shift
-	    makegVCF=$1;;
-	--makeVCF )
-	    shift
-	    makeVCF=$1;;
+# the main 3 steps of the program
 	--align)
 	    shift
 	    align=$1;;
+# Generate GVCF:
+	--makegVCF )
+	    shift
+	    makegVCF=$1;;
+# Do joint calling
+	--makeJointVCF )
+	    shift
+	    makeJointVCF=$1;;
 	--projectID)
 	    shift
 	    projectID=$1;;
@@ -108,13 +116,11 @@ then
     fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
     novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.k15.s2.novoindex
 fi
-
 if [[ "$reference" == "1kg" ]]
 then
     fasta=/cluster/project8/vyp/vincent/data/reference_genomes/human_g1k_v37.fasta
     novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta.k15.s2.novoindex
 fi
-
 if [[ "$reference" == "hg19" ]]
 then
     fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/hg19_UCSC.fa
@@ -149,16 +155,13 @@ memory2=5  ##used for the sort function, seem to crash when using 10
 queue=queue6
 scratch=0
 
-if [[ "$makeVCF" == "yes" ]]; then nhours=12; vmem=4; memory2=noneed; fi
-if [[ "$makegVCF" == "yes" ]]; then nhours=24; vmem=6; memory2=6; fi
-if [[ "$align" == "yes" ]]; then nhours=240; ncores=6; vmem=2.3; memory2=7; fi ##10 days? Perhaps more.
 
-
-### running checks
-mustBeCode=`head -1 $supportFrame | cut -f1 -d' ' | cut -f1`  ##should accept tab or space as delimiters
+### Check format of support file.
+##should accept tab or space as delimiters
+## but does read support tabs and delimeters?
+mustBeCode=`head -1 $supportFrame | cut -f1 -d' ' | cut -f1`  
 mustBeF1=`head -1 $supportFrame | cut -f2 -d' ' | cut -f2`
 mustBeF2=`head -1 $supportFrame | cut -f3 -d' ' | cut -f3`
-
 if [[ "$mustBeCode" != "code" ]]; then echo "The first column of the file $supportFrame must have the name code $mustBeCode"; exit; fi
 if [[ "$mustBeF1" != "f1" ]]; then echo "The second column of the file $supportFrame must have the name f1"; exit; fi
 if [[ "$mustBeF2" != "f2" ]]; then echo "The third column of the file $supportFrame must have the name f2"; exit; fi
@@ -167,9 +170,9 @@ if [[ "$mustBeF2" != "f2" ]]; then echo "The third column of the file $supportFr
 
 ####################### Alignment using Novoalign  ###########################################################################
 # The alignment creates the SAM and BAM files for GATK variant calling
-if [[ "$align" == "yes" ]]
-then
-    for file in $novoalignRef; do
+function align() {
+    for file in $novoalignRef
+    do
 	ls -lh $file
 	if [ ! -e "$file"  ] && [ "$file" != "none" ]
 	    then 
@@ -196,7 +199,7 @@ then
     then
 	    if [ ! -e $f1 ]; then echo "$f1 does not exist"; exit; fi
 	    if [ ! -e $f2 ]; then echo "$f2 does not exist"; exit; fi
-	    if [ ! -e ${tempFolder}/${code} ]; then mkdir ${tempFolder}/${code}; fi
+        mkdir -p ${tempFolder}/${code} 
 	    echo $script >> $mainTable
 	    echo "
 $novoalign -c ${ncores} -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' --rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam} -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - > ${output}.bam
@@ -211,14 +214,13 @@ $novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}_s
 	fi
     done
     #end of while loop
-fi
+}
 
 
-####################### GATK HaplotypeCaller #################################################################################
+####################### GATK HaplotypeCaller no splitting by chromosome  #####################################################
 # Instead of splitting by chromosome creates a single VCF file.
 # This is only manageable for exon and generally smaller sequence datasets.
-if [[ "$makesinglegVCF" == "yes" ]]
-then
+function makeSingleGVCF() {
     mainScript=cluster/submission/makesinglegVCF.sh
     mainTable=cluster/submission/makesinglegVCF_table.sh
     #start of while loop
@@ -246,13 +248,12 @@ then
             " > $script
         fi
     done
-fi
+}
 
-####################### GATK HaplotypeCaller #################################################################################
+####################### GATK HaplotypeCaller split by chromosome  ############################################################
 # Take as input the sorted, unique BAM files and produces the gVCF files
 # Splits by chromosome.
-if [[ "$makegVCF" == "yes" ]]
-then
+function makeGVCF() {
     mainScript=cluster/submission/makegVCF.sh
     mainTable=cluster/submission/makegVCF_table.sh
     cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
@@ -287,18 +288,16 @@ then
 	done
     done
     #end of while loop
-fi
+}
 
 
 ####################### GATK GenotypeGVCFs  ##################################################################################
 ### This is the part that combines all the VCFs across samples to do the joint calling.
 ### This is a more practical aprroach of doing joint-calling than using the UnifiedGenotyper
 ### which relies on the BAM files.
-if [[ "$makeVCF" == "yes" ]]
-then
-    
-    mainScript=cluster/submission/makeVCF.sh
-    mainTable=cluster/submission/makeVCF_table.sh
+function makeJointVCF() {
+    mainScript=cluster/submission/makeJointVCF.sh
+    mainTable=cluster/submission/makeJointVCF_table.sh
     echo "listScripts" > $mainTable
     cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
     for chrCode in `seq 1 25`
@@ -309,34 +308,69 @@ then
         ##if the index is missing, or we use the "force" option
         if [ ! -s ${output}.tbi ] || [ "$force" == "yes" ]
         then 
-	    script=`echo $mainScript | sed -e 's/.sh$//'`_chr${chrCleanCode}.sh	
-	    echo "$script" >> $mainTable
-        #Genotypes any number of gVCF files that were produced by the Haplotype Caller into a single joint VCF file.
-	    echo "
+            script=`echo $mainScript | sed -e 's/.sh$//'`_chr${chrCleanCode}.sh	
+            echo "$script" >> $mainTable
+            #Genotypes any number of gVCF files that were produced by the Haplotype Caller into a single joint VCF file.
+            echo "
 $java17 -Xmx2g -jar $GATK \\
    -T GenotypeGVCFs \\
    -R $fasta \\
    -L chr${chrCleanCode}  --interval_padding 100  \\
    --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore --annotation MappingQualityRankSumTest --annotation ReadPosRankSumTest --annotation FisherStrand \\" > $script
-        # for each line in support file
-	    tail -n +2 $supportFrame | while read code f1 f2
-        do  ### now look at each gVCF file
+            # for each line in support file
+            tail -n +2 $supportFrame | while read code f1 f2
+            do  ### now look at each gVCF file
             output=${oFolder}/${code}/${code}
             gVCF="${output}_chr${chrCleanCode}.gvcf.gz"
-		if [[ "$enforceStrict" == "yes" && ! -s $gVCF ]]; then echo "Cannot find $gVCF"; exit; fi
-		if [ -s $gVCF ]
-        then 
-		    echo "   --variant $gVCF \\" >> $script; 
-		fi
-	done
-	#echo "   --dbsnp ${bundle}/dbsnp_137.b37.vcf \\
-   #-o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
-	echo "   -o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
-fi    
+            if [[ "$enforceStrict" == "yes" && ! -s $gVCF ]]
+            then
+                echo "Cannot find $gVCF"
+                exit
+            fi
+            if [ -s $gVCF ]
+            then 
+                echo "   --variant $gVCF \\" >> $script; 
+            fi
+            done
+            #echo "   --dbsnp ${bundle}/dbsnp_137.b37.vcf \\
+            #-o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
+            echo "   -o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
+      fi
+    done
+}
 
 
 
 #################### the code below is generic to all modules: compute the nb of jobs and create the final submission array
+
+if [[ "$align" == "yes" ]]
+then
+    ##10 days? Perhaps more.
+    nhours=240
+    ncores=6
+    vmem=2.3
+    memory2=7
+    # call align function
+    align
+fi
+if [[ "$makegVCF" == "yes" ]]
+then nhours=24
+    vmem=6
+    memory2=6
+    #
+    makeGVCF
+    #makeSingleGVCF
+fi
+if [[ "$makeJointVCF" == "yes" ]]
+then
+    nhours=12
+    vmem=4
+    memory2=noneed
+    #
+    makeJointVCF
+fi
+
+
 njobs=`wc -l $mainTable | cut -f1 -d' '`
 ((njobs=njobs-1))
 
