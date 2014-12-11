@@ -120,7 +120,7 @@ fi
 
 
 ############################### creates folders required for qsub and writing logs
-mkdir -p cluster cluster/out cluster/err cluster/submission
+mkdir -p cluster cluster/out cluster/error cluster/submission
 #for folder in cluster cluster/out cluster/error cluster/submission; do
     #if [ ! -e $folder ]; then mkdir $folder; fi
 #done
@@ -141,15 +141,14 @@ done
 nhours=0
 ncores=1
 vmem=1
-memory=2
 memory2=5  ##used for the sort function, seem to crash when using 10
 queue=queue6
 scratch=0
 
 if [[ "$summaryStats" == "yes" ]]; then ((nhours=nhours+2)); vmem=3; fi
-if [[ "$makeVCF" == "yes" ]]; then ((nhours=nhours+12)); vmem=6; memory=6; fi
-if [[ "$makegVCF" == "yes" ]]; then ((nhours=nhours+24)); vmem=6; memory=6; fi
-if [[ "$align" == "yes" ]]; then ((nhours=nhours+240)); ncores=12; vmem=1.3; memory=3; memory2=7; fi ##10 days?
+if [[ "$makeVCF" == "yes" ]]; then ((nhours=nhours+12)); vmem=4; memory2=noneed; fi
+if [[ "$makegVCF" == "yes" ]]; then ((nhours=nhours+24)); vmem=6; memory2=6; fi
+if [[ "$align" == "yes" ]]; then ((nhours=nhours+240)); ncores=6; vmem=2.6; memory2=7; fi ##10 days?
 
 
 ### running checks
@@ -205,13 +204,12 @@ if [[ "$align" == "yes" ]]
 	    if [ ! -e ${tempFolder}/${code} ]; then mkdir ${tempFolder}/${code}; fi
 	    echo $script >> $mainTable
 	    echo "
-#$novoalign -c 11 -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - | $novosort - -t ${tempFolder} -c 8 -m ${memory2}G -i -o ${output}_sorted_unique.bam   ###this line is too ambitious, and I am now breaking it down into smaller pieces
 
-$novoalign -c 11 -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - > ${output}.bam
+$novoalign -c ${ncores} -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - > ${output}.bam
 
-${samtools} view -Sb ${output}_disc.sam | $novosort - -t ${tempFolder} -c 11 -m ${memory2}G -i -o ${output}_disc_sorted.bam
+${samtools} view -Sb ${output}_disc.sam | $novosort - -t ${tempFolder} -c ${ncores} -m ${memory2}G -i -o ${output}_disc_sorted.bam
 
-$novosort -t ${tempFolder}/${code} -c 11 -m ${memory2}G -i -o ${output}_sorted_unique.bam ${output}.bam
+$novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}_sorted_unique.bam ${output}.bam
 
 #rm ${output}_disc.sam ${output}.bam
 "  >> $script
@@ -220,39 +218,6 @@ $novosort -t ${tempFolder}/${code} -c 11 -m ${memory2}G -i -o ${output}_sorted_u
 	fi
     done
     #end of while loop
-
-    #### compute the nb of jobs 
-    njobs=`wc -l $mainTable | cut -f1 -d' '`
-    ((njobs=njobs-1))
-
-    ####### And now we work on the main script that combines them all
-    echo "
-#!/bin/bash
-#$ -S /bin/bash
-#$ -o cluster/out
-#$ -e cluster/error
-#$ -cwd
-#$ -pe smp ${ncores}
-#$ -l scr=${scratch}G
-#$ -l tmem=${vmem}G,h_vmem=${vmem}G
-#$ -l h_rt=${nhours}:0:0
-#$ -tc 20
-#$ -t 1-${njobs}
-#$ -V
-#$ -R y
-
-array=( \`cat \"${mainTable}\" \`)
-
-script=\${array[ \$SGE_TASK_ID ]}
-
-echo \$script
-
-sh \$script
-
-" > $mainScript
-
-    echo "Main submission scripts and tables for the align module:"
-    wc -l $mainScript $mainTable
 fi
 
 
@@ -366,24 +331,29 @@ $java17 -Xmx2g -jar $GATK \\
 	    echo "   -o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
 	fi    
     done
-
-    #### compute the nb of jobs 
-    njobs=`wc -l $mainTable | cut -f1 -d' '`
-    ((njobs=njobs-1))
+done
 
 
-    echo "
+
+
+
+#################### the code below is generic to all modules: compute the nb of jobs and create the final submission array
+njobs=`wc -l $mainTable | cut -f1 -d' '`
+((njobs=njobs-1))
+
+
+echo "
 #!/bin/bash
 #$ -S /bin/bash
 #$ -o cluster/out
 #$ -e cluster/error
 #$ -cwd
-#$ -pe smp 1
+#$ -pe smp ${ncores}
 #$ -l scr=${scratch}G
-#$ -l tmem=4G,h_vmem=4G
-#$ -l h_rt=24:0:0
+#$ -l tmem=${vmem}G,h_vmem=${vmem}G
+#$ -l h_rt=${nhours}:0:0
 #$ -tc 25
-#$ -t 1-25
+#$ -t 1-${njobs}
 #$ -V
 #$ -R y
 
@@ -398,8 +368,8 @@ sh \$script
 " > $mainScript
 
 
-    echo "Main submission scripts and tables for the align module:"
-    wc -l $mainScript $mainTable
-fi
+echo "Main submission scripts and tables for the align module:"
+wc -l $mainScript $mainTable
+
 
 
