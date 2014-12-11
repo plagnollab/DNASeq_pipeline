@@ -14,7 +14,7 @@ computer=CS
 if [[ "$computer" == "CS" ]]
 then
     Software=/cluster/project8/vyp/vincent/Software
-    java17=/share/apps/jdk1.7.0_45/jre/bin/java
+    java=/share/apps/jdk1.7.0_45/jre/bin/java
     bundle=/scratch2/vyp-scratch2/GATK_bundle
     target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/merged_exome_target_cleaned.bed
     tempFolder=/scratch2/vyp-scratch2/vincent/temp/novoalign
@@ -29,9 +29,11 @@ samblaster=${Software}/samblaster/samblaster
 ##samtools
 samtools=${Software}/samtools-1.1/samtools
 ## Picard
-picardDup=${Software}/picard-tools-1.100/MarkDuplicates.jar
-picardMetrics=${Software}/picard-tools-1.100/CalculateHsMetrics.jar
-picardSamToFastq=${Software}/picard-tools-1.100/SamToFastq.jar
+picard=${Software}/picard-tools-1.100/
+picard_CreateSequenceDictionary=${picard}/CreateSequenceDictionary.jar 
+picard_MarkDuplicates=${picard}/MarkDuplicates.jar
+picard_CalculateHsMetric=${picard}/CalculateHsMetrics.jar
+picard_SamToFastq=${picard}/SamToFastq.jar
 
 ############ default values
 #parameters to aligner
@@ -118,7 +120,9 @@ then
 fi
 if [[ "$reference" == "1kg" ]]
 then
-    fasta=/cluster/project8/vyp/vincent/data/reference_genomes/human_g1k_v37.fasta
+    #fasta=/cluster/project8/vyp/vincent/data/reference_genomes/human_g1k_v37.fasta
+    #changing this for now because i need write access to this directory
+    fasta=/cluster/project8/vyp/pontikos/data/reference_genomes/human_g1k_v37.fasta
     novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta.k15.s2.novoindex
 fi
 if [[ "$reference" == "hg19" ]]
@@ -126,7 +130,6 @@ then
     fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/hg19_UCSC.fa
     novoalignRef=none
 fi
-
 
 ############################### creates folders required for qsub and writing logs
 mkdir -p cluster cluster/out cluster/error cluster/submission
@@ -220,6 +223,7 @@ $novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}_s
 ####################### GATK HaplotypeCaller no splitting by chromosome  #####################################################
 # Instead of splitting by chromosome creates a single VCF file.
 # This is only manageable for exon and generally smaller sequence datasets.
+# This is currently not fully suported in the next step of doing joint-calling.
 function makeSingleGVCF() {
     mainScript=cluster/submission/makesinglegVCF.sh
     mainTable=cluster/submission/makesinglegVCF_table.sh
@@ -237,7 +241,7 @@ function makeSingleGVCF() {
             echo $script >> $mainTable
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
             echo "
-           $java17 -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
+           $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
                -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
            --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
            -stand_call_conf 30.0 \
@@ -254,6 +258,20 @@ function makeSingleGVCF() {
 # Take as input the sorted, unique BAM files and produces the gVCF files
 # Splits by chromosome.
 function makeGVCF() {
+    # GATK_HaplotypeCaller requires a sequence dictionary
+    # submit as interactive long job?
+    if [ ! -e ${fasta%.fasta}.dict ]
+    then 
+        echo $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
+        $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
+    fi
+    #same story
+    if [ ! -e ${fasta}.fai ]
+    then 
+        echo $samtools faidx $fasta
+        $samtools faidx $fasta
+        file ${fasta}.fai
+    fi
     mainScript=cluster/submission/makegVCF.sh
     mainTable=cluster/submission/makegVCF_table.sh
     cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
@@ -274,7 +292,7 @@ function makeGVCF() {
            echo $script >> $mainTable
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
            echo "
-           $java17 -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
+           $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
                -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
            --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
            -stand_call_conf 30.0 \
@@ -312,7 +330,7 @@ function makeJointVCF() {
             echo "$script" >> $mainTable
             #Genotypes any number of gVCF files that were produced by the Haplotype Caller into a single joint VCF file.
             echo "
-$java17 -Xmx2g -jar $GATK \\
+$java -Xmx2g -jar $GATK \\
    -T GenotypeGVCFs \\
    -R $fasta \\
    -L chr${chrCleanCode}  --interval_padding 100  \\
