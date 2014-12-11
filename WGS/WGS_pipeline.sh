@@ -256,6 +256,8 @@ sh \$script
 fi
 
 
+# Instead of splitting by chromosome creates a single VCF file.
+# This is only manageable for exon and generally smaller sequence datasets.
 if [[ "$makesinglegVCF" == "yes" ]]
 then
 
@@ -339,7 +341,7 @@ if [[ "$makeVCF" == "yes" ]]; then
         chrCleanCode=${cleanChr[ $chrCode ]}
         output=${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz
         ##if the index is missing, or we use the "force" option
-        if [[ ! -s ${output}.tbi | "$force" == "yes" ]]
+        if [ ! -s ${output}.tbi ] || [ "$force" == "yes" ]
         then 
 	    script=`echo $mainScript | sed -e 's/.sh$//'`_chr${chrCleanCode}.sh	
 	    echo "$script" >> $mainTable
