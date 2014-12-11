@@ -111,6 +111,8 @@ done
 
 
 ########################### supported reference sequences
+# all reference sequences and indexes should be under:
+# /scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/
 fasta=none
 novoalignRef=none
 if [[ "$reference" == "hg38_noAlt" ]]
@@ -120,9 +122,7 @@ then
 fi
 if [[ "$reference" == "1kg" ]]
 then
-    #fasta=/cluster/project8/vyp/vincent/data/reference_genomes/human_g1k_v37.fasta
-    #changing this for now because i need write access to this directory
-    fasta=/cluster/project8/vyp/pontikos/data/reference_genomes/human_g1k_v37.fasta
+    fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
     novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta.k15.s2.novoindex
 fi
 if [[ "$reference" == "hg19" ]]
@@ -133,9 +133,6 @@ fi
 
 ############################### creates folders required for qsub and writing logs
 mkdir -p cluster cluster/out cluster/error cluster/submission
-#for folder in cluster cluster/out cluster/error cluster/submission; do
-    #if [ ! -e $folder ]; then mkdir $folder; fi
-#done
 
 ###############  now let us check that the reference exists
 for file in $fasta
@@ -147,7 +144,6 @@ do
 	exit
     fi
 done
-
 
 
 ###########################################################
@@ -236,13 +232,13 @@ function makeSingleGVCF() {
         ## one job per chromosome to save time
         ## if the index is not there, we assume that we have to do the whole job
         if [ ! -s ${output}.gvcf.gz.tbi | "$force" == "yes" ]
-	    then
+        then
             script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
             echo $script >> $mainTable
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
             echo "
            $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
-               -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
+           -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
            --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
            -stand_call_conf 30.0 \
            -stand_emit_conf 10.0 \
@@ -260,6 +256,8 @@ function makeSingleGVCF() {
 function makeGVCF() {
     # GATK_HaplotypeCaller requires a sequence dictionary
     # submit as interactive long job?
+    #
+    #[[ -e ${fasta%.fasta}.dict ]] && $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
     if [ ! -e ${fasta%.fasta}.dict ]
     then 
         echo $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
@@ -285,6 +283,9 @@ function makeGVCF() {
 	for chrCode in `seq 1 25`
     do
 	    chrCleanCode=${cleanChr[ $chrCode ]}
+        #sometimes the dict index contains just the chrom number sometimes
+        #it contains chr<number>
+        #should check which scenario where are in
 	    ##if the index is not there, we assume that we have to do the whole job
 	    if [ ! -s ${output}_chr${chrCleanCode}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
         then
@@ -293,11 +294,11 @@ function makeGVCF() {
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
            echo "
            $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
-               -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
+           -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
            --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
            -stand_call_conf 30.0 \
            -stand_emit_conf 10.0 \
-           -L chr${chrCleanCode} \
+           -L ${chrCleanCode} \
            --downsample_to_coverage 200 \
            --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
            -o ${output}_chr${chrCleanCode}.gvcf.gz
@@ -421,6 +422,7 @@ sh \$script
 
 echo "Main submission scripts and tables for the align module:"
 wc -l $mainScript $mainTable
+echo run: qsub $mainScript
 
 
 
