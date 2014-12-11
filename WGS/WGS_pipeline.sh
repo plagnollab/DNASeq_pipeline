@@ -1,4 +1,5 @@
 #! /bin/bash
+# this script has only been tested with bash and may not work with other shells
 
 computer=CS
 java17=java
@@ -12,21 +13,21 @@ then
     tempFolder=/scratch2/vyp-scratch2/vincent/temp/novoalign
 fi
 
+### Tools needed by this script
 # Two functions of GATK will be used HaplotypeCaller and GenotypeGVCFs 
 GATK=${Software}/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
 novoalign=${Software}/novocraft3/novoalign
 novosort=${Software}/novocraft3/novosort
 samblaster=${Software}/samblaster/samblaster
-
 ##samtools
 samtools=${Software}/samtools-1.1/samtools
-
 ## Picard
 picardDup=${Software}/picard-tools-1.100/MarkDuplicates.jar
 picardMetrics=${Software}/picard-tools-1.100/CalculateHsMetrics.jar
 picardSamToFastq=${Software}/picard-tools-1.100/SamToFastq.jar
 
 ############ default values
+#parameters to aligner
 inputFormat=STDFQ
 tparam=250
 
@@ -41,10 +42,11 @@ align=no
 makegVCF=no
 makeVCF=no
 
-
-iFolder=""
+# current default output folder is aligned
 oFolder=aligned
+# this is the default reference genome
 fasta="default.fasta"
+# this is used by the aligner but not sure what it does.  Vincent?
 extraID=""
 
 
@@ -76,9 +78,9 @@ do
 	--projectID)
 	    shift
 	    projectID=$1;;
-        --reference)
-            shift
-            reference=$1;;
+    --reference)
+        shift
+        reference=$1;;
 	--force)
 	    shift
 	    force=$1;;
@@ -98,22 +100,23 @@ done
 
 
 
-extra="--rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam}"
-
-########################### choice of reference sequence
+########################### supported reference sequences
 fasta=none
 novoalignRef=none
-if [[ "$reference" == "hg38_noAlt" ]]; then
+if [[ "$reference" == "hg38_noAlt" ]]
+then
     fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
     novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.k15.s2.novoindex
 fi
 
-if [[ "$reference" == "1kg" ]]; then
+if [[ "$reference" == "1kg" ]]
+then
     fasta=/cluster/project8/vyp/vincent/data/reference_genomes/human_g1k_v37.fasta
     novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta.k15.s2.novoindex
 fi
 
-if [[ "$reference" == "hg19" ]]; then
+if [[ "$reference" == "hg19" ]]
+then
     fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/hg19_UCSC.fa
     novoalignRef=none
 fi
@@ -126,7 +129,8 @@ mkdir -p cluster cluster/out cluster/error cluster/submission
 #done
 
 ###############  now let us check that the reference exists
-for file in $fasta; do
+for file in $fasta
+do
     ls -lh $file
     if [ ! -e "$file"  ] && [ "$file" != "none" ]
     then 
@@ -161,11 +165,10 @@ if [[ "$mustBeF2" != "f2" ]]; then echo "The third column of the file $supportFr
 
 
 
-########################### Now writing the script
-
+####################### Alignment using Novoalign  ###########################################################################
+# The alignment creates the SAM and BAM files for GATK variant calling
 if [[ "$align" == "yes" ]]
-    then
-    
+then
     for file in $novoalignRef; do
 	ls -lh $file
 	if [ ! -e "$file"  ] && [ "$file" != "none" ]
@@ -174,27 +177,20 @@ if [[ "$align" == "yes" ]]
 	    exit
 	fi
     done
-
-
     mainScript=cluster/submission/align.sh
     mainTable=cluster/submission/align_table.sh
     echo "listScripts" > $mainTable
     #start of while loop
+    #writes a script for each line of supportFrame
     tail -n +2 $supportFrame | while read code f1 f2
     do
         mkdir -p ${oFolder}/${code}
-        #if [ ! -e ${oFolder}/${code} ]; then mkdir ${oFolder}/${code}; fi
         output=${oFolder}/${code}/${code}
         script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
 	echo "
 ##start of script
 
 " > $script
-	if [[ "$iFolder" != "" ]]
-    then
-	    f1=${iFolder}/${f1}
-	    f2=${iFolder}/${f2}
-	fi
     ## proceed with that sample if force is set to yes or the output does not exist
 	if [[ ! -s ${output}_sorted_unique.bam.bai || "$force" == "yes" ]]
     then
@@ -203,13 +199,11 @@ if [[ "$align" == "yes" ]]
 	    if [ ! -e ${tempFolder}/${code} ]; then mkdir ${tempFolder}/${code}; fi
 	    echo $script >> $mainTable
 	    echo "
-
-$novoalign -c ${ncores} -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' $extra -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - > ${output}.bam
+$novoalign -c ${ncores} -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' --rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam} -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - > ${output}.bam
 
 ${samtools} view -Sb ${output}_disc.sam | $novosort - -t ${tempFolder} -c ${ncores} -m ${memory2}G -i -o ${output}_disc_sorted.bam
 
 $novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}_sorted_unique.bam ${output}.bam
-
 #rm ${output}_disc.sam ${output}.bam
 "  >> $script
 	    echo "$date" >> $script  ##to measure the duration
@@ -220,27 +214,29 @@ $novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}_s
 fi
 
 
+####################### GATK HaplotypeCaller #################################################################################
 # Instead of splitting by chromosome creates a single VCF file.
 # This is only manageable for exon and generally smaller sequence datasets.
 if [[ "$makesinglegVCF" == "yes" ]]
 then
-
     mainScript=cluster/submission/makesinglegVCF.sh
     mainTable=cluster/submission/makesinglegVCF_table.sh
-    
-    #sart of while loop
+    #start of while loop
+    #each line of the support file is read
+    #and a script each is generated
     tail -n +2 $supportFrame | while read code f1 f2
       do
-	output=${oFolder}/${code}/${code}
-	##one job per chromosome to save time
-	    ##if the index is not there, we assume that we have to do the whole job
-	if [ ! -s ${output}.gvcf.gz.tbi | "$force" == "yes" ]
+        output=${oFolder}/${code}/${code}
+        ## one job per chromosome to save time
+        ## if the index is not there, we assume that we have to do the whole job
+        if [ ! -s ${output}.gvcf.gz.tbi | "$force" == "yes" ]
 	    then
-	    script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
-	    echo $script >> $mainTable
+            script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
+            echo $script >> $mainTable
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
-	    echo "
-           $java17 -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
+            echo "
+           $java17 -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
+               -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
            --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
            -stand_call_conf 30.0 \
            -stand_emit_conf 10.0 \
@@ -248,19 +244,21 @@ then
            --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
            -o ${output}.gvcf.gz
             " > $script
-	fi
+        fi
     done
 fi
 
+####################### GATK HaplotypeCaller #################################################################################
 # Take as input the sorted, unique BAM files and produces the gVCF files
+# Splits by chromosome.
 if [[ "$makegVCF" == "yes" ]]
 then
-
     mainScript=cluster/submission/makegVCF.sh
     mainTable=cluster/submission/makegVCF_table.sh
-
     cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
-    #sart of while loop
+    #start of while loop
+    #each line of the support file is read
+    #and a script each is generated
     tail -n +2 $supportFrame | while read code f1 f2
     do
 	output=${oFolder}/${code}/${code}
@@ -269,13 +267,14 @@ then
     do
 	    chrCleanCode=${cleanChr[ $chrCode ]}
 	    ##if the index is not there, we assume that we have to do the whole job
-	    if [ ! -s ${output}_chr${chrCleanCode}.gvcf.gz.tbi | "$force" == "yes" ]
+	    if [ ! -s ${output}_chr${chrCleanCode}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
         then
            script=`echo $mainScript | sed -e 's/.sh$//'`_chr${chrCode}_${code}.sh
            echo $script >> $mainTable
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
            echo "
-           $java17 -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
+           $java17 -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
+               -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
            --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
            -stand_call_conf 30.0 \
            -stand_emit_conf 10.0 \
@@ -291,9 +290,12 @@ then
 fi
 
 
-##############################################################################################################################
-
-if [[ "$makeVCF" == "yes" ]]; then
+####################### GATK GenotypeGVCFs  ##################################################################################
+### This is the part that combines all the VCFs across samples to do the joint calling.
+### This is a more practical aprroach of doing joint-calling than using the UnifiedGenotyper
+### which relies on the BAM files.
+if [[ "$makeVCF" == "yes" ]]
+then
     
     mainScript=cluster/submission/makeVCF.sh
     mainTable=cluster/submission/makeVCF_table.sh
@@ -312,29 +314,25 @@ if [[ "$makeVCF" == "yes" ]]; then
         #Genotypes any number of gVCF files that were produced by the Haplotype Caller into a single joint VCF file.
 	    echo "
 $java17 -Xmx2g -jar $GATK \\
-   -R $fasta \\
    -T GenotypeGVCFs \\
+   -R $fasta \\
    -L chr${chrCleanCode}  --interval_padding 100  \\
    --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore --annotation MappingQualityRankSumTest --annotation ReadPosRankSumTest --annotation FisherStrand \\" > $script
+        # for each line in support file
 	    tail -n +2 $supportFrame | while read code f1 f2
         do  ### now look at each gVCF file
             output=${oFolder}/${code}/${code}
             gVCF="${output}_chr${chrCleanCode}.gvcf.gz"
 		if [[ "$enforceStrict" == "yes" && ! -s $gVCF ]]; then echo "Cannot find $gVCF"; exit; fi
-		if [ -s $gVCF ]; then 
+		if [ -s $gVCF ]
+        then 
 		    echo "   --variant $gVCF \\" >> $script; 
 		fi
-	    done
-	    
+	done
 	#echo "   --dbsnp ${bundle}/dbsnp_137.b37.vcf \\
    #-o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
-	    
-	    echo "   -o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
-	fi    
-    done
-done
-
-
+	echo "   -o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
+fi    
 
 
 
