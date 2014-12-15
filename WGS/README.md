@@ -20,7 +20,7 @@ bash WGS_pipeline.sh
      --projectID < >
 `
 
-The two modes of running the pipeline are either for alignment or for variant calling:
+The three modes of running the pipeline are either for alignment, for single variant calling or for joint variant calling:
 - align
 - gvcf
 - jointvcf
@@ -47,13 +47,13 @@ Following is an explanation of those parameters.
 The pipeline submission script assumes that you have written a "support" data frame.
 There's a convenience script to generate it:
 
-> makesupport.sh <dir> <ext>
+> bash makesupport.sh  ../data/ fq.gz > ../examples/support.txt
 
-The format of the first row is:
+If you want to generate manually then the format of the first row is:
 
 > code f1 f2 
 
-where f1 and f2 are the paired end fastq files and code is an identifier for the exome of interest.
+where f1 and f2 are the paths to the paired end fastq files and code is an identifier for the exome of interest.
 The code is used to create a subdirectory under aligned where the output goes.
 
 ### reference
@@ -67,7 +67,7 @@ Two reference builds are supported:
 
 A very useful parameter to set is "extraID" to know the batch.
 
-## Alignment
+## Alignment (align mode)
 
 This generates the scripts:
  - cluster/submission/align.sh
@@ -83,13 +83,17 @@ Finally [novosort]() is ran on the BAM.
 The default output folder is:
 > aligned
 
-## Variant calling
+## Variant calling (gvcf mode)
 
 This generates scripts:
 - cluster/submission/makeVCF.sh
 - cluster/submission/makeVCF_table.sh
 
 The variant calling is done by [GATK](http://www.broadinstitute.org/partnerships/education/broade/best-practices-variant-calling-gatk) using HaplotypeCaller and GenotypeGVCFs.
+
+## Joint variant calling (jointvcf mode)
+
+This generates scripts:
 
 
 ## Dependencies
