@@ -7,14 +7,25 @@
 # 2) Genotype calling with the GATK HaplotypeCaller.  This generates the gVCF file.
 # 3) Jointly call VCFs using the GATK GenotypeGVCFs . This generates a multi-sample combined VCF file.
 
+# prints to stderr in red
+function error() { >&2 echo -e "\033[31m$*\033[0m"; }
+function stop() { >&2 echo -e "\033[31m$*\033[0m"; exit 1; }
 
 function usage() {
     echo "syntax: $0"
     echo " --mode : [align|gvcf|jointvcf]"
-    echo " -h : prints this message"
+	echo "--extraID "
+    echo "--tempFolder : specify a temp directory for the java picard code"
+	echo "--supportFrame : critical to specify the output file"
+	echo "--tparam "
+	echo "--projectID"
+    echo "--reference"
+	echo "--force"
+	echo "--enforceStrict"
+	echo "--inputFormat"
+    echo "--help : prints this message"
     exit 1
 }
-
 
 
 ####################### Alignment using Novoalign  ###########################################################################
@@ -38,7 +49,7 @@ function align() {
     do
         mkdir -p ${oFolder}/${code}
         output=${oFolder}/${code}/${code}
-        script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
+        script=${mainScript%.sh}_${code}.sh
 	echo "
 ##start of script
 " > $script
@@ -80,7 +91,7 @@ function singlegvcf() {
         ## if the index is not there, we assume that we have to do the whole job
         if [ ! -s ${output}.gvcf.gz.tbi | "$force" == "yes" ]
         then
-            script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
+            script=${mainScript%.sh}_${code}.sh
             echo $script >> $mainTable
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
             echo "
@@ -268,10 +279,7 @@ do
 	--tparam )
 	    shift
 	    tparam=$1;;
-# the main 3 steps of the program
-# align
-# gvcf
-# jointvcf
+# the main 3 steps of the program: align or gvcf or jointvcf
 	--mode)
 	    shift
 	    mode=$1;;
@@ -292,6 +300,7 @@ do
 	    inputFormat=$1;;
 	-* )
 	    echo "Unrecognized option: $1"
+        usage
 	    exit 1;;
     esac
     shift
@@ -367,6 +376,7 @@ then
     vmem=2.3
     memory2=7
     # call align function
+    echo align
     align
 #not fully supported yet
 elif [[ "singlegvcf" == "$mode" ]]
@@ -379,6 +389,7 @@ then
     nhours=24
     vmem=6
     #memory2=6
+    echo gvcf
     gvcf
 #need to check with vincent
 elif [[ "jointvcf" == "$mode" ]]
@@ -387,6 +398,7 @@ then
     vmem=4
     #memory2=noneed
     #
+    echo jointvcf
     jointvcf
 else
     stop "unknown mode: $mode"
