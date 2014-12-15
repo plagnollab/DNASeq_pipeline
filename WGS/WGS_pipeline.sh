@@ -11,10 +11,18 @@
 function usage() {
     echo "syntax: $0"
     echo " --mode : [align|gvcf|jointvcf]"
+	echo "--extraID "
+    echo "--tempFolder : specify a temp directory for the java picard code"
+	echo "--supportFrame : critical to specify the output file"
+	echo "--tparam "
+	echo "--projectID"
+    echo "--reference"
+	echo "--force"
+	echo "--enforceStrict"
+	echo "--inputFormat"
     echo " -h : prints this message"
     exit 1
 }
-
 
 
 ####################### Alignment using Novoalign  ###########################################################################
@@ -38,7 +46,7 @@ function align() {
     do
         mkdir -p ${oFolder}/${code}
         output=${oFolder}/${code}/${code}
-        script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
+        script=${mainScript%.sh}_${code}.sh
 	echo "
 ##start of script
 " > $script
@@ -80,7 +88,7 @@ function singlegvcf() {
         ## if the index is not there, we assume that we have to do the whole job
         if [ ! -s ${output}.gvcf.gz.tbi | "$force" == "yes" ]
         then
-            script=`echo $mainScript | sed -e 's/.sh$//'`_${code}.sh
+            script=${mainScript%.sh}_${code}.sh
             echo $script >> $mainTable
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
             echo "
@@ -367,6 +375,7 @@ then
     vmem=2.3
     memory2=7
     # call align function
+    echo align
     align
 #not fully supported yet
 elif [[ "singlegvcf" == "$mode" ]]
@@ -379,6 +388,7 @@ then
     nhours=24
     vmem=6
     #memory2=6
+    echo gvcf
     gvcf
 #need to check with vincent
 elif [[ "jointvcf" == "$mode" ]]
@@ -387,6 +397,7 @@ then
     vmem=4
     #memory2=noneed
     #
+    echo jointvcf
     jointvcf
 else
     stop "unknown mode: $mode"
