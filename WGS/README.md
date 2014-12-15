@@ -10,22 +10,20 @@ The two main scripts are:
 with.
 
 `
-sh WGS_pipeline.sh 
+bash WGS_pipeline.sh 
+     --mode [align|gvcf|jointvcf]
      --supportFrame < >
      --reference [hg38_noAlt|1kg]
-     --align [yes|no]
      --tparam 320
      --inputFormat STDFQ 
      --extraID < >
-     --makeVCF [yes|no]
-     --makegVCF [yes|no]
      --projectID < >
 `
 
 The two modes of running the pipeline are either for alignment or for variant calling:
 - align
-- makegVCF
-- makeVCF
+- gvcf
+- jointvcf
 
 If ran for alignment, *WGS_pipeline* will generate the following bash
 scripts:
@@ -47,6 +45,10 @@ Following is an explanation of those parameters.
 ### supportFrame
 
 The pipeline submission script assumes that you have written a "support" data frame.
+There's a convenience script to generate it:
+
+> makesupport.sh <dir> <ext>
+
 The format of the first row is:
 
 > code f1 f2 
