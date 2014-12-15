@@ -89,7 +89,9 @@ This generates scripts:
 - cluster/submission/makeVCF.sh
 - cluster/submission/makeVCF_table.sh
 
-The variant calling is done by [GATK](http://www.broadinstitute.org/partnerships/education/broade/best-practices-variant-calling-gatk) using HaplotypeCaller and GenotypeGVCFs.
+The variant calling is done by [GATK](http://www.broadinstitute.org/partnerships/education/broade/best-practices-variant-calling-gatk) using HaplotypeCaller.
+
+> **Note**: We don't use GenotypeGVCFs anymore because it requires all input BAM files which is too computationally expensive.  Instead joint calling is done using the gvcf files in the next step.
 
 ## Joint variant calling (jointvcf mode)
 
