@@ -12,4 +12,4 @@ else
     ext=$2
 fi
 paste <(echo code) <(echo f1) <(echo f2)
-paste <(ls -1 $DIR/*_1.fastq.gz | sed "s/_1.${ext}//" | xargs -I f basename f) <(ls -1 $DIR/*_1.${ext}) <(ls -1 $DIR/*_2.${ext})
+paste <(ls -1 $DIR/*_1.${ext} | sed "s/_1.${ext}//" | xargs -I f basename f) <(ls -1 $DIR/*_1.${ext}) <(ls -1 $DIR/*_2.${ext})
