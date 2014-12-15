@@ -37,6 +37,24 @@ This generates a script under `cluster/submissions/align.sh` containing an SGE j
 > qsub cluster/submissions/align.sh
 
 ## Overview
+
+```flow
+st=>start: Start
+e=>end
+op=>operation: My Operation
+cond=>condition: Yes or No?
+
+st->op->cond
+cond(yes)->e
+cond(no)->op
+```
+
+```sequence
+Alice->Bob: Hello Bob, how are you?
+Note right of Bob: Bob thinks
+Bob-->Alice: I am good thanks!
+```
+
 The two main scripts are:
 - WGS_submission_script.sh
 - WGS_pipeline.sh
