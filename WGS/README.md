@@ -1,3 +1,7 @@
+<script src="raphael-min.js"></script>
+<script src="underscore-min.js"></script>
+<script src="sequence-diagram-min.js"></script>
+
 # Whole Genome Sequencing Pipeline
 
 ## Example
@@ -37,17 +41,6 @@ This generates a script under `cluster/submissions/align.sh` containing an SGE j
 > qsub cluster/submissions/align.sh
 
 ## Overview
-
-```flow
-st=>start: Start
-e=>end
-op=>operation: My Operation
-cond=>condition: Yes or No?
-
-st->op->cond
-cond(yes)->e
-cond(no)->op
-```
 
 ```sequence
 Alice->Bob: Hello Bob, how are you?
