@@ -7,6 +7,9 @@
 # 2) Genotype calling with the GATK HaplotypeCaller.  This generates the gVCF file.
 # 3) Jointly call VCFs using the GATK GenotypeGVCFs . This generates a multi-sample combined VCF file.
 
+# prints to stderr in red
+function error() { >&2 echo -e "\033[31m$*\033[0m"; }
+function stop() { >&2 echo -e "\033[31m$*\033[0m"; exit 1; }
 
 function usage() {
     echo "syntax: $0"
@@ -20,7 +23,7 @@ function usage() {
 	echo "--force"
 	echo "--enforceStrict"
 	echo "--inputFormat"
-    echo " -h : prints this message"
+    echo "--help : prints this message"
     exit 1
 }
 
@@ -276,10 +279,7 @@ do
 	--tparam )
 	    shift
 	    tparam=$1;;
-# the main 3 steps of the program
-# align
-# gvcf
-# jointvcf
+# the main 3 steps of the program: align or gvcf or jointvcf
 	--mode)
 	    shift
 	    mode=$1;;
@@ -300,6 +300,7 @@ do
 	    inputFormat=$1;;
 	-* )
 	    echo "Unrecognized option: $1"
+        usage
 	    exit 1;;
     esac
     shift
