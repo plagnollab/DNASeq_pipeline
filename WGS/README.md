@@ -5,7 +5,7 @@
 ## Example
 
 First create the support file which points to where the fastq files lie.
-> bash makesupport.sh  data/ fq.gz > examples/support.txt
+> bash makesupportfile.sh  data/ fq.gz > examples/support.txt
 
 This should look like this:
 
