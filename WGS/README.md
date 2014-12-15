@@ -1,6 +1,4 @@
-<script src="raphael-min.js"></script>
-<script src="underscore-min.js"></script>
-<script src="sequence-diagram-min.js"></script>
+
 
 # Whole Genome Sequencing Pipeline
 
@@ -10,14 +8,16 @@ First create the support file which points to where the fastq files lie.
 > bash makesupport.sh  data/ fq.gz > examples/support.txt
 
 This should look like this:
-`
+
+```
 code	f1	f2
 sim_reads	data//sim_reads_1.fq.gz	data//sim_reads_2.fq.gz
-`
+```
 
 Then do the alignment:
 
-> bash WGS_pipeline.sh 
+```bash
+bash WGS_pipeline.sh 
      --mode align
      --supportFrame examples/support.txt
      --reference 1kg
@@ -25,16 +25,17 @@ Then do the alignment:
      --inputFormat STDFQ 
      --extraID example
      --projectID example
+```
 
 This creates the following directory structure:
-`
+```
 cluster
      submission
      out
      err
 aligned
      sim_reads
-`
+```
      
 This generates a script under `cluster/submissions/align.sh` containing an SGE job array which can then be submitted to the cluster:
 
@@ -42,11 +43,6 @@ This generates a script under `cluster/submissions/align.sh` containing an SGE j
 
 ## Overview
 
-```sequence
-Alice->Bob: Hello Bob, how are you?
-Note right of Bob: Bob thinks
-Bob-->Alice: I am good thanks!
-```
 
 The two main scripts are:
 - WGS_submission_script.sh
