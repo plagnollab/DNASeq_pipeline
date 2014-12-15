@@ -1,0 +1,2 @@
+code	f1	f2
+sim_reads	data//sim_reads_1.fq.gz	data//sim_reads_2.fq.gz
