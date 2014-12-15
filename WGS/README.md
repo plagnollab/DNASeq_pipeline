@@ -1,5 +1,41 @@
 # Whole Genome Sequencing Pipeline
 
+## Example
+
+First create the support file which points to where the fastq files lie.
+> bash makesupport.sh  data/ fq.gz > examples/support.txt
+
+This should look like this:
+`
+code	f1	f2
+sim_reads	data//sim_reads_1.fq.gz	data//sim_reads_2.fq.gz
+`
+
+Then do the alignment:
+
+> bash WGS_pipeline.sh 
+     --mode align
+     --supportFrame examples/support.txt
+     --reference 1kg
+     --tparam 320
+     --inputFormat STDFQ 
+     --extraID example
+     --projectID example
+
+This creates the following directory structure:
+`
+cluster
+     submission
+     out
+     err
+aligned
+     sim_reads
+`
+     
+This generates a script under `cluster/submissions/align.sh` containing an SGE job array which can then be submitted to the cluster:
+
+> qsub cluster/submissions/align.sh
+
 ## Overview
 The two main scripts are:
 - WGS_submission_script.sh
@@ -9,8 +45,8 @@ The two main scripts are:
 *WGS_pipeline*
 with.
 
-`
-bash WGS_pipeline.sh 
+
+> bash WGS_pipeline.sh 
      --mode [align|gvcf|jointvcf]
      --supportFrame < >
      --reference [hg38_noAlt|1kg]
@@ -18,7 +54,7 @@ bash WGS_pipeline.sh
      --inputFormat STDFQ 
      --extraID < >
      --projectID < >
-`
+
 
 The three modes of running the pipeline are either for alignment, for single variant calling or for joint variant calling:
 - align
