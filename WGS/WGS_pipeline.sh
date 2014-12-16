@@ -35,9 +35,8 @@ function align() {
     do
 	ls -lh $file
 	if [ ! -e "$file"  ] && [ "$file" != "none" ]
-	    then 
-	    echo "Error, reference file $file does not exist"
-	    exit
+	then 
+	    stop "Error, reference file $file does not exist"
 	fi
     done
     mainScript=cluster/submission/align.sh
@@ -113,7 +112,7 @@ function singlegvcf() {
 # Splits by chromosome.
 function gvcf() {
     # GATK_HaplotypeCaller requires a sequence dictionary
-    # submit as interactive long job?
+    # Maybe the following should be submitted as interactive long job?
     #
     #[[ -e ${fasta%.fasta}.dict ]] && $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
     if [ ! -e ${fasta%.fasta}.dict ]
@@ -147,13 +146,17 @@ function gvcf() {
 	    ##if the index is not there, we assume that we have to do the whole job
 	    if [ ! -s ${output}_chr${chrCleanCode}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
         then
-           script=`echo $mainScript | sed -e 's/.sh$//'`_chr${chrCode}_${code}.sh
+           script=${mainScript%.sh}_chr${chrCode}_${code}.sh
            echo $script >> $mainTable
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
            echo "
            $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
-           -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
-           --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
+           -T HaplotypeCaller \
+           -R $fasta \
+           -I ${output}_sorted_unique.bam  \
+           --emitRefConfidence GVCF \
+           --variant_index_type LINEAR \
+           --variant_index_parameter 128000 \
            -stand_call_conf 30.0 \
            -stand_emit_conf 10.0 \
            -L ${chrCleanCode} \
@@ -189,11 +192,16 @@ function jointvcf() {
             echo "$script" >> $mainTable
             #Genotypes any number of gVCF files that were produced by the Haplotype Caller into a single joint VCF file.
             echo "
-$java -Xmx2g -jar $GATK \\
-   -T GenotypeGVCFs \\
-   -R $fasta \\
-   -L chr${chrCleanCode}  --interval_padding 100  \\
-   --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore --annotation MappingQualityRankSumTest --annotation ReadPosRankSumTest --annotation FisherStrand \\" > $script
+            $java -Xmx2g -jar $GATK \
+               -T GenotypeGVCFs \
+               -R $fasta \
+               -L chr${chrCleanCode}  --interval_padding 100  \
+               --annotation InbreedingCoeff \
+               --annotation QualByDepth \
+               --annotation HaplotypeScore \
+               --annotation MappingQualityRankSumTest \
+               --annotation ReadPosRankSumTest \
+               --annotation FisherStrand \\" > $script
             # for each line in support file
             tail -n +2 $supportFrame | while read code f1 f2
             do  ### now look at each gVCF file
@@ -201,8 +209,7 @@ $java -Xmx2g -jar $GATK \\
             gVCF="${output}_chr${chrCleanCode}.gvcf.gz"
             if [[ "$enforceStrict" == "yes" && ! -s $gVCF ]]
             then
-                echo "Cannot find $gVCF"
-                exit
+                stop "Cannot find $gVCF"
             fi
             if [ -s $gVCF ]
             then 
@@ -337,8 +344,7 @@ do
     ls -lh $file
     if [ ! -e "$file"  ] && [ "$file" != "none" ]
     then 
-        echo "Error, reference file $file does not exist"
-	exit
+        stop "Error, reference file $file does not exist"
     fi
 done
 
@@ -358,9 +364,9 @@ scratch=0
 mustBeCode=`head -1 $supportFrame | cut -f1 -d' ' | cut -f1`  
 mustBeF1=`head -1 $supportFrame | cut -f2 -d' ' | cut -f2`
 mustBeF2=`head -1 $supportFrame | cut -f3 -d' ' | cut -f3`
-if [[ "$mustBeCode" != "code" ]]; then echo "The first column of the file $supportFrame must have the name code $mustBeCode"; exit; fi
-if [[ "$mustBeF1" != "f1" ]]; then echo "The second column of the file $supportFrame must have the name f1"; exit; fi
-if [[ "$mustBeF2" != "f2" ]]; then echo "The third column of the file $supportFrame must have the name f2"; exit; fi
+if [[ "$mustBeCode" != "code" ]]; then stop "The first column of the file $supportFrame must have the name code $mustBeCode"; fi
+if [[ "$mustBeF1" != "f1" ]]; then stop "The second column of the file $supportFrame must have the name f1"; fi
+if [[ "$mustBeF2" != "f2" ]]; then stop "The third column of the file $supportFrame must have the name f2"; fi
 
 
 ### program can run in 3 modes ###
@@ -405,6 +411,10 @@ else
 fi
 
 ### The script to be submitted to qsub ###
+echo $mainTable
+echo $mainTable.2
+cat $mainTable | sort -u > $mainTable.2
+mv $mainTable.2 $mainTable
 njobs=`wc -l $mainTable | cut -f1 -d' '`
 ((njobs=njobs-1))
 
