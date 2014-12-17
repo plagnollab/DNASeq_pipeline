@@ -30,7 +30,12 @@ function usage() {
 
 ####################### Alignment using Novoalign  ###########################################################################
 # The alignment creates the SAM and BAM files for GATK variant calling
-function align() {
+function mode_align() {
+    ##10 days? Perhaps more.
+    nhours=240
+    ncores=6
+    vmem=2.3
+    memory2=7
     for file in $novoalignRef
     do
 	ls -lh $file
@@ -39,8 +44,6 @@ function align() {
 	    stop "Error, reference file $file does not exist"
 	fi
     done
-    mainScript=cluster/submission/align.sh
-    mainTable=cluster/submission/align_table.sh
     echo "listScripts" > $mainTable
     #start of while loop
     #writes a script for each line of supportFrame
@@ -55,8 +58,8 @@ function align() {
     ## proceed with that sample if force is set to yes or the output does not exist
 	if [[ ! -s ${output}_sorted_unique.bam.bai || "$force" == "yes" ]]
     then
-	    if [ ! -e $f1 ]; then echo "$f1 does not exist"; exit; fi
-	    if [ ! -e $f2 ]; then echo "$f2 does not exist"; exit; fi
+	    if [ ! -e $f1 ]; then stop "$f1 does not exist"; fi
+	    if [ ! -e $f2 ]; then stop "$f2 does not exist"; fi
         mkdir -p ${tempFolder}/${code} 
 	    echo $script >> $mainTable
 	    echo "
@@ -77,9 +80,9 @@ $novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}_s
 # Instead of splitting by chromosome creates a single VCF file.
 # This is only manageable for exon and generally smaller sequence datasets.
 # This is currently not fully suported in the next step of doing joint-calling.
-function singlegvcf() {
-    mainScript=cluster/submission/makesinglegVCF.sh
-    mainTable=cluster/submission/makesinglegVCF_table.sh
+function mode_singlegvcf() {
+    nhours=24
+    vmem=6
     #start of while loop
     #each line of the support file is read
     #and a script each is generated
@@ -110,7 +113,10 @@ function singlegvcf() {
 ####################### GATK HaplotypeCaller split by chromosome  ############################################################
 # Take as input the sorted, unique BAM files and produces the gVCF files
 # Splits by chromosome.
-function gvcf() {
+function mode_gvcf() {
+    nhours=24
+    vmem=6
+    #memory2=6
     # GATK_HaplotypeCaller requires a sequence dictionary
     # Maybe the following should be submitted as interactive long job?
     #
@@ -170,14 +176,62 @@ function gvcf() {
     #end of while loop
 }
 
+####################### GATK CombineGVCFs split by chromosome  ############################################################
+# Take as input the sorted, unique BAM files and produces the gVCF files
+# Splits by chromosome.
+function mode_combinegvcfs() {
+    mainScript=cluster/submission/makeCombineGVCFs.sh
+    mainTable=cluster/submission/makeCombineGVCFs_table.sh
+    # GATK_HaplotypeCaller requires a sequence dictionary
+    # Maybe the following should be submitted as interactive long job?
+    #
+    #[[ -e ${fasta%.fasta}.dict ]] && $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
+    if [ ! -e ${fasta%.fasta}.dict ]
+    then 
+        echo $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
+        $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
+    fi
+    #same story
+    if [ ! -e ${fasta}.fai ]
+    then 
+        echo $samtools faidx $fasta
+        $samtools faidx $fasta
+        file ${fasta}.fai
+    fi
+    cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
+	output=${oFolder}/${code}/${code}
+	##one script per chromosome
+	for chrCode in `seq 1 25`
+    do
+	    chrCleanCode=${cleanChr[ $chrCode ]}
+        #sometimes the dict index contains just the chrom number sometimes
+        #it contains chr<number>
+        #should check which scenario where are in
+	    ##if the index is not there, we assume that we have to do the whole job
+        script=${mainScript%.sh}_chr${chrCode}.sh
+        echo $script >> $mainTable
+        #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
+        echo "
+        $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
+        -T CombineGVCFs \
+        -R $fasta \
+        -L ${chrCleanCode} \
+        -o combined/chr${chr}.gvcf.gz 
+        --variant aligned/*/*_chr${chrCode}.gvcf.gz \
+        " > $script
+	done
+}
+
+
 
 ####################### GATK GenotypeGVCFs  ##################################################################################
 ### This is the part that combines all the VCFs across samples to do the joint calling.
 ### This is a more practical aprroach of doing joint-calling than using the UnifiedGenotyper
 ### which relies on the BAM files.
-function jointvcf() {
-    mainScript=cluster/submission/makeJointVCF.sh
-    mainTable=cluster/submission/makeJointVCF_table.sh
+function mode_jointvcf() {
+    nhours=12
+    vmem=4
+    #memory2=noneed
     echo "listScripts" > $mainTable
     cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
     for chrCode in `seq 1 25`
@@ -195,7 +249,8 @@ function jointvcf() {
             $java -Xmx2g -jar $GATK \
                -T GenotypeGVCFs \
                -R $fasta \
-               -L chr${chrCleanCode}  --interval_padding 100  \
+               -L chr${chrCleanCode} \
+               --interval_padding 100  \
                --annotation InbreedingCoeff \
                --annotation QualByDepth \
                --annotation HaplotypeScore \
@@ -241,6 +296,7 @@ fi
 ### Tools needed by this script
 # Two functions of GATK will be used HaplotypeCaller and GenotypeGVCFs 
 GATK=${Software}/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
+#$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar ${GATK}
 novoalign=${Software}/novocraft3/novoalign
 novosort=${Software}/novocraft3/novosort
 samblaster=${Software}/samblaster/samblaster
@@ -354,7 +410,6 @@ nhours=0
 ncores=1
 vmem=1
 memory2=5  ##used for the sort function, seem to crash when using 10
-queue=queue6
 scratch=0
 
 
@@ -368,48 +423,33 @@ if [[ "$mustBeCode" != "code" ]]; then stop "The first column of the file $suppo
 if [[ "$mustBeF1" != "f1" ]]; then stop "The second column of the file $supportFrame must have the name f1"; fi
 if [[ "$mustBeF2" != "f2" ]]; then stop "The third column of the file $supportFrame must have the name f2"; fi
 
-
 ### program can run in 3 modes ###
-# align
-# makegVCF
-# makeJointVCF
-
+mainScript=cluster/submission/run_${mode}.sh
+mainTable=cluster/submission/run_${mode}_table.sh
 if [[ "align" == "$mode" ]]
 then
-    ##10 days? Perhaps more.
-    nhours=240
-    ncores=6
-    vmem=2.3
-    memory2=7
     # call align function
     echo align
-    align
+    mode_align
 #not fully supported yet
 elif [[ "singlegvcf" == "$mode" ]]
 then
-    nhours=24
-    vmem=6
-    singlegvcf
+    echo singlegvcf
+    mode_singlegvcf
 elif [[ "gvcf" == "$mode" ]]
 then
-    nhours=24
-    vmem=6
-    #memory2=6
     echo gvcf
-    gvcf
+    mode_gvcf
 #need to check with vincent
 elif [[ "jointvcf" == "$mode" ]]
 then
-    nhours=12
-    vmem=4
-    #memory2=noneed
     #
     echo jointvcf
-    jointvcf
+    mode_jointvcf
 else
     stop "unknown mode: $mode"
 fi
-
+makeJointVCF
 ### The script to be submitted to qsub ###
 echo $mainTable
 echo $mainTable.2
