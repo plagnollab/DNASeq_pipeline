@@ -11,23 +11,6 @@
 function error() { >&2 echo -e "\033[31m$*\033[0m"; }
 function stop() { >&2 echo -e "\033[31m$*\033[0m"; exit 1; }
 
-function usage() {
-    echo "syntax: $0"
-    echo " --mode : [align|gvcf|jointvcf]"
-	echo "--extraID "
-    echo "--tempFolder : specify a temp directory for the java picard code"
-	echo "--supportFrame : critical to specify the output file"
-	echo "--tparam "
-	echo "--projectID"
-    echo "--reference"
-	echo "--force"
-	echo "--enforceStrict"
-	echo "--inputFormat"
-    echo "--help : prints this message"
-    exit 1
-}
-
-
 ####################### Alignment using Novoalign  ###########################################################################
 # The alignment creates the SAM and BAM files for GATK variant calling
 function mode_align() {
@@ -44,7 +27,6 @@ function mode_align() {
 	    stop "Error, reference file $file does not exist"
 	fi
     done
-    echo "listScripts" > $mainTable
     #start of while loop
     #writes a script for each line of supportFrame
     tail -n +2 $supportFrame | while read code f1 f2
@@ -180,8 +162,8 @@ function mode_gvcf() {
 # Take as input the sorted, unique BAM files and produces the gVCF files
 # Splits by chromosome.
 function mode_combinegvcfs() {
-    mainScript=cluster/submission/makeCombineGVCFs.sh
-    mainTable=cluster/submission/makeCombineGVCFs_table.sh
+    nhours=12
+    vmem=4
     # GATK_HaplotypeCaller requires a sequence dictionary
     # Maybe the following should be submitted as interactive long job?
     #
@@ -210,14 +192,15 @@ function mode_combinegvcfs() {
 	    ##if the index is not there, we assume that we have to do the whole job
         script=${mainScript%.sh}_chr${chrCode}.sh
         echo $script >> $mainTable
+        VARIANTS=`echo aligned/*/*_chr${chrCode}.gvcf.gz | xargs -n1 | xargs -I f echo -n ' --variant' f`
         #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
         echo "
         $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
         -T CombineGVCFs \
         -R $fasta \
         -L ${chrCleanCode} \
-        -o combined/chr${chr}.gvcf.gz 
-        --variant aligned/*/*_chr${chrCode}.gvcf.gz \
+        -o combined/chr${chr}.gvcf.gz \
+        $VARIANTS
         " > $script
 	done
 }
@@ -279,6 +262,70 @@ function mode_jointvcf() {
 }
 
 
+###
+function usage() {
+    echo "syntax: $0"
+    echo "--mode : [`declare -F | grep mode | sed 's/.*mode_//' | xargs -n1 echo -n ' |' | sed 's/ \|//'` ]"
+    echo "--extraID "
+    echo "--tempFolder : temp directory for the java picard code"
+    echo "--supportFrame : critical to specify the output file"
+    echo "--tparam "
+    echo "--projectID"
+    echo "--reference"
+    echo "--force"
+    echo "--enforceStrict"
+    echo "--inputFormat"
+    echo "--help : prints this message"
+    exit 1
+}
+
+
+##
+until [ -z "$1" ]
+do
+    # use a case statement to test vars. we always test $1 and shift at the end of the for block.
+    case $1 in
+    --extraID )
+        shift
+        extraID="$1_";;
+     --tempFolder )   ##specify a temp directory for the java picard code
+        shift
+        tempFolder=$1;;
+    --supportFrame )    ### critical to specify the output file
+        shift
+        supportFrame=$1;;
+    --tparam )
+        shift
+        tparam=$1;;
+    # the main 3 steps of the program: align or gvcf or jointvcf
+    --mode)
+        shift
+        mode=$1;;
+    --projectID)
+        shift
+        projectID=$1;;
+    --reference)
+        shift
+        reference=$1;;
+    --force)
+        shift
+        force=$1;;
+    --enforceStrict)
+        shift
+        enforceStrict=$1;;
+    --inputFormat)
+        shift
+        inputFormat=$1;;
+    -* )
+        echo "Unrecognized option: $1"
+        usage
+        exit 1;;
+    esac
+    shift
+    if [ "$#" = "0" ]; then break; fi
+done 
+
+
 #################### the code below is generic to all modules: compute the nb of jobs and create the final submission array
 
 # If you run this in a different environment than the UCL CS cluster
@@ -326,49 +373,6 @@ fasta="default.fasta"
 extraID=""
 
 
-until [ -z "$1" ]
-do
-	# use a case statement to test vars. we always test $1 and shift at the end of the for block.
-    case $1 in
-	--extraID )
-	    shift
-	    extraID="$1_";;
-     --tempFolder )   ##specify a temp directory for the java picard code
-	    shift
-	    tempFolder=$1;;
-	--supportFrame )    ### critical to specify the output file
-	    shift
-	    supportFrame=$1;;
-	--tparam )
-	    shift
-	    tparam=$1;;
-# the main 3 steps of the program: align or gvcf or jointvcf
-	--mode)
-	    shift
-	    mode=$1;;
-	--projectID)
-	    shift
-	    projectID=$1;;
-    --reference)
-        shift
-        reference=$1;;
-	--force)
-	    shift
-	    force=$1;;
-	--enforceStrict)
-	    shift
-	    enforceStrict=$1;;
-	--inputFormat)
-	    shift
-	    inputFormat=$1;;
-	-* )
-	    echo "Unrecognized option: $1"
-        usage
-	    exit 1;;
-    esac
-    shift
-    if [ "$#" = "0" ]; then break; fi
-done 
 
 ########################### supported reference sequences
 # all reference sequences and indexes should be under:
@@ -423,57 +427,39 @@ if [[ "$mustBeCode" != "code" ]]; then stop "The first column of the file $suppo
 if [[ "$mustBeF1" != "f1" ]]; then stop "The second column of the file $supportFrame must have the name f1"; fi
 if [[ "$mustBeF2" != "f2" ]]; then stop "The third column of the file $supportFrame must have the name f2"; fi
 
-### program can run in 3 modes ###
-mainScript=cluster/submission/run_${mode}.sh
-mainTable=cluster/submission/run_${mode}_table.sh
-if [[ "align" == "$mode" ]]
-then
-    # call align function
-    echo align
-    mode_align
-#not fully supported yet
-elif [[ "singlegvcf" == "$mode" ]]
-then
-    echo singlegvcf
-    mode_singlegvcf
-elif [[ "gvcf" == "$mode" ]]
-then
-    echo gvcf
-    mode_gvcf
-#need to check with vincent
-elif [[ "jointvcf" == "$mode" ]]
-then
-    #
-    echo jointvcf
-    mode_jointvcf
-else
-    stop "unknown mode: $mode"
-fi
-makeJointVCF
+# everything will be stored under $mode
+mkdir -p $mode/submission $mode/err $mode/out
+mainScript=$mode/submission/run_${mode}.sh
+mainTable=$mode/submission/run_${mode}_table.sh
+
+# call function (see above)
+echo mode_${mode}
+mode_${mode}
+
 ### The script to be submitted to qsub ###
 echo $mainTable
 echo $mainTable.2
 cat $mainTable | sort -u > $mainTable.2
 mv $mainTable.2 $mainTable
-njobs=`wc -l $mainTable | cut -f1 -d' '`
-((njobs=njobs-1))
+njobs=`cat $mainTable | wc -l $mainTable`
 
 echo "
 #!/bin/bash
 #$ -S /bin/bash
-#$ -o cluster/out
-#$ -e cluster/err
+#$ -o /dev/null
+#$ -e /dev/null
 #$ -cwd
+#$ -V
+#$ -R y 
 #$ -pe smp ${ncores}
 #$ -l scr=${scratch}G
 #$ -l tmem=${vmem}G,h_vmem=${vmem}G
 #$ -l h_rt=${nhours}:0:0
-#$ -tc 25
 #$ -t 1-${njobs}
-#$ -V
-#$ -R y 
+#$ -tc 25
 array=( \`cat \"${mainTable}\" \`) 
 script=\${array[ \$SGE_TASK_ID ]} 
+exec >${mode}/out/${script%.sh}.out 2>${mode}/err/${script%.sh}.err 
 echo \$script 
 sh \$script
 " > $mainScript
