@@ -23,26 +23,61 @@ bash WGS_pipeline.sh
      --reference 1kg
      --tparam 320
      --inputFormat STDFQ 
-     --extraID example
-     --projectID example
+     --projectID Project1
 ```
 
 This creates the following directory structure:
 ```
-cluster
-     submission
-     out
-     err
-aligned
-     sim_reads
+Project1/
+    README
+    support.txt
+     align/
+        scripts/
+        data/
+        out/
+        err/
 ```
-     
-This generates a script under `cluster/submissions/align.sh` containing an SGE job array which can then be submitted to the cluster:
+`support.txt` is just a copy of the support file that was specified.
+`README` should get automatically updated but this has not been implemented yet (also not sure what information would be useful).
+If all the fastq.gz files specified in support.txt are found then this generates the script `Project1/align/scripts/align.sh` containing an SGE job array, where each job does alignment for each sample.
+Check the output in `Project1/align/scripts`.
+This script can then be submitted to the cluster:
 
-> qsub cluster/submissions/align.sh
+> qsub Project1/align/scripts/align.sh
+
+If certain BAM files already exist, they will not be regenerated unless the `--force` option is used.  This `--force` argument applies to the modes too: gvcf, combinegvcf etc.
+Once the jobs have been submitted use `qstat` to check the running status.
+Each job in the array will write logs, to both `Project1/align/out/` and `Project1/align/err/` respectively.
+
+Once the job array finishes you can check that all files exists by running the bash script again:
+
+```bash
+bash WGS_pipeline.sh 
+     --mode align
+     --supportFrame examples/support.txt
+     --reference 1kg
+     --tparam 320
+     --inputFormat STDFQ 
+     --projectID Project1
+```
+The job array should now be empty if all files have been successfully created.
+If they are still scripts to be submitted, first check the log files the type of error.
+If its a transient error like a stale NFS handle due to a lost connection then submit the jobs again.
+
+Once the alignment is complete you can move on to the gvcf generation:
+```bash
+bash WGS_pipeline.sh 
+     --mode gvcfs
+     --supportFrame examples/support.txt
+     --reference 1kg
+     --tparam 320
+     --inputFormat STDFQ 
+     --projectID Project1
+```
+This will follow a similar process to what has been described here with the same dir structure created.
+
 
 ## Overview
-
 
 The two main scripts are:
 - WGS_submission_script.sh
