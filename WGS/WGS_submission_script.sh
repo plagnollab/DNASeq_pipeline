@@ -33,6 +33,8 @@ echo "scriptNames" > $mainTable
 
 mkdir -p aligned/${projectID}
 
-sh ${pipeline} --supportFrame ${supportFrame} --reference ${reference} --align ${align}  --tparam 320  --inputFormat STDFQ  --extraID $extraID --makeVCF ${makeVCF} --makegVCF ${makegVCF}  --projectID ${projectID}
+bash ${pipeline} --mode align --supportFrame ${supportFrame} --reference ${reference}  --tparam 320  --inputFormat STDFQ  --extraID $extraID --makeVCF ${makeVCF} --makegVCF ${makegVCF}  --projectID ${projectID}
+
+bash ${pipeline} --mode vcf --supportFrame ${supportFrame} --reference ${reference} --tparam 320  --inputFormat STDFQ  --extraID $extraID --makeVCF ${makeVCF} --makegVCF ${makegVCF}  --projectID ${projectID}
 
 

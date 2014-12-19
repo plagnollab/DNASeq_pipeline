@@ -14,6 +14,8 @@ function stop() { >&2 echo -e "\033[31m$*\033[0m"; exit 1; }
 ####################### Alignment using Novoalign  ###########################################################################
 # The alignment creates the SAM and BAM files for GATK variant calling
 function mode_align() {
+    output=${projectID}/align/data/
+    mkdir -p $output
     ##10 days? Perhaps more.
     nhours=240
     ncores=6
@@ -31,71 +33,37 @@ function mode_align() {
     #writes a script for each line of supportFrame
     tail -n +2 $supportFrame | while read code f1 f2
     do
-        mkdir -p ${oFolder}/${code}
-        output=${oFolder}/${code}/${code}
-        script=${mainScript%.sh}_${code}.sh
-	echo "
-##start of script
-" > $script
-    ## proceed with that sample if force is set to yes or the output does not exist
-	if [[ ! -s ${output}_sorted_unique.bam.bai || "$force" == "yes" ]]
-    then
-	    if [ ! -e $f1 ]; then stop "$f1 does not exist"; fi
-	    if [ ! -e $f2 ]; then stop "$f2 does not exist"; fi
-        mkdir -p ${tempFolder}/${code} 
-	    echo $script >> $mainTable
-	    echo "
-$novoalign -c ${ncores} -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' --rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam} -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}_disc.sam  | ${samtools} view -Sb - > ${output}.bam
-${samtools} view -Sb ${output}_disc.sam | $novosort - -t ${tempFolder} -c ${ncores} -m ${memory2}G -i -o ${output}_disc_sorted.bam
-$novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}_sorted_unique.bam ${output}.bam
-#rm ${output}_disc.sam ${output}.bam
-"  >> $script
-	    echo "$date" >> $script  ##to measure the duration
-	    echo $script
-	fi
+        ## only create the script if .bam.bai is not of zero size
+        ## unless force is set to yes 
+        if [[ ! -s ${output}/${code}_sorted_unique.bam.bai || "$force" == "yes" ]]
+        then
+            echo ${output}/${code}_sorted_unique.bam.bai does not exist
+            if [ ! -e $f1 ]; then stop "$f1 does not exist"; fi
+            if [ ! -e $f2 ]; then stop "$f2 does not exist"; fi
+            mkdir -p ${tempFolder}/${code} 
+            echo "
+$novoalign -c ${ncores} -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' --rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam} -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}/${code}_disc.sam  | ${samtools} view -Sb - > ${output}/${code}.bam
+${samtools} view -Sb ${output}/${code}_disc.sam | $novosort - -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_disc_sorted.bam
+$novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_sorted_unique.bam ${output}/${code}.bam
+#rm ${output}/${code}_disc.sam ${output}/${code}.bam
+        "   > ${mainScript%.sh}_${code}.sh
+        else
+            #echo ${output}/${code}_sorted_unique.bam.bai exists
+            rm -f ${mainScript%.sh}_${code}.sh
+        fi
     done
     #end of while loop
 }
 
-
-####################### GATK HaplotypeCaller no splitting by chromosome  #####################################################
-# Instead of splitting by chromosome creates a single VCF file.
-# This is only manageable for exon and generally smaller sequence datasets.
-# This is currently not fully suported in the next step of doing joint-calling.
-function mode_singlegvcf() {
-    nhours=24
-    vmem=6
-    #start of while loop
-    #each line of the support file is read
-    #and a script each is generated
-    tail -n +2 $supportFrame | while read code f1 f2
-      do
-        output=${oFolder}/${code}/${code}
-        ## one job per chromosome to save time
-        ## if the index is not there, we assume that we have to do the whole job
-        if [ ! -s ${output}.gvcf.gz.tbi | "$force" == "yes" ]
-        then
-            script=${mainScript%.sh}_${code}.sh
-            echo $script >> $mainTable
-           #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
-            echo "
-           $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
-           -T HaplotypeCaller -R $fasta -I ${output}_sorted_unique.bam  \
-           --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 \
-           -stand_call_conf 30.0 \
-           -stand_emit_conf 10.0 \
-           --downsample_to_coverage 200 \
-           --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
-           -o ${output}.gvcf.gz
-            " > $script
-        fi
-    done
-}
-
 ####################### GATK HaplotypeCaller split by chromosome  ############################################################
-# Take as input the sorted, unique BAM files and produces the gVCF files
+# Take as input the sorted, unique per sample BAM files and produces the gVCF files
 # Splits by chromosome.
+# Input: BAM files.
+# Output: per sample per chromosome gvcf files.
 function mode_gvcf() {
+    input=${projectID}/align/data/
+    output=${projectID}/gvcf/data/
+    mkdir -p $output
     nhours=24
     vmem=6
     #memory2=6
@@ -115,15 +83,12 @@ function mode_gvcf() {
         $samtools faidx $fasta
         file ${fasta}.fai
     fi
-    mainScript=cluster/submission/makegVCF.sh
-    mainTable=cluster/submission/makegVCF_table.sh
     cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
     #start of while loop
     #each line of the support file is read
     #and a script each is generated
     tail -n +2 $supportFrame | while read code f1 f2
     do
-	output=${oFolder}/${code}/${code}
 	##one job per chromosome to save time
 	for chrCode in `seq 1 25`
     do
@@ -132,16 +97,16 @@ function mode_gvcf() {
         #it contains chr<number>
         #should check which scenario where are in
 	    ##if the index is not there, we assume that we have to do the whole job
-	    if [ ! -s ${output}_chr${chrCleanCode}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
+	    if [ ! -s ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
         then
-           script=${mainScript%.sh}_chr${chrCode}_${code}.sh
-           echo $script >> $mainTable
+            echo ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi does not exist
+            #if file is empty stop
+            [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
            echo "
-           $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
-           -T HaplotypeCaller \
+          $HaplotypeCaller 
            -R $fasta \
-           -I ${output}_sorted_unique.bam  \
+           -I ${input}/${code}_sorted_unique.bam  \
            --emitRefConfidence GVCF \
            --variant_index_type LINEAR \
            --variant_index_parameter 128000 \
@@ -150,8 +115,10 @@ function mode_gvcf() {
            -L ${chrCleanCode} \
            --downsample_to_coverage 200 \
            --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
-           -o ${output}_chr${chrCleanCode}.gvcf.gz
-            " > $script
+           -o ${output}/${code}_chr${chrCleanCode}.gvcf.gz
+            " > ${mainScript%.sh}_${code}_chr${chrCode}.sh
+        else
+            rm -f ${mainScript%.sh}_${code}_chr${chrCode}.sh
 	    fi
 	done
     done
@@ -159,49 +126,25 @@ function mode_gvcf() {
 }
 
 ####################### GATK CombineGVCFs split by chromosome  ############################################################
-# Take as input the sorted, unique BAM files and produces the gVCF files
+# Take as input the per sample gVCF files and produces the combined gvcf file.
 # Splits by chromosome.
-function mode_combinegvcfs() {
+function mode_combinegvcf() {
     nhours=12
     vmem=4
-    # GATK_HaplotypeCaller requires a sequence dictionary
-    # Maybe the following should be submitted as interactive long job?
-    #
-    #[[ -e ${fasta%.fasta}.dict ]] && $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
-    if [ ! -e ${fasta%.fasta}.dict ]
-    then 
-        echo $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
-        $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
-    fi
-    #same story
-    if [ ! -e ${fasta}.fai ]
-    then 
-        echo $samtools faidx $fasta
-        $samtools faidx $fasta
-        file ${fasta}.fai
-    fi
     cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
-	output=${oFolder}/${code}/${code}
 	##one script per chromosome
 	for chrCode in `seq 1 25`
     do
 	    chrCleanCode=${cleanChr[ $chrCode ]}
-        #sometimes the dict index contains just the chrom number sometimes
-        #it contains chr<number>
-        #should check which scenario where are in
-	    ##if the index is not there, we assume that we have to do the whole job
-        script=${mainScript%.sh}_chr${chrCode}.sh
-        echo $script >> $mainTable
         VARIANTS=`echo aligned/*/*_chr${chrCode}.gvcf.gz | xargs -n1 | xargs -I f echo -n ' --variant' f`
-        #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
         echo "
         $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
         -T CombineGVCFs \
         -R $fasta \
         -L ${chrCleanCode} \
-        -o combined/chr${chr}.gvcf.gz \
+        -o ${mode}/chr${chr}.gvcf.gz \
         $VARIANTS
-        " > $script
+        " > ${mainScript%.sh}_chr${chrCode}.sh
 	done
 }
 
@@ -215,7 +158,6 @@ function mode_jointvcf() {
     nhours=12
     vmem=4
     #memory2=noneed
-    echo "listScripts" > $mainTable
     cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
     for chrCode in `seq 1 25`
     do 
@@ -225,8 +167,6 @@ function mode_jointvcf() {
         ##if the index is missing, or we use the "force" option
         if [ ! -s ${output}.tbi ] || [ "$force" == "yes" ]
         then 
-            script=`echo $mainScript | sed -e 's/.sh$//'`_chr${chrCleanCode}.sh	
-            echo "$script" >> $mainTable
             #Genotypes any number of gVCF files that were produced by the Haplotype Caller into a single joint VCF file.
             echo "
             $java -Xmx2g -jar $GATK \
@@ -239,7 +179,7 @@ function mode_jointvcf() {
                --annotation HaplotypeScore \
                --annotation MappingQualityRankSumTest \
                --annotation ReadPosRankSumTest \
-               --annotation FisherStrand \\" > $script
+               --annotation FisherStrand \\" > ${mainScript%.sh}_chr${chrCleanCode}.sh
             # for each line in support file
             tail -n +2 $supportFrame | while read code f1 f2
             do  ### now look at each gVCF file
@@ -265,19 +205,28 @@ function mode_jointvcf() {
 ###
 function usage() {
     echo "syntax: $0"
-    echo "--mode : [`declare -F | grep mode | sed 's/.*mode_//' | xargs -n1 echo -n ' |' | sed 's/ \|//'` ]"
-    echo "--extraID "
+    echo "--mode : [`declare -F | grep mode | sed 's/.*mode_//' | awk 'BEGIN{ORS="|";}{print;}' | sed 's/|$//'`]"
+    echo "--extraID : writes to the ReadGroup of the aligner "
     echo "--tempFolder : temp directory for the java picard code"
     echo "--supportFrame : critical to specify the output file"
-    echo "--tparam "
-    echo "--projectID"
+    echo "--tparam : novoalign -t argument "
+    echo "--projectID : directory under which all processing happens"
     echo "--reference"
     echo "--force"
     echo "--enforceStrict"
-    echo "--inputFormat"
+    echo "--inputFormat : novoalign format [STDFQ]"
     echo "--help : prints this message"
     exit 1
 }
+
+
+############ default values
+#parameters to aligner
+inputFormat=STDFQ
+tparam=250
+####
+force=no
+enforceStrict=no
 
 
 ##
@@ -325,7 +274,6 @@ do
     if [ "$#" = "0" ]; then break; fi
 done 
 
-
 #################### the code below is generic to all modules: compute the nb of jobs and create the final submission array
 
 # If you run this in a different environment than the UCL CS cluster
@@ -344,6 +292,7 @@ fi
 # Two functions of GATK will be used HaplotypeCaller and GenotypeGVCFs 
 GATK=${Software}/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
 #$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar ${GATK}
+HaplotypeCaller="$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK -T HaplotypeCaller"
 novoalign=${Software}/novocraft3/novoalign
 novosort=${Software}/novocraft3/novosort
 samblaster=${Software}/samblaster/samblaster
@@ -355,15 +304,6 @@ picard_CreateSequenceDictionary=${picard}/CreateSequenceDictionary.jar
 picard_MarkDuplicates=${picard}/MarkDuplicates.jar
 picard_CalculateHsMetric=${picard}/CalculateHsMetrics.jar
 picard_SamToFastq=${picard}/SamToFastq.jar
-
-############ default values
-#parameters to aligner
-inputFormat=STDFQ
-tparam=250
-
-####
-force=no
-enforceStrict=no
 
 # current default output folder is aligned
 oFolder=aligned
@@ -395,9 +335,6 @@ else
     stop Unsupported reference $reference
 fi
 
-############################### creates folders required for qsub and writing logs
-mkdir -p cluster cluster/out cluster/err cluster/submission
-
 ###############  now let us check that the reference exists
 for file in $fasta
 do
@@ -410,38 +347,38 @@ done
 
 
 ###########################################################
-nhours=0
 ncores=1
 vmem=1
 memory2=5  ##used for the sort function, seem to crash when using 10
 scratch=0
 
-
 ### Check format of support file.
 ##should accept tab or space as delimiters
 ## but does read support tabs and delimeters?
-mustBeCode=`head -1 $supportFrame | cut -f1 -d' ' | cut -f1`  
-mustBeF1=`head -1 $supportFrame | cut -f2 -d' ' | cut -f2`
-mustBeF2=`head -1 $supportFrame | cut -f3 -d' ' | cut -f3`
+mustBeCode=`head -n1 $supportFrame | cut -f1 -d' ' | cut -f1`  
+mustBeF1=`head -n1 $supportFrame | cut -f2 -d' ' | cut -f2`
+mustBeF2=`head -n1 $supportFrame | cut -f3 -d' ' | cut -f3`
 if [[ "$mustBeCode" != "code" ]]; then stop "The first column of the file $supportFrame must have the name code $mustBeCode"; fi
 if [[ "$mustBeF1" != "f1" ]]; then stop "The second column of the file $supportFrame must have the name f1"; fi
 if [[ "$mustBeF2" != "f2" ]]; then stop "The third column of the file $supportFrame must have the name f2"; fi
 
-# everything will be stored under $mode
-mkdir -p $mode/submission $mode/err $mode/out
-mainScript=$mode/submission/run_${mode}.sh
-mainTable=$mode/submission/run_${mode}_table.sh
+############################### creates folders required for qsub and writing logs
+mkdir -p $projectID
+cp $supportFrame $projectID/
+supportFrame=${projectID}/`basename $supportFrame`
+touch ${projectID}/README
+echo "
+"
+> ${projectID}/README 
 
+mkdir -p ${projectID}/$mode/data ${projectID}/$mode/scripts ${projectID}/$mode/out ${projectID}/$mode/err 
+mainScript=${projectID}/$mode/scripts/$mode.sh
 # call function (see above)
 echo mode_${mode}
 mode_${mode}
 
 ### The script to be submitted to qsub ###
-echo $mainTable
-echo $mainTable.2
-cat $mainTable | sort -u > $mainTable.2
-mv $mainTable.2 $mainTable
-njobs=`cat $mainTable | wc -l $mainTable`
+njobs=`ls -1 ${projectID}/$mode/scripts/${mode}_*.sh | wc -l`
 
 echo "
 #!/bin/bash
@@ -457,16 +394,18 @@ echo "
 #$ -l h_rt=${nhours}:0:0
 #$ -t 1-${njobs}
 #$ -tc 25
-array=( \`cat \"${mainTable}\" \`) 
+array=( \`ls -1 ${projectID}/$mode/scripts/${mode}_*.sh \`) 
 script=\${array[ \$SGE_TASK_ID ]} 
-exec >${mode}/out/${script%.sh}.out 2>${mode}/err/${script%.sh}.err 
+scriptname=\`basename \${script%.sh}\`
+exec >${projectID}/${mode}/out/\${scriptname}.out 2>${projectID}/${mode}/err/\${scriptname}.err 
 echo \$script 
-sh \$script
+bash \$script
 " > $mainScript
 
-echo "Main submission scripts and tables for the align module:"
-wc -l $mainScript $mainTable
+echo "Main submission script:"
 echo run: qsub $mainScript
+echo number of jobs in array: `ls -1 ${projectID}/$mode/scripts/${mode}_*.sh | wc -l`
+
 
 
 
