@@ -43,9 +43,12 @@ function mode_align() {
             mkdir -p ${tempFolder}/${code} 
             echo "
 $novoalign -c ${ncores} -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' --rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam} -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}/${code}_disc.sam  | ${samtools} view -Sb - > ${output}/${code}.bam
+
 ${samtools} view -Sb ${output}/${code}_disc.sam | $novosort - -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_disc_sorted.bam
+
 $novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_sorted_unique.bam ${output}/${code}.bam
-#rm ${output}/${code}_disc.sam ${output}/${code}.bam
+
+rm ${output}/${code}_disc.sam ${output}/${code}.bam
         "   > ${mainScript%.sh}_${code}.sh
         else
             #echo ${output}/${code}_sorted_unique.bam.bai exists
@@ -309,9 +312,6 @@ picard_SamToFastq=${picard}/SamToFastq.jar
 oFolder=aligned
 # this is the default reference genome
 fasta="default.fasta"
-# this is used by the aligner but not sure what it does.  Vincent?
-extraID=""
-
 
 
 ########################### supported reference sequences
