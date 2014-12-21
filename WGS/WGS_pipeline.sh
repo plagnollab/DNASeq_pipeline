@@ -19,7 +19,7 @@ function mode_align() {
     ##10 days? Perhaps more.
     nhours=240
     ncores=6
-    vmem=2.3
+    vmem=2.6
     memory2=7
     for file in $novoalignRef
     do
@@ -394,12 +394,14 @@ echo "
 #$ -l h_rt=${nhours}:0:0
 #$ -t 1-${njobs}
 #$ -tc 25
+
 array=( header \`ls -1 ${projectID}/$mode/scripts/${mode}_*.sh \`) 
 script=\${array[ \$SGE_TASK_ID ]} 
 scriptname=\`basename \${script%.sh}\`
-exec >${projectID}/${mode}/out/\${scriptname}.out 2>${projectID}/${mode}/err/\${scriptname}.err 
+exec >${projectID}/${mode}/out/\${scriptname}_job\${SGE_TASK_ID}.out 2>${projectID}/${mode}/err/\${scriptname}_job\${SGE_TASK_ID}.err 
 echo \$script 
 bash \$script
+
 " > $mainScript
 
 echo "Main submission script:"
