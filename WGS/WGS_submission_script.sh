@@ -5,26 +5,15 @@ pipeline=${software}/pipeline/WGS/WGS_pipeline.sh
 
 
 ################## below location of the input and output folders, as well as the list of IDs
-iFolder=/SAN/biomed/biomed2/biomed2/ingest
-oFolder=/scratch2/vyp-scratch2/WGS/Hardcastle_October2014/aligned
+#iFolder=/SAN/biomed/biomed2/biomed2/ingest
+projectID=/scratch2/vyp-scratch2/exomes_temp/IoO/Manchester_batch1
 if [ ! -e $oFolder ]; then mkdir $oFolder; fi
-find /SAN/biomed/biomed2/biomed2/ingest/ -name *1.fastq.gz -exec basename {} .fastq.gz \; | sed -e 's/_L0.*\|_1$//g' > support/listIDs.tab
-myIDs=`cat support/listIDs.tab | grep 14`
 
 
 #################### key parameters to choose
-projectID=HardcastleStep2
-extraID=Hardcastle_October2014
-reference=hg38_noAlt
-
-############# below the actions that we want to apply
-align=yes
-makegVCF=no
-makeVCF=no
-
-force=no
-
-supportFrame=support/Hardcastle_October2014.tab
+extraID=Manchester_December2014
+reference=1kg
+supportFrame=support/Manchester_batch1.tab
 
 ########################## end of parameter file
 
@@ -33,8 +22,8 @@ echo "scriptNames" > $mainTable
 
 mkdir -p aligned/${projectID}
 
-bash ${pipeline} --mode align --supportFrame ${supportFrame} --reference ${reference}  --tparam 320  --inputFormat STDFQ  --extraID $extraID --makeVCF ${makeVCF} --makegVCF ${makegVCF}  --projectID ${projectID}
+bash ${pipeline} --mode align --supportFrame ${supportFrame} --reference ${reference}  --tparam 320  --inputFormat STDFQ  --extraID $extraID --projectID ${projectID}
 
-bash ${pipeline} --mode vcf --supportFrame ${supportFrame} --reference ${reference} --tparam 320  --inputFormat STDFQ  --extraID $extraID --makeVCF ${makeVCF} --makegVCF ${makegVCF}  --projectID ${projectID}
+#bash ${pipeline} --mode vcf --supportFrame ${supportFrame} --reference ${reference} --extraID $extraID  --projectID ${projectID}
 
 

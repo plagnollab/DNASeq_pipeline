@@ -163,7 +163,7 @@ function mode_jointvcf() {
     do 
         ##one job per chromosome to save time
         chrCleanCode=${cleanChr[ $chrCode ]}
-        output=${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz
+        output=${projectID}/combined/combined_chr${chrCleanCode}.vcf.gz
         ##if the index is missing, or we use the "force" option
         if [ ! -s ${output}.tbi ] || [ "$force" == "yes" ]
         then 
@@ -183,7 +183,7 @@ function mode_jointvcf() {
             # for each line in support file
             tail -n +2 $supportFrame | while read code f1 f2
             do  ### now look at each gVCF file
-            output=${oFolder}/${code}/${code}
+            output=${projectID}/${code}/${code}
             gVCF="${output}_chr${chrCleanCode}.gvcf.gz"
             if [[ "$enforceStrict" == "yes" && ! -s $gVCF ]]
             then
@@ -196,7 +196,7 @@ function mode_jointvcf() {
             done
             #echo "   --dbsnp ${bundle}/dbsnp_137.b37.vcf \\
             #-o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
-            echo "   -o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
+            echo "   -o ${projectID}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
       fi
     done
 }
@@ -394,7 +394,7 @@ echo "
 #$ -l h_rt=${nhours}:0:0
 #$ -t 1-${njobs}
 #$ -tc 25
-array=( \`ls -1 ${projectID}/$mode/scripts/${mode}_*.sh \`) 
+array=( header \`ls -1 ${projectID}/$mode/scripts/${mode}_*.sh \`) 
 script=\${array[ \$SGE_TASK_ID ]} 
 scriptname=\`basename \${script%.sh}\`
 exec >${projectID}/${mode}/out/\${scriptname}.out 2>${projectID}/${mode}/err/\${scriptname}.err 
