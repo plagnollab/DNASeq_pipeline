@@ -398,7 +398,7 @@ echo "
 array=( header \`ls -1 ${projectID}/$mode/scripts/${mode}_*.sh \`) 
 script=\${array[ \$SGE_TASK_ID ]} 
 scriptname=\`basename \${script%.sh}\`
-exec >${projectID}/${mode}/out/\${scriptname}_job\${SGE_TASK_ID}.out 2>${projectID}/${mode}/err/\${scriptname}_job\${SGE_TASK_ID}.err 
+exec >${projectID}/${mode}/out/\${scriptname}_job\${SGE_TASK_ID}.out 2>${projectID}/${mode}/err/\${scriptname}_job\${SGE_TASK_ID}.err  
 echo \$script 
 bash \$script
 
