@@ -1,6 +1,9 @@
 #! /bin/bash
 # this script has only been tested with bash and may not work with other shells
 
+# this forces all variables to be defined
+set -u
+
 # This script does the following three tasks:
 # 1) Run alignment to generate BAM and SAM files.
 #    Novoalign and samtools are used for this purpose.
@@ -107,7 +110,7 @@ function mode_gvcf() {
             [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
            echo "
-          $HaplotypeCaller 
+          $HaplotypeCaller \
            -R $fasta \
            -I ${input}/${code}_sorted_unique.bam  \
            --emitRefConfidence GVCF \
@@ -154,7 +157,7 @@ function mode_combinegvcf() {
 
 
 ####################### GATK GenotypeGVCFs  ##################################################################################
-### This is the part that combines all the VCFs across samples to do the joint calling.
+### This is the part that combines all the VCFs across samples to do the joint calling.
 ### This is a more practical aprroach of doing joint-calling than using the UnifiedGenotyper
 ### which relies on the BAM files.
 function mode_jointvcf() {
@@ -394,17 +397,22 @@ echo "
 #$ -l h_rt=${nhours}:0:0
 #$ -t 1-${njobs}
 #$ -tc 25
-
+set -u
+set -x
+mkdir -p ${projectID}/${mode}/scripts ${projectID}/${mode}/data ${projectID}/${mode}/err ${projectID}/${mode}/out
 array=( header \`ls -1 ${projectID}/$mode/scripts/${mode}_*.sh \`) 
 script=\${array[ \$SGE_TASK_ID ]} 
 scriptname=\`basename \${script%.sh}\`
-exec >${projectID}/${mode}/out/\${scriptname}_job\${SGE_TASK_ID}.out 2>${projectID}/${mode}/err/\${scriptname}_job\${SGE_TASK_ID}.err  
+exec >${projectID}/${mode}/out/\${scriptname}_job\${SGE_TASK_ID}_\${JOB_ID}.out 2>${projectID}/${mode}/err/\${scriptname}_job\${SGE_TASK_ID}_\${JOB_ID}.err  
 echo \$script 
 bash \$script
 
 " > $mainScript
 
 echo "Main submission script:"
+cat $mainScript
+echo
+echo
 echo run: qsub $mainScript
 echo number of jobs in array: `ls -1 ${projectID}/$mode/scripts/${mode}_*.sh | wc -l`
 
