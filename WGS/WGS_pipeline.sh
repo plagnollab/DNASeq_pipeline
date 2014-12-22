@@ -112,7 +112,7 @@ function mode_gvcf_unsplit() {
            -stand_call_conf 30.0 \
            -stand_emit_conf 10.0 \
            --downsample_to_coverage 200 \
-           --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
+           --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 60 \
            -o ${output}/${code}.gvcf.gz
             " > ${mainScript%.sh}_${code}.sh
         else
