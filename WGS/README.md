@@ -59,6 +59,7 @@ bash WGS_pipeline.sh
      --tparam 320
      --inputFormat STDFQ 
      --projectID Project1
+     --extraID Project1_
 ```
 The job array should now be empty if all files have been successfully created.
 If they are still scripts to be submitted, first check the log files the type of error.
@@ -143,7 +144,9 @@ Two reference builds are supported:
 
 ### extraID
 
-A very useful parameter to set is "extraID" to know the batch.
+The parameter "extraID" defines the batch.
+It is added to the RG header of the BAM files and is used to distinguish samples in the merged VCF files.
+
 
 ## Alignment (align mode)
 
