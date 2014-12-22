@@ -63,9 +63,11 @@ rm ${output}/${code}_disc.sam ${output}/${code}.bam
 
 
 ####################### GATK HaplotypeCaller genome-wide  ############################################################
-# Take as input the sorted, unique per sample BAM files and produces the gVCF files
+# Take as input the sorted, unique per sample BAM files and produces the gVCF files.
+# The gVCF files will not be split by chromosome. This is only pratical for smaller
+# non-genomewide datasets.
 # Input: BAM files.
-# Output: per sample per chromosome gvcf files.
+# Output: per sample gvcf files.
 function mode_gvcf_unsplit() {
     input=${projectID}/align/data/
     output=${projectID}/gvcf_unsplit/data/
