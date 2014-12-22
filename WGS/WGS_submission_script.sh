@@ -6,21 +6,17 @@ pipeline=${software}/pipeline/WGS/WGS_pipeline.sh
 
 ################## below location of the input and output folders, as well as the list of IDs
 #iFolder=/SAN/biomed/biomed2/biomed2/ingest
-projectID=/scratch2/vyp-scratch2/exomes_temp/IoO/Manchester_batch1
+projectID=/scratch2/vyp-scratch2/exomes_temp/Hardcastle/Hardcastle_December2014
 if [ ! -e $oFolder ]; then mkdir $oFolder; fi
 
 
 #################### key parameters to choose
-extraID=Manchester_December2014
+extraID=Hardcastle_December2014
 reference=1kg
-supportFrame=support/Manchester_batch1.tab
+supportFrame=support/Hardcastle_December2014.tab
 
 ########################## end of parameter file
 
-njobs=0
-echo "scriptNames" > $mainTable
-
-mkdir -p aligned/${projectID}
 
 bash ${pipeline} --mode align --supportFrame ${supportFrame} --reference ${reference}  --tparam 320  --inputFormat STDFQ  --extraID $extraID --projectID ${projectID}
 

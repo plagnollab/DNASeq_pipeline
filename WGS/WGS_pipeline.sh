@@ -61,6 +61,65 @@ rm ${output}/${code}_disc.sam ${output}/${code}.bam
     #end of while loop
 }
 
+
+####################### GATK HaplotypeCaller genome-wide  ############################################################
+# Take as input the sorted, unique per sample BAM files and produces the gVCF files
+# Input: BAM files.
+# Output: per sample per chromosome gvcf files.
+function mode_gvcf_unsplit() {
+    input=${projectID}/align/data/
+    output=${projectID}/gvcf_unsplit/data/
+    mkdir -p $output
+    nhours=72
+    vmem=6
+    #memory2=6
+    # GATK_HaplotypeCaller requires a sequence dictionary
+    # Maybe the following should be submitted as interactive long job?
+    #
+    #[[ -e ${fasta%.fasta}.dict ]] && $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
+    if [ ! -e ${fasta%.fasta}.dict ]
+    then 
+        echo $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
+        $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
+    fi
+    #same story
+    if [ ! -e ${fasta}.fai ]
+    then 
+        echo $samtools faidx $fasta
+        $samtools faidx $fasta
+        file ${fasta}.fai
+    fi
+    #start of while loop
+    #each line of the support file is read
+    #and a script each is generated
+    tail -n +2 $supportFrame | while read code f1 f2
+    do
+      if [ ! -s ${output}/${code}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
+	  then
+	  echo ${output}/${code}.gvcf.gz.tbi does not exist
+            #if file is empty stop
+	  [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
+           #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
+	  echo "
+          $HaplotypeCaller \
+           -R $fasta \
+           -I ${input}/${code}_sorted_unique.bam  \
+           --emitRefConfidence GVCF \
+           --variant_index_type LINEAR \
+           --variant_index_parameter 128000 \
+           -stand_call_conf 30.0 \
+           -stand_emit_conf 10.0 \
+           --downsample_to_coverage 200 \
+           --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
+           -o ${output}/${code}.gvcf.gz
+            " > ${mainScript%.sh}_${code}.sh
+        else
+	  rm -f ${mainScript%.sh}_${code}.sh
+      fi
+    done
+    #end of while loop
+}
+
 ####################### GATK HaplotypeCaller split by chromosome  ############################################################
 # Take as input the sorted, unique per sample BAM files and produces the gVCF files
 # Splits by chromosome.
