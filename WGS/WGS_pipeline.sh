@@ -1,8 +1,12 @@
 #! /bin/bash
 # this script has only been tested with bash and may not work with other shells
 
+# script exits if return value of a command is not zero
+set -e
 # this forces all variables to be defined
 set -u
+# for debugging prints out every line before executing it
+#set -x
 
 # This script does the following three tasks:
 # 1) Run alignment to generate BAM and SAM files.
@@ -12,7 +16,9 @@ set -u
 
 # prints to stderr in red
 function error() { >&2 echo -e "\033[31m$*\033[0m"; }
-function stop() { >&2 echo -e "\033[31m$*\033[0m"; exit 1; }
+function stop() { error "$*"; exit 1; }
+try() { "$@" || stop "cannot $*"; }
+
 
 ####################### Alignment using Novoalign  ###########################################################################
 # The alignment creates the SAM and BAM files for GATK variant calling
@@ -26,19 +32,20 @@ function mode_align() {
     memory2=7
     for file in $novoalignRef
     do
-	ls -lh $file
-	if [ ! -e "$file"  ] && [ "$file" != "none" ]
-	then 
-	    stop "Error, reference file $file does not exist"
-	fi
+    ls -lh $file
+    if [ ! -e "$file"  ] && [ "$file" != "none" ]
+    then 
+        stop "Error, reference file $file does not exist"
+    fi
     done
     #start of while loop
     #writes a script for each line of supportFrame
-    tail -n +2 $supportFrame | while read code f1 f2
+    #tail -n +2 $supportFrame | while read code f1 f2
+    while read code f1 f2
     do
         ## only create the script if .bam.bai is not of zero size
         ## unless force is set to yes 
-        if [[ ! -s ${output}/${code}_sorted_unique.bam.bai || "$force" == "yes" ]]
+        if [[ ! -s ${output}/${code}_sorted_unique.bam.bai ]] || [[ "$force" == "yes" ]]
         then
             echo ${output}/${code}_sorted_unique.bam.bai does not exist
             if [ ! -e $f1 ]; then stop "$f1 does not exist"; fi
@@ -57,8 +64,7 @@ rm ${output}/${code}_disc.sam ${output}/${code}.bam
             #echo ${output}/${code}_sorted_unique.bam.bai exists
             rm -f ${mainScript%.sh}_${code}.sh
         fi
-    done
-    #end of while loop
+    done < <(tail -n +2 $supportFrame)
 }
 
 
@@ -94,15 +100,15 @@ function mode_gvcf_unsplit() {
     #start of while loop
     #each line of the support file is read
     #and a script each is generated
-    tail -n +2 $supportFrame | while read code f1 f2
+    while read code f1 f2
     do
       if [ ! -s ${output}/${code}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
-	  then
-	  echo ${output}/${code}.gvcf.gz.tbi does not exist
-            #if file is empty stop
-	  [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
+      then
+          echo ${output}/${code}.gvcf.gz.tbi does not exist
+          #if file is empty stop
+          [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
-	  echo "
+          echo "
           $HaplotypeCaller \
            -R $fasta \
            -I ${input}/${code}_sorted_unique.bam  \
@@ -115,10 +121,10 @@ function mode_gvcf_unsplit() {
            --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 60 \
            -o ${output}/${code}.gvcf.gz
             " > ${mainScript%.sh}_${code}.sh
-        else
-	  rm -f ${mainScript%.sh}_${code}.sh
+      else
+          rm -f ${mainScript%.sh}_${code}.sh
       fi
-    done
+    done < <(tail -n +2 $supportFrame)
     #end of while loop
 }
 
@@ -154,42 +160,41 @@ function mode_gvcf() {
     #start of while loop
     #each line of the support file is read
     #and a script each is generated
-    tail -n +2 $supportFrame | while read code f1 f2
+    while read code f1 f2
     do
-	##one job per chromosome to save time
-	for chrCode in `seq 1 25`
-    do
-	    chrCleanCode=${cleanChr[ $chrCode ]}
-        #sometimes the dict index contains just the chrom number sometimes
-        #it contains chr<number>
-        #should check which scenario where are in
-	    ##if the index is not there, we assume that we have to do the whole job
-	    if [ ! -s ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
-        then
-            echo ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi does not exist
-            #if file is empty stop
-            [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
-           #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
-           echo "
-          $HaplotypeCaller \
-           -R $fasta \
-           -I ${input}/${code}_sorted_unique.bam  \
-           --emitRefConfidence GVCF \
-           --variant_index_type LINEAR \
-           --variant_index_parameter 128000 \
-           -stand_call_conf 30.0 \
-           -stand_emit_conf 10.0 \
-           -L ${chrCleanCode} \
-           --downsample_to_coverage 200 \
-           --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
-           -o ${output}/${code}_chr${chrCleanCode}.gvcf.gz
-            " > ${mainScript%.sh}_${code}_chr${chrCode}.sh
-        else
-            rm -f ${mainScript%.sh}_${code}_chr${chrCode}.sh
-	    fi
-	done
-    done
-    #end of while loop
+        ##one job per chromosome to save time
+        for chrCode in `seq 1 25`
+        do
+            chrCleanCode=${cleanChr[ $chrCode ]}
+            #sometimes the dict index contains just the chrom number sometimes
+            #it contains chr<number>
+            #should check which scenario where are in
+            ##if the index is not there, we assume that we have to do the whole job
+            if [ ! -s ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
+            then
+                echo ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi does not exist
+                #if file is empty stop
+                [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
+               #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
+               echo "
+              $HaplotypeCaller \
+               -R $fasta \
+               -I ${input}/${code}_sorted_unique.bam  \
+               --emitRefConfidence GVCF \
+               --variant_index_type LINEAR \
+               --variant_index_parameter 128000 \
+               -stand_call_conf 30.0 \
+               -stand_emit_conf 10.0 \
+               -L ${chrCleanCode} \
+               --downsample_to_coverage 200 \
+               --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
+               -o ${output}/${code}_chr${chrCleanCode}.gvcf.gz
+                " > ${mainScript%.sh}_${code}_chr${chrCode}.sh
+            else
+                rm -f ${mainScript%.sh}_${code}_chr${chrCode}.sh
+            fi
+        done
+    done < <(tail -n +2 $supportFrame)
 }
 
 ####################### GATK CombineGVCFs split by chromosome  ############################################################
@@ -199,10 +204,10 @@ function mode_combinegvcf() {
     nhours=12
     vmem=4
     cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
-	##one script per chromosome
-	for chrCode in `seq 1 25`
+    ##one script per chromosome
+    for chrCode in `seq 1 25`
     do
-	    chrCleanCode=${cleanChr[ $chrCode ]}
+        chrCleanCode=${cleanChr[ $chrCode ]}
         VARIANTS=`echo aligned/*/*_chr${chrCode}.gvcf.gz | xargs -n1 | xargs -I f echo -n ' --variant' f`
         echo "
         $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
@@ -212,7 +217,7 @@ function mode_combinegvcf() {
         -o ${mode}/chr${chr}.gvcf.gz \
         $VARIANTS
         " > ${mainScript%.sh}_chr${chrCode}.sh
-	done
+    done
 }
 
 
@@ -221,18 +226,19 @@ function mode_combinegvcf() {
 ### This is the part that combines all the VCFs across samples to do the joint calling.
 ### This is a more practical aprroach of doing joint-calling than using the UnifiedGenotyper
 ### which relies on the BAM files.
-function mode_jointvcf() {
+function mode_jointgvcf() {
+    input=${projectID}/gvcf/data/
+    output=${projectID}/jointgvcf/data/
+    mkdir -p ${output}
     nhours=12
     vmem=4
-    #memory2=noneed
     cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
     for chrCode in `seq 1 25`
     do 
         ##one job per chromosome to save time
         chrCleanCode=${cleanChr[ $chrCode ]}
-        output=${projectID}/combined/combined_chr${chrCleanCode}.vcf.gz
         ##if the index is missing, or we use the "force" option
-        if [ ! -s ${output}.tbi ] || [ "$force" == "yes" ]
+        if [ ! -s ${output}/jointgvcf_chr${chrCleanCode}.vcf.gz ] || [ "$force" == "yes" ]
         then 
             #Genotypes any number of gVCF files that were produced by the Haplotype Caller into a single joint VCF file.
             echo "
@@ -248,22 +254,23 @@ function mode_jointvcf() {
                --annotation ReadPosRankSumTest \
                --annotation FisherStrand \\" > ${mainScript%.sh}_chr${chrCleanCode}.sh
             # for each line in support file
-            tail -n +2 $supportFrame | while read code f1 f2
-            do  ### now look at each gVCF file
-            output=${projectID}/${code}/${code}
-            gVCF="${output}_chr${chrCleanCode}.gvcf.gz"
-            if [[ "$enforceStrict" == "yes" && ! -s $gVCF ]]
-            then
-                stop "Cannot find $gVCF"
-            fi
-            if [ -s $gVCF ]
-            then 
-                echo "   --variant $gVCF \\" >> $script; 
-            fi
-            done
-            #echo "   --dbsnp ${bundle}/dbsnp_137.b37.vcf \\
-            #-o ${oFolder}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
-            echo "   -o ${projectID}/combined/combined_chr${chrCleanCode}.vcf.gz" >> $script
+            # the following syntax does not respond to exit
+            # because the pipe creates another subprocess
+            #tail -n +2 $supportFrame | while read code f1 f2
+            while read code f1 f2
+                do  ### now look at each gVCF file
+                gVCF="${input}/${code}_chr${chrCleanCode}.gvcf.gz"
+                if [[ ! -s $gVCF ]]
+                then
+                    error "Cannot find $gVCF"
+                    echo "cat $input/../err/gvcf_${code}_chr${chrCleanCode}_*.err | grep ERROR"
+                    cat $input/../err/gvcf_${code}_chr${chrCleanCode}_*.err | grep ERROR
+                    exit 1
+                else
+                    echo "   --variant $gVCF \\" >> ${mainScript%.sh}_chr${chrCleanCode}.sh
+                fi
+            done < <(tail -n +2 $supportFrame)
+            echo "   -o ${output}/jointgvcf_chr${chrCleanCode}.vcf.gz" >> ${mainScript%.sh}_chr${chrCleanCode}.sh
       fi
     done
 }
@@ -280,7 +287,7 @@ function usage() {
     echo "--projectID : directory under which all processing happens"
     echo "--reference"
     echo "--force"
-    echo "--enforceStrict"
+    #echo "--enforceStrict"
     echo "--inputFormat : novoalign format [STDFQ]"
     echo "--help : prints this message"
     exit 1
@@ -293,7 +300,7 @@ inputFormat=STDFQ
 tparam=250
 ####
 force=no
-enforceStrict=no
+#enforceStrict=no
 
 
 ##
@@ -326,9 +333,10 @@ do
     --force)
         shift
         force=$1;;
-    --enforceStrict)
-        shift
-        enforceStrict=$1;;
+#NP: what is the point of this option?
+    #--enforceStrict)
+        #shift
+        #enforceStrict=$1;;
     --inputFormat)
         shift
         inputFormat=$1;;
