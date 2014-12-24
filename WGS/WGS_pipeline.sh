@@ -6,7 +6,7 @@ set -e
 # this forces all variables to be defined
 set -u
 # for debugging prints out every line before executing it
-#set -x
+set -x
 
 # This script does the following three tasks:
 # 1) Run alignment to generate BAM and SAM files.
@@ -156,14 +156,13 @@ function mode_gvcf() {
         $samtools faidx $fasta
         file ${fasta}.fai
     fi
-    cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
     #start of while loop
     #each line of the support file is read
     #and a script each is generated
     while read code f1 f2
     do
         ##one job per chromosome to save time
-        for chrCode in `seq 1 25`
+        for chrCode in `seq 1 $cleanChrLen`
         do
             chrCleanCode=${cleanChr[ $chrCode ]}
             #sometimes the dict index contains just the chrom number sometimes
@@ -203,9 +202,8 @@ function mode_gvcf() {
 function mode_combinegvcf() {
     nhours=12
     vmem=4
-    cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
     ##one script per chromosome
-    for chrCode in `seq 1 25`
+    for chrCode in `seq 1 $cleanChrLen`
     do
         chrCleanCode=${cleanChr[ $chrCode ]}
         VARIANTS=`echo aligned/*/*_chr${chrCode}.gvcf.gz | xargs -n1 | xargs -I f echo -n ' --variant' f`
@@ -232,8 +230,7 @@ function mode_jointgvcf() {
     mkdir -p ${output}
     nhours=12
     vmem=4
-    cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
-    for chrCode in `seq 1 25`
+    for chrCode in `seq 1 $cleanChrLen`
     do 
         ##one job per chromosome to save time
         chrCleanCode=${cleanChr[ $chrCode ]}
@@ -276,6 +273,8 @@ function mode_jointgvcf() {
 }
 
 
+
+
 ###
 function usage() {
     echo "syntax: $0"
@@ -302,6 +301,12 @@ tparam=250
 force=no
 #enforceStrict=no
 
+# include mithchondrial DNA?  Maybe set an optional parameter
+#cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y M )
+cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y ) 
+cleanChrLen=${#cleanChr[@]}
+#need to decrement because of header
+cleanChrLen=$(( cleanChrLen-1 ))
 
 ##
 until [ -z "$1" ]
