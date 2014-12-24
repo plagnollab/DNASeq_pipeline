@@ -79,7 +79,7 @@ function mode_gvcf_unsplit() {
     output=${projectID}/gvcf_unsplit/data/
     mkdir -p $output
     nhours=72
-    vmem=6
+    vmem=8
     #memory2=6
     # GATK_HaplotypeCaller requires a sequence dictionary
     # Maybe the following should be submitted as interactive long job?
@@ -117,7 +117,7 @@ function mode_gvcf_unsplit() {
            --variant_index_parameter 128000 \
            -stand_call_conf 30.0 \
            -stand_emit_conf 10.0 \
-           --downsample_to_coverage 200 \
+           --downsample_to_coverage 250 \
            --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 60 \
            -o ${output}/${code}.gvcf.gz
             " > ${mainScript%.sh}_${code}.sh
@@ -138,7 +138,7 @@ function mode_gvcf() {
     output=${projectID}/gvcf/data/
     mkdir -p $output
     nhours=24
-    vmem=6
+    vmem=8
     #memory2=6
     # GATK_HaplotypeCaller requires a sequence dictionary
     # Maybe the following should be submitted as interactive long job?
@@ -372,7 +372,7 @@ fi
 # Two functions of GATK will be used HaplotypeCaller and GenotypeGVCFs 
 GATK=${Software}/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
 #$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar ${GATK}
-HaplotypeCaller="$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK -T HaplotypeCaller"
+HaplotypeCaller="$java -Djava.io.tmpdir=${tempFolder} -Xmx5g -jar $GATK -T HaplotypeCaller"
 novoalign=${Software}/novocraft3/novoalign
 novosort=${Software}/novocraft3/novosort
 samblaster=${Software}/samblaster/samblaster
