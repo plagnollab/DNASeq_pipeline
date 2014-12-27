@@ -6,7 +6,7 @@ set -e
 # this forces all variables to be defined
 set -u
 # for debugging prints out every line before executing it
-set -x
+#set -x
 
 # This script does the following three tasks:
 # 1) Run alignment to generate BAM and SAM files.
@@ -242,7 +242,7 @@ function mode_jointgvcf() {
             $java -Xmx2g -jar $GATK \
                -T GenotypeGVCFs \
                -R $fasta \
-               -L chr${chrCleanCode} \
+               -L ${chrCleanCode} \
                --interval_padding 100  \
                --annotation InbreedingCoeff \
                --annotation QualByDepth \
@@ -255,7 +255,7 @@ function mode_jointgvcf() {
             # because the pipe creates another subprocess
             #tail -n +2 $supportFrame | while read code f1 f2
             while read code f1 f2
-                do  ### now look at each gVCF file
+            do  ### now look at each gVCF file
                 gVCF="${input}/${code}_chr${chrCleanCode}.gvcf.gz"
                 if [[ ! -s $gVCF ]]
                 then
