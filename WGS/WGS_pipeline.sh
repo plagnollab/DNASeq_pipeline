@@ -139,6 +139,8 @@ function mode_gvcf() {
     mkdir -p $output
     nhours=24
     vmem=8
+    #script files get regenerated on every run
+    rm -f ${projectID}/gvcf/scripts/*.sh
     #memory2=6
     # GATK_HaplotypeCaller requires a sequence dictionary
     # Maybe the following should be submitted as interactive long job?
@@ -171,11 +173,11 @@ function mode_gvcf() {
             ##if the index is not there, we assume that we have to do the whole job
             if [ ! -s ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
             then
-                echo ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi does not exist
-                #if file is empty stop
-                [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
-               #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
-               echo "
+              echo ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi does not exist
+              #if file is empty stop
+              [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
+              #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
+              echo "
               $HaplotypeCaller \
                -R $fasta \
                -I ${input}/${code}_sorted_unique.bam  \
@@ -184,11 +186,11 @@ function mode_gvcf() {
                --variant_index_parameter 128000 \
                -stand_call_conf 30.0 \
                -stand_emit_conf 10.0 \
-               -L ${chrCleanCode} \
+               -L ${chrPrefix}${chrCleanCode} \
                --downsample_to_coverage 200 \
                --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
                -o ${output}/${code}_chr${chrCleanCode}.gvcf.gz
-                " > ${mainScript%.sh}_${code}_chr${chrCode}.sh
+              " > ${mainScript%.sh}_${code}_chr${chrCode}.sh
             else
                 rm -f ${mainScript%.sh}_${code}_chr${chrCode}.sh
             fi
@@ -211,7 +213,7 @@ function mode_combinegvcf() {
         $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
         -T CombineGVCFs \
         -R $fasta \
-        -L ${chrCleanCode} \
+        -L ${chrPrefix}${chrCleanCode} \
         -o ${mode}/chr${chr}.gvcf.gz \
         $VARIANTS
         " > ${mainScript%.sh}_chr${chrCode}.sh
@@ -230,6 +232,7 @@ function mode_jointgvcf() {
     mkdir -p ${output}
     nhours=12
     vmem=4
+    rm -f ${projectID}/jointgvcf/scripts/*.sh
     for chrCode in `seq 1 $cleanChrLen`
     do 
         ##one job per chromosome to save time
@@ -242,7 +245,7 @@ function mode_jointgvcf() {
             $java -Xmx2g -jar $GATK \
                -T GenotypeGVCFs \
                -R $fasta \
-               -L ${chrCleanCode} \
+               -L ${chrPrefix}${chrCleanCode} \
                --interval_padding 100  \
                --annotation InbreedingCoeff \
                --annotation QualByDepth \
@@ -268,7 +271,10 @@ function mode_jointgvcf() {
                 fi
             done < <(tail -n +2 $supportFrame)
             echo "   -o ${output}/jointgvcf_chr${chrCleanCode}.vcf.gz" >> ${mainScript%.sh}_chr${chrCleanCode}.sh
-      fi
+        else 
+            # if the file already exists then delete previous script
+            rm -f ${mainScript%.sh}_chr${chrCleanCode}.sh
+        fi
     done
 }
 
@@ -400,14 +406,17 @@ if [[ "$reference" == "hg38_noAlt" ]]
 then
     fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
     novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.k15.s2.novoindex
+    chrPrefix='chr'
 elif [[ "$reference" == "1kg" ]]
 then
     fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
     novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta.k15.s2.novoindex
+    chrPrefix=''
 elif [[ "$reference" == "hg19" ]]
 then
     fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/hg19_UCSC.fa
     novoalignRef=none
+    chrPrefix='chr'
 else
     stop Unsupported reference $reference
 fi
