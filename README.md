@@ -5,6 +5,6 @@ Consists of:
 
 * [WGS](WGS)
 * [WES](WES)
-* 
+* [DCUTILS] (DCUTILS) utilities written by @davenomiddlenamecurtis
 
 
