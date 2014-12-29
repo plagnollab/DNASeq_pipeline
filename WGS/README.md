@@ -172,7 +172,7 @@ This generates scripts:
 
 The variant calling is done by [GATK](http://www.broadinstitute.org/partnerships/education/broade/best-practices-variant-calling-gatk) using HaplotypeCaller.
 
-> **Note**: We don't use GenotypeGVCFs anymore because it requires all input BAM files which is too computationally expensive.  Instead joint calling is done using the gvcf files in the next step.
+> **Note**: Joint calling is done using the full set of gvcf files in the next step, not usually done within a batch.
 
 ## Joint variant calling (jointvcf mode)
 
