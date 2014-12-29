@@ -47,7 +47,7 @@ function mode_align() {
     #tail -n +2 $supportFrame | while read code f1 f2
     while read code f1 f2
     do
-        ## only create the script if .bam.bai is not of zero size
+        ## do not create the script if .bam.bai exists and is of non-zero size
         ## unless force is set to yes 
         if [[ ! -s ${output}/${code}_sorted_unique.bam.bai ]] || [[ "$force" == "yes" ]]
         then
@@ -67,7 +67,7 @@ $novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}/$
 rm ${output}/${code}_disc.sam ${output}/${code}.bam
         "   > ${mainScript%.sh}_${code}.sh
         else
-            #echo ${output}/${code}_sorted_unique.bam.bai exists
+            #echo ${output}/${code}_sorted_unique.bam.bai already exists
             rm -f ${mainScript%.sh}_${code}.sh
         fi
     done < <(tail -n +2 $supportFrame)
