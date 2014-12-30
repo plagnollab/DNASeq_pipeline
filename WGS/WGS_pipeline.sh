@@ -84,8 +84,9 @@ function mode_gvcf_unsplit() {
     input=${projectID}/align/data/
     output=${projectID}/gvcf_unsplit/data/
     mkdir -p $output
-    nhours=72
-    vmem=8
+    nhours=${nhours-72}
+    ncores=${ncores-1}
+    vmem=${vmem-8}
     #memory2=6
     # GATK_HaplotypeCaller requires a sequence dictionary
     # Maybe the following should be submitted as interactive long job?
@@ -143,8 +144,9 @@ function mode_gvcf() {
     input=${projectID}/align/data/
     output=${projectID}/gvcf/data/
     mkdir -p $output
-    nhours=24
-    vmem=8
+    nhours=${nhours-24}
+    ncores=${ncores-1}
+    vmem=${vmem-8}
     #script files get regenerated on every run
     rm -f ${projectID}/gvcf/scripts/*.sh
     #memory2=6
@@ -208,8 +210,9 @@ function mode_gvcf() {
 # Take as input the per sample gVCF files and produces the combined gvcf file.
 # Splits by chromosome.
 function mode_combinegvcf() {
-    nhours=12
-    vmem=4
+    nhours=${nhours-12}
+    ncores=${ncores-1}
+    vmem=${vmem-4}
     ##one script per chromosome
     for chrCode in `seq 1 $cleanChrLen`
     do
@@ -236,8 +239,9 @@ function mode_jointgvcf() {
     input=${projectID}/gvcf/data/
     output=${projectID}/jointgvcf/data/
     mkdir -p ${output}
-    nhours=12
-    vmem=4
+    nhours=${nhours-12}
+    ncores=${ncores-1}
+    vmem=${vmem-4}
     rm -f ${projectID}/jointgvcf/scripts/*.sh
     for chrCode in `seq 1 $cleanChrLen`
     do 
