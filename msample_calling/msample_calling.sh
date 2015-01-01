@@ -1,4 +1,10 @@
-iFolder=/scratch2/vyp-scratch2/vincent/GATK/HC/IoO
+#! /bin/bash
+
+# prints to stderr in red
+function error() { >&2 echo -e "\033[31m$*\033[0m"; }
+function stop() { error "$*"; exit 1; }
+try() { "$@" || stop "cannot $*"; }
+
 fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
 bundle=/scratch2/vyp-scratch2/reference_datasets/GATK_bundle
 
@@ -29,15 +35,15 @@ until [ -z "$1" ]; do
         --tmpDir )
 	    shift
 	    tmpDir=$1;;
-	--output )
-	    shift
-	    output=$1;;
 	--genotype )
 	    shift
 	    genotype=$1;;
 	--gVCFlist )
 	    shift
 	    gVCFlist=$1;;
+	--currentUCLex )
+	    shift
+	    currentUCLex=$1;;
         -* )
             echo "Unrecognized option: $1"
             exit 1;;
@@ -48,31 +54,31 @@ done
 
 
 
-if [ ! -d $iFolder ]; then 
-    echo "$iFolder is not a directory"
-    exit
-fi
-
-
-
-
 
 ############## Now options are all set
-gVCFFolder=${iFolder}/gVCF
 output=/scratch2/vyp-scratch2/vincent/GATK/mainset_${currentUCLex}/mainset_${currentUCLex}
+
+### Check format of support file.
+##should accept tab or space as delimiters
+## but does read support tabs and delimeters?
+mustBePath=`head -n1 $gVCFlist | cut -f1 -d' ' | cut -f1`
+mustBeId=`head -n1 $gVCFlist | cut -f2 -d' ' | cut -f2`
+
+if [[ "$mustBePath" != "path" ]]; then stop "The first column of the file $gVCFlist must have the name path $mustBePath"; fi
+if [[ "$mustBeId" != "id" ]]; then stop "The second column of the file $gVCFlist must have the name id $mustBeId"; fi
 
 
 if [[ "$genotype" == "yes" ]]; then
     echo "Running the genotype module"
-
+    
     for chr in `seq 1 22` X; do
 	
 	echo "testing ${output}_chr${chr}.idx"
 	
 	if [ ! -e ${output}_chr${chr}.idx ]; then 
-	
-	    script=cluster/submission/genotype_${chr}.sh
-
+	    
+	    script=cluster/submission/genotype_chr${chr}.sh
+	    
 	    echo "
 #$ -o cluster/out
 #$ -e cluster/error
@@ -92,17 +98,21 @@ $java -Xmx9g -jar $GATK \\
    --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore --annotation MappingQualityRankSumTest --annotation ReadPosRankSumTest --annotation FisherStrand \\
    --dbsnp ${bundle}/dbsnp_137.b37.vcf \\" >> $script
 	    
-	
-	    cat $gVCFlist | while read path id; do
+	    
+	    while read path id; do
 		gVCF=${path}/chr${chr}/${id}.gvcf.gz
-		if [ ! -s $gVCF ]; then echo "Cannot find $gVCF"; fi
-
+		echo "Including $gVCF"
+		
+		if [ ! -s $gVCF ]; then stop "Cannot find $gVCF"; fi
+		if [ ! -s $gVCF.tbi ]; then stop "Cannot find $gVCF.tbi"; fi
+		
 		echo "   --variant $gVCF \\" >> $script
-	    done
+	    done < <(tail -n +2 $gVCFlist)
 	    echo "   -o ${output}_chr${chr}" >> $script
 	    
 	    ls -ltrh $script
 	    qsub $script
 	fi
-    done
+    done 
+    
 fi
