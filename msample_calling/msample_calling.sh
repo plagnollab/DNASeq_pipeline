@@ -75,8 +75,10 @@ mustBeId=`head -n1 $gVCFlist | cut -f2 -d' ' | cut -f2`
 if [[ "$mustBePath" != "path" ]]; then stop "The first column of the file $gVCFlist must have the name path $mustBePath"; fi
 if [[ "$mustBeId" != "id" ]]; then stop "The second column of the file $gVCFlist must have the name id $mustBeId"; fi
 
+memoSmall=5
+
 mainScript=cluster/submission/calling.sh
-## individual scripts of the form cluster/submission/subcript_chr${chr}.sh
+## individual scripts of the form cluster/submission/subscript_chr${chr}.sh
 
 echo "
 #$ -o cluster/out
@@ -94,14 +96,14 @@ LISTCHROMS=(chr 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X )
 
 CHR=\${LISTCHROMS[ \$SGE_TASK_ID ]}
 
-sh cluster/submission/subcript_chr\${CHR}.sh
+sh cluster/submission/subscript_chr\${CHR}.sh
 
 " > $mainScript
 
 
 ######## first clean up the individual files
 for chr in `seq 1 22` X; do
-    if [ -e cluster/submission/subcript_chr${chr}.sh ]; then rm cluster/submission/subcript_chr${chr}.sh; fi
+    if [ -e cluster/submission/subscript_chr${chr}.sh ]; then rm cluster/submission/subscript_chr${chr}.sh; fi
 done
 
 ##################################################
@@ -115,12 +117,12 @@ if [[ "$genotype" == "yes" ]]; then
 
 	    echo "
 
-$java -Xmx9g -jar $GATK \\
+$java -Xmx${memoSmall}g -jar $GATK \\
    -R $fasta \\
    -T GenotypeGVCFs \\
    -L $chr -L $target --interval_set_rule INTERSECTION --interval_padding 100  \\
    --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore --annotation MappingQualityRankSumTest --annotation ReadPosRankSumTest --annotation FisherStrand \\
-   --dbsnp ${bundle}/dbsnp_137.b37.vcf \\" >> cluster/submission/subcript_chr${chr}.sh
+   --dbsnp ${bundle}/dbsnp_137.b37.vcf \\" >> cluster/submission/subscript_chr${chr}.sh
 	    
 	    
 	    while read path id; do
@@ -143,7 +145,6 @@ fi
 if [[ "$recal" == "yes" ]]; then
     echo "Running the recalibration module"
     
-    memoSmall=5
 
     for chr in `seq 1 22` X; do
 	    
