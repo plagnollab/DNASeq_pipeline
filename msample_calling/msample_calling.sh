@@ -24,7 +24,7 @@ recal=no
 gVCFlist=none
 
 maxGaussians=6
-maxGaussiansIndels=6
+maxGaussiansIndels=5
 numBad=1000
 numBadIndels=1000
 
@@ -91,7 +91,7 @@ echo "
 #$ -R y
 #$ -pe smp 1
 #$ -cwd 
-#$ -t 1-23
+#$ -t 22-22
 #$ -tc 23
 
 LISTCHROMS=(chr 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X )
@@ -158,16 +158,46 @@ if [[ "$recal" == "yes" ]]; then
 
 
 echo "
+
+#### extract the indels
+$java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
+     -T SelectVariants \
+     -R $fasta \
+     -V ${output}_chr${chr}.vcf.gz \
+     -selectType INDEL \
+     -selectType MIXED \
+     -o ${output}_chr${chr}_indels.vcf.gz
+
+#### apply the filters for the indels
+$java -jar ${GATK} \
+    -T VariantFiltration \
+    -R $fasta \
+    -V ${output}_chr${chr}_indels.vcf.gz \
+    --filterExpression \"QD < 2.0 || FS > 200.0 || ReadPosRankSum < -20.0\" \
+    --filterName \"FAIL\" \
+    -o ${output}_chr${chr}_indels_filtered.vcf.gz
+
+
+#### extract the SNPs
+$java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
+     -T SelectVariants \
+     -R $fasta \
+     -V ${output}_chr${chr}.vcf.gz \
+     -selectType SNP \
+     -o ${output}_chr${chr}_SNPs.vcf.gz
+
+
+
 ####### first SNPs
-$java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecalibrator -R $fasta --input ${output}_chr${chr}.vcf.gz --maxGaussians ${maxGaussians} --mode SNP \
+$java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecalibrator -R $fasta --input ${output}_chr${chr}_SNPs.vcf.gz --maxGaussians ${maxGaussians} --mode SNP \
              -resource:hapmap,VCF,known=false,training=true,truth=true,prior=15.0 ${bundle}/hapmap_3.3.b37.vcf  \
              -resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 ${bundle}/1000G_omni2.5.b37.vcf \
              -resource:dbsnp,VCF,known=true,training=false,truth=false,prior=8.0 ${bundle}/dbsnp_137.b37.vcf \
              -an QD -an FS -an ReadPosRankSum -an InbreedingCoeff \
              -tranche 100.0 -tranche 99.9 -tranche 99.8 -tranche 99.6 -tranche 99.5 -tranche 99.4 -tranche 99.3 -tranche 99.0 -tranche 98.0 -tranche 97.0 -tranche 90.0 \
              --minNumBadVariants ${numBad} \
-             -recalFile ${output}_chr${chr}_SNP_combrec \
-             -tranchesFile ${output}_chr${chr}_SNP_combtranch \
+             -recalFile ${output}_chr${chr}_SNPs_combrec.recal \
+             -tranchesFile ${output}_chr${chr}_SNPs_combtranch \
              -rscriptFile  ${output}_chr${chr}_recal_plots_snps.R
 
 ${Rscript} ${output}_chr${chr}_recal_plots_snps.R
@@ -175,31 +205,20 @@ ${Rscript} ${output}_chr${chr}_recal_plots_snps.R
 
 #apply_recal
 $java -Xmx${memoSmall}g -jar ${GATK} -T ApplyRecalibration -R $fasta \
-       -o ${output}_chr${chr}_recal_SNP.vcf.gz \
+       -o ${output}_chr${chr}_SNPs_filtered.vcf.gz \
        --ts_filter_level 99.5 \
-       --recal_file ${output}_chr${chr}_SNP_combrec --tranches_file ${output}_chr${chr}_SNP_combtranch --mode SNP \
-       --input ${output}_chr${chr}.vcf.gz \
+       --recal_file ${output}_chr${chr}_SNP_combrec.recal --tranches_file ${output}_chr${chr}_SNP_combtranch --mode SNP \
+       --input ${output}_chr${chr}_SNPs_filtered.vcf.gz \
 
 
+#### Now we merge SNPs and indels
+$java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
+       -T CombineVariants --assumeIdenticalSamples \
+       -R $fasta \
+       -V ${output}_chr${chr}_SNPs_filtered.vcf.gz \
+       -V ${output}_chr${chr}_indels_filtered.vcf.gz \
+       -o ${output}_chr${chr}_filtered.vcf.gz
 
-######## now the indels
-$java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecalibrator -R $fasta --input ${output}_chr${chr}_recal_SNP.vcf.gz --mode INDEL \
-           -resource:mills,known=true,training=true,truth=true,prior=12.0 ${bundle}/Mills_and_1000G_gold_standard.indels.b37.vcf \
-           -an QD -an FS -an ReadPosRankSum -an InbreedingCoeff \
-           -tranche 100.0 -tranche 99.5  -tranche 99.0 -tranche 97.0 -tranche 96.0 -tranche 95.0 -tranche 94.0 -tranche 93.0 -tranche 92.0 -tranche 91.0 -tranche 90.0 \
-           --minNumBadVariants ${numBadIndels} \
-           --maxGaussians ${maxGaussiansIndels} \
-           -recalFile ${output}_chr${chr}_INDEL_combrec \
-           -tranchesFile ${output}_chr${chr}_INDEL_combtranch \
-           -rscriptFile ${output}_chr${chr}_recal_plots_indels.R
-
-${Rscript} ${output}_chr${chr}_recal_plots_indels.R
-
-#apply_recal
-$java -Xmx${memoSmall}g -jar ${GATK} -T ApplyRecalibration -R $fasta \
-         --input ${output}_chr${chr}_recal_SNP.vcf.gz --out ${output}_chr${chr}_recal.vcf.gz \
-         --recal_file ${output}_chr${chr}_INDEL_combrec --tranches_file ${output}_chr${chr}_INDEL_combtranch --mode INDEL \
-         --ts_filter_level 95.0
 
 rm -rf $tmpDir
 
