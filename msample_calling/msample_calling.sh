@@ -23,8 +23,10 @@ genotype=no
 recal=no
 gVCFlist=none
 
-
-maxGaussians=5
+maxGaussians=6
+maxGaussiansIndels=6
+numBad=1000
+numBadIndels=1000
 
 #output=/scratch2/vyp-scratch2/vincent/GATK/cardioset_${currentUCLex}/cardioset_${currentUCLex}
 
