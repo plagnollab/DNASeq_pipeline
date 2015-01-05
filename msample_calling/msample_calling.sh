@@ -219,10 +219,11 @@ $java -Xmx${memoSmall}g -jar ${GATK} -T ApplyRecalibration -R $fasta \
 $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
        -T CombineVariants --assumeIdenticalSamples \
        -R $fasta \
-       -V ${output}_chr${chr}_SNPs_filtered.vcf.gz \
-       -V ${output}_chr${chr}_indels_filtered.vcf.gz \
+       --variant:SNPs ${output}_chr${chr}_SNPs_filtered.vcf.gz \
+       --variant:indels ${output}_chr${chr}_indels_filtered.vcf.gz \
+       -genotypeMergeOptions PRIORITIZE  \
+       -priority SNPs,indels \
        -o ${output}_chr${chr}_filtered.vcf
-
 
 rm -rf $tmpDir
 
