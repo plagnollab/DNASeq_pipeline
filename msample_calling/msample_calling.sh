@@ -173,7 +173,7 @@ $java -jar ${GATK} \
     -T VariantFiltration \
     -R $fasta \
     -V ${output}_chr${chr}_indels.vcf.gz \
-    --filterExpression \"QD < 2.0 || FS > 200.0 || ReadPosRankSum < -20.0\" \
+    --filterExpression \"QD < 2.0 || FS > 50.0 || ReadPosRankSum < -20.0\" \
     --filterName \"FAIL\" \
     -o ${output}_chr${chr}_indels_filtered.vcf.gz
 
@@ -207,8 +207,8 @@ ${Rscript} ${output}_chr${chr}_recal_plots_snps.R
 $java -Xmx${memoSmall}g -jar ${GATK} -T ApplyRecalibration -R $fasta \
        -o ${output}_chr${chr}_SNPs_filtered.vcf.gz \
        --ts_filter_level 99.5 \
-       --recal_file ${output}_chr${chr}_SNP_combrec.recal --tranches_file ${output}_chr${chr}_SNP_combtranch --mode SNP \
-       --input ${output}_chr${chr}_SNPs_filtered.vcf.gz \
+       --recal_file ${output}_chr${chr}_SNPs_combrec.recal --tranches_file ${output}_chr${chr}_SNPs_combtranch --mode SNP \
+       --input ${output}_chr${chr}_SNPs.vcf.gz \
 
 
 #### Now we merge SNPs and indels
