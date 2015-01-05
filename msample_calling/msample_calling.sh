@@ -24,9 +24,10 @@ recal=no
 gVCFlist=none
 
 maxGaussians=6
-maxGaussiansIndels=5
+#maxGaussiansIndels=5
 numBad=1000
-numBadIndels=1000
+#numBadIndels=1000
+GQ=20
 
 #output=/scratch2/vyp-scratch2/vincent/GATK/cardioset_${currentUCLex}/cardioset_${currentUCLex}
 
@@ -48,6 +49,9 @@ until [ -z "$1" ]; do
 	--recal )
 	    shift
 	    recal=$1;;
+	--annovar )
+	    shift
+	    annovar=$1;;
 	--gVCFlist )
 	    shift
 	    gVCFlist=$1;;
@@ -208,7 +212,7 @@ $java -Xmx${memoSmall}g -jar ${GATK} -T ApplyRecalibration -R $fasta \
        -o ${output}_chr${chr}_SNPs_filtered.vcf.gz \
        --ts_filter_level 99.5 \
        --recal_file ${output}_chr${chr}_SNPs_combrec.recal --tranches_file ${output}_chr${chr}_SNPs_combtranch --mode SNP \
-       --input ${output}_chr${chr}_SNPs.vcf.gz \
+       --input ${output}_chr${chr}_SNPs.vcf.gz
 
 
 #### Now we merge SNPs and indels
@@ -217,10 +221,12 @@ $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
        -R $fasta \
        -V ${output}_chr${chr}_SNPs_filtered.vcf.gz \
        -V ${output}_chr${chr}_indels_filtered.vcf.gz \
-       -o ${output}_chr${chr}_filtered.vcf.gz
+       -o ${output}_chr${chr}_filtered.vcf
 
 
 rm -rf $tmpDir
+
+rm ${output}_chr${chr}_indels.vcf.gz ${output}_chr${chr}_SNPs.vcf.gz ${output}_chr${chr}_SNPs_filtered.vcf.gz
 
 " >> $script
 	
@@ -229,6 +235,29 @@ rm -rf $tmpDir
     
 fi
 
+
+if [[ "$annovar" == "yes" ]]; then
+
+
+    for chr in `seq 1 22` X; do
+	
+	script=cluster/submission/subscript_chr${chr}.sh
+	
+	echo "
+
+cut -f1-8 ${output}_chr${chr}_filtered.vcf > ${output}_for_annovar.vcf
+
+/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/convert2annovar.pl --allallele -format vcf4 --includeinfo ${output}_for_annovar.vcf > ${output}_db
+
+/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/summarize_annovar_VP.pl -ver1000g 1000g2012apr -verdbsnp 137 -veresp 6500si -alltranscript -buildver hg19 --genetype ensgene --remove ${output}_db /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/humandb_hg19/
+
+perl ~/Software/pipeline/GATK_v2/custom_filtering.pl ${output}_chr${chr}_filtered.vcf ${output}_recal_filtered2.vcf ${GQ}
+
+python /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/annovar_vcf_combine_VP.py ${output}_recal_filtered2.vcf ${output}_db.exome_summary.csv ${output}_exome_table.csv
+
+" >> $script
+    done
+fi
 
 
 ##############################
