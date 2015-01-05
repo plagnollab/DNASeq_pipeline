@@ -1,9 +1,0 @@
-See http://www.ensembl.org/info/docs/tools/vep/script/vep_other.html#assembly
-
-If using Build 37:
-
---ASSEMBLY GRCh37 \
---port 3337
-
-If using Build 38:
---ASSEMBLY GRCh38
