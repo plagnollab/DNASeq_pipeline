@@ -52,6 +52,9 @@ until [ -z "$1" ]; do
 	--annovar )
 	    shift
 	    annovar=$1;;
+	--convertToR )
+	    shift
+	    convertToR=$1;;
 	--gVCFlist )
 	    shift
 	    gVCFlist=$1;;
