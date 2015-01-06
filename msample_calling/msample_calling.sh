@@ -261,6 +261,20 @@ python /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/annovar_vcf_combi
 fi
 
 
+if [[ "$convertToR" == "yes" ]]; then
+    
+    if [ ! -e ${output}/snpStats ]; then mkdir ${output}/snpStats; fi
+
+    for chr in `seq 1 22` X; do
+	
+	script=cluster/submission/subscript_chr${chr}.sh
+	
+	echo "
+perl /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/make_matrix_calls.pl ${output}_exome_table.csv ${output}
+
+$Rbin CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} /cluster/project8/vyp/vincent/Software/pipeline/msample_calling/convert_to_R.R cluster/R/convert_to_R_chr${chr}.out
+" >> $Rscript
+
 ##############################
 for chr in `seq 1 22` X; do
     ls -ltrh cluster/submission/subscript_chr${chr}.sh
