@@ -274,7 +274,7 @@ if [[ "$convertToR" == "yes" ]]; then
 	script=cluster/submission/subscript_chr${chr}.sh
 	
 	echo "
-perl /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/make_matrix_calls.pl ${output}_exome_table.csv ${output}
+perl /cluster/project8/vyp/vincent/Software/pipeline/msample_calling/make_matrix_calls.pl ${output}_exome_table.csv ${output} $chr
 
 $Rbin CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} /cluster/project8/vyp/vincent/Software/pipeline/msample_calling/convert_to_R.R cluster/R/convert_to_R_chr${chr}.out
 " >> $script

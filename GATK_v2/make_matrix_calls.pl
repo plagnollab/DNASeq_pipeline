@@ -81,8 +81,8 @@ if ($csv->parse($_)) {
 		}
 		
 		print "Now writing the calls to $callFile\n";
-		open (OUT, " > $callFile") or die;
-		open (DEPTH, " > $depthFile") or die;
+		open (OUT, " > $callFile") or die $callFile;
+		open (DEPTH, " > $depthFile") or die $depthFile;
 		open (ROW, " > $rownameFile") or die;
 		open (ANN, " > $annotationFile") or die;
 		

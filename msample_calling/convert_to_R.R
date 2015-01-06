@@ -34,12 +34,12 @@ OneKG_ranges <- GRanges(seqnames = Rle(onekgpositions$CHROM), IRanges(onekgposit
 matrix.calls.snpStats.all <- NULL
 first <- TRUE
 
-message('Preparing data for chromosome ', chrom)
+message('Preparing data for chromosome ', chromosome)
 
-calls.file <- paste(root, '_snpStats/calls_chr', chrom, '.tab', sep = '')
-depth.file <- paste(root, '_snpStats/depth_chr', chrom, '.tab', sep = '')
-rowname.file <- paste(root, '_snpStats/rowname_chr', chrom, '.tab', sep = '')
-annotations.file <- paste(root, '_snpStats/annotations_chr', chrom, '.csv', sep = '')
+calls.file <- paste(root, '_snpStats/calls_chr', chromosome, '.tab', sep = '')
+depth.file <- paste(root, '_snpStats/depth_chr', chromosome, '.tab', sep = '')
+rowname.file <- paste(root, '_snpStats/rowname_chr', chromosome, '.tab', sep = '')
+annotations.file <- paste(root, '_snpStats/annotations_chr', chromosome, '.csv', sep = '')
 
 if (file.exists(rowname.file) && file.exists(calls.file)) {
   variant.names <- scan(rowname.file, what = character())
@@ -68,7 +68,7 @@ if (file.exists(rowname.file) && file.exists(calls.file)) {
                          ncol = length(sample.names),
                          nrow = n.calls)
   
-  save(list = c('matrix.depth', 'annotations.snpStats', 'matrix.calls.snpStats'), file = paste(root, '_snpStats/chr', chrom, '_snpStats.RData', sep = ''))
+  save(list = c('matrix.depth', 'annotations.snpStats', 'matrix.calls.snpStats'), file = paste(root, '_snpStats/chr', chromosome, '_snpStats.RData', sep = ''))
   
   print(table(annotations.snpStats$FILTER))
   #good.pos <- unique(overlap$queryHits)
