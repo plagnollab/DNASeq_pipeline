@@ -9,6 +9,7 @@ fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g
 bundle=/scratch2/vyp-scratch2/reference_datasets/GATK_bundle
 
 Rscript=/share/apps/R-3.1.0/bin/Rscript
+Rbin=/share/apps/R-3.1.0/bin/R
 
 java=/share/apps/jdk1.7.0_45/bin/java
 tmpDir=/scratch0/vyp
@@ -266,7 +267,7 @@ fi
 
 if [[ "$convertToR" == "yes" ]]; then
     
-    if [ ! -e ${output}/snpStats ]; then mkdir ${output}/snpStats; fi
+    if [ ! -e ${output}_snpStats ]; then mkdir ${output}_snpStats; echo "Created ${output}_snpStats"; fi
 
     for chr in `seq 1 22` X; do
 	
@@ -276,7 +277,10 @@ if [[ "$convertToR" == "yes" ]]; then
 perl /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/make_matrix_calls.pl ${output}_exome_table.csv ${output}
 
 $Rbin CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} /cluster/project8/vyp/vincent/Software/pipeline/msample_calling/convert_to_R.R cluster/R/convert_to_R_chr${chr}.out
-" >> $Rscript
+" >> $script
+	
+    done
+fi
 
 ##############################
 for chr in `seq 1 22` X; do
