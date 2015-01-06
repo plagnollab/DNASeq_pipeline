@@ -15,12 +15,11 @@ If using Build 38:
 Script to convert multiallelic variants to multiple variants each with a single alternate allele
 (note that quality score information is not retained). This reads in a gz vcf.
 ```
-/cluster/project8/vyp/AdamLevine/scripts/multi_to_single_gvcf.py
+multi_to_single_gvcf.py
  ```
- 
 Script to run VEP:
 ```
-run_VEP.sh
+bash run_VEP.sh
 ```
 You will see that this script points to VEP in my home directory which is obviously not going to work.
 In addition I was using version 75. They are now up to version 78 but we need to check that you can still use this with Build 37. You will see that I ask it for the effect of the variant on every possible Ensembl transcript.
@@ -30,12 +29,12 @@ We need to review the information here http://www.ensembl.org/info/docs/tools/ve
 After running the VEP I use this script to format the results.
 
 ```
-extract_vep_vcf_v2.py
+extract_VEP.py
 ```
 
 Like this:
 ```sh
-python extract_vep_vcf_v2.py groups.txt VEP_out.vcf > Formatted.txt
+python extract_VEP.py groups.txt VEP_out.vcf > Formatted.txt
 ```
 
 This also extracts the effects for the correct allele (e.g. if there are C>T and C>A allele frequency annotations,
