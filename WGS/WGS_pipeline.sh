@@ -289,6 +289,37 @@ function mode_jointgvcf() {
 }
 
 
+####################### GATK CombineGVCFs   ##################################################################################
+### 
+### 
+### 
+function mode_CombineGVCFs() {
+    nhours=${nhours-30}
+    ncores=${ncores-1}
+    vmem=${vmem-9}
+    tc=${tc-80}
+    rm -f ${projectID}/CombinedGVCFs/scripts/*.sh
+    if [[ ! -f $supportFile ]]
+    then
+        stop "support file does not exists"
+    fi
+    while IFS=',' read -r chrCleanCode input
+    do
+       #echo $chrCode $output
+       VARIANTS=`echo --variant $input | sed 's/,/ --variant /g'`
+       echo "
+       $java -Djava.io.tmpdir=${tempFolder} -Xmx7g -jar $GATK \
+       -T CombineGVCFs \
+       -R $fasta \
+       -L ${chrPrefix}${chrCleanCode} \
+       -o ${output}/chr${chrCleanCode}.gvcf.gz \
+       $VARIANTS
+       " > ${mainScript%.sh}_chr${chrCleanCode}.sh
+    done < <(tail -n+2 $supportFile) 
+}
+
+
+
 
 
 ###
@@ -298,6 +329,7 @@ function usage() {
     echo "--extraID : writes to the ReadGroup of the aligner "
     echo "--tempFolder : temp directory for the java picard code"
     echo "--supportFrame : critical to specify the output file"
+    echo "--supportFile : for joining gVCF files"
     echo "--tparam : novoalign -t argument "
     echo "--projectID : directory under which all processing happens"
     echo "--reference"
@@ -337,6 +369,9 @@ do
     --supportFrame )    ### critical to specify the output file
         shift
         supportFrame=$1;;
+    --supportFile )    
+        shift
+        supportFile=$1;;
     --aligner-tparam )
         shift
         tparam=$1;;
@@ -461,12 +496,17 @@ scratch=1
 ### Check format of support file.
 ##should accept tab or space as delimiters
 ## but does read support tabs and delimeters?
-mustBeCode=`head -n1 $supportFrame | cut -f1 -d' ' | cut -f1`  
-mustBeF1=`head -n1 $supportFrame | cut -f2 -d' ' | cut -f2`
-mustBeF2=`head -n1 $supportFrame | cut -f3 -d' ' | cut -f3`
-if [[ "$mustBeCode" != "code" ]]; then stop "The first column of the file $supportFrame must have the name code $mustBeCode"; fi
-if [[ "$mustBeF1" != "f1" ]]; then stop "The second column of the file $supportFrame must have the name f1"; fi
-if [[ "$mustBeF2" != "f2" ]]; then stop "The third column of the file $supportFrame must have the name f2"; fi
+if [[ "$mode" != "CombineGVCFs" ]]
+then
+    mustBeCode=`head -n1 $supportFrame | cut -f1 -d' ' | cut -f1`  
+    mustBeF1=`head -n1 $supportFrame | cut -f2 -d' ' | cut -f2`
+    mustBeF2=`head -n1 $supportFrame | cut -f3 -d' ' | cut -f3`
+    if [[ "$mustBeCode" != "code" ]]; then stop "The first column of the file $supportFrame must have the name code $mustBeCode"; fi
+    if [[ "$mustBeF1" != "f1" ]]; then stop "The second column of the file $supportFrame must have the name f1"; fi
+    if [[ "$mustBeF2" != "f2" ]]; then stop "The third column of the file $supportFrame must have the name f2"; fi
+else
+    supportFrame=$supportFile
+fi
 
 ############################### creates folders required for qsub and writing logs
 mkdir -p $projectID
@@ -478,6 +518,7 @@ echo "
 > ${projectID}/README 
 
 mkdir -p ${projectID}/$mode/data ${projectID}/$mode/scripts ${projectID}/$mode/out ${projectID}/$mode/err 
+output=${projectID}/$mode/data
 mainScript=${projectID}/$mode/scripts/$mode.sh
 # call function (see above)
 echo mode_${mode}
@@ -499,7 +540,7 @@ echo "
 #$ -l tmem=${vmem}G,h_vmem=${vmem}G
 #$ -l h_rt=${nhours}:0:0
 #$ -t 1-${njobs}
-#$ -tc 25
+#$ -tc ${tc-25}
 set -u
 set -x
 mkdir -p ${projectID}/${mode}/scripts ${projectID}/${mode}/data ${projectID}/${mode}/err ${projectID}/${mode}/out
