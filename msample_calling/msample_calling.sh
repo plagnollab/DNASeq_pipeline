@@ -250,15 +250,15 @@ if [[ "$annovar" == "yes" ]]; then
 	
 	echo "
 
-cut -f1-8 ${output}_chr${chr}_filtered.vcf > ${output}_for_annovar.vcf
+cut -f1-8 ${output}_chr${chr}_filtered.vcf > ${output}_chr${chr}_for_annovar.vcf
 
-/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/convert2annovar.pl --allallele -format vcf4 --includeinfo ${output}_chr${chr}_for_annovar.vcf > ${output}_db
+/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/convert2annovar.pl --allallele -format vcf4 --includeinfo ${output}_chr${chr}_for_annovar.vcf > ${output}_chr${chr}.db
 
-/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/summarize_annovar_VP.pl -ver1000g 1000g2012apr -verdbsnp 137 -veresp 6500si -alltranscript -buildver hg19 --genetype ensgene --remove ${output}_${chr}_db /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/humandb_hg19/
+/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/summarize_annovar_VP.pl -ver1000g 1000g2012apr -verdbsnp 137 -veresp 6500si -alltranscript -buildver hg19 --genetype ensgene --remove ${output}_chr${chr}_db /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/humandb_hg19/
 
-perl ~/Software/pipeline/GATK_v2/custom_filtering.pl ${output}_chr${chr}_filtered.vcf ${output}_${chr}_recal_filtered2.vcf ${GQ}
+perl ~/Software/pipeline/GATK_v2/custom_filtering.pl ${output}_chr${chr}_filtered.vcf ${output}_chr${chr}_recal_filtered2.vcf ${GQ}
 
-python /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/annovar_vcf_combine_VP.py ${output}_${chr}_recal_filtered2.vcf ${output}_${chr}_db.exome_summary.csv ${output}_${chr}_exome_table.csv
+python /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/annovar_vcf_combine_VP.py ${output}_chr${chr}_recal_filtered2.vcf ${output}_chr${chr}_db.exome_summary.csv ${output}_chr${chr}_exome_table.csv
 
 " >> $script
     done
@@ -274,7 +274,7 @@ if [[ "$convertToR" == "yes" ]]; then
 	script=cluster/submission/subscript_chr${chr}.sh
 	
 	echo "
-perl /cluster/project8/vyp/vincent/Software/pipeline/msample_calling/make_matrix_calls.pl ${output}_${chr}exome_table.csv ${output}_${chr} $chr
+perl /cluster/project8/vyp/vincent/Software/pipeline/msample_calling/make_matrix_calls.pl ${output}_chr${chr}_exome_table.csv ${output} $chr
 
 $Rbin CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} /cluster/project8/vyp/vincent/Software/pipeline/msample_calling/convert_to_R.R cluster/R/convert_to_R_chr${chr}.out
 " >> $script
