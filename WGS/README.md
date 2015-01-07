@@ -164,11 +164,7 @@ Finally [novosort]() is ran on the BAM.
 The default output folder is:
 > aligned
 
-## Variant calling (gvcf mode)
-
-This generates scripts:
-- cluster/submission/makeVCF.sh
-- cluster/submission/makeVCF_table.sh
+## Single sample variant calling
 
 The variant calling is done by [GATK](http://www.broadinstitute.org/partnerships/education/broade/best-practices-variant-calling-gatk) using [HaplotypeCaller](https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php).
 
@@ -196,10 +192,19 @@ ch ALT allele, in the same order as listed">
 
 > **Note**: Joint calling is done using the full set of gvcf files in the next step, not usually done within a batch.
 
+## Merging of samples
+
+This is done by CombineGVCFs
+
 ## Joint variant calling (jointvcf mode)
 
-This generates scripts:
+Single samples VCFs called by HaplotypeCaller are combined per chromosome using GenotypeGVCFs.
+After this step, the generated joint VCFs cannot be merged using CombineGVCF.
 
+
+## Variant selection, filtering and recalibration
+
+All these steps are handled by the msample script.
 
 ## Dependencies
 
