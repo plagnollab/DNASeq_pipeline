@@ -1,10 +1,12 @@
 #!/bin/bash
 
 ####SET CHROMOSOME
-chr=1
+#ch1r=1
+chr=$2
 
 ####INPUT FILE
-vcfin=/home/zchads1/cluster/UCL-exomes_v2/variants/Levine_${chr}_single.vcf
+#vcfin=/home/zchads1/cluster/UCL-exomes_v2/variants/Levine_${chr}_single.vcf
+vcfin=$1
 
 ####CONFIGURE SOFTWARE SHORTCUTS AND PATHS
 vep=/cluster/project8/vyp/AdamLevine/software/ensembl/src/ensembl-tools/scripts/variant_effect_predictor/variant_effect_predictor.pl
@@ -15,6 +17,7 @@ PERL5LIB=${PERL5LIB}:/cluster/project8/vyp/AdamLevine/software/ensembl/src/ensem
 PERL5LIB=${PERL5LIB}:/cluster/project8/vyp/AdamLevine/software/ensembl/src/ensembl-compara/modules
 PERL5LIB=${PERL5LIB}:/cluster/project8/vyp/AdamLevine/software/ensembl/src/ensembl-variation/modules
 PERL5LIB=${PERL5LIB}:/cluster/project8/vyp/AdamLevine/software/ensembl/src/ensembl-funcgen/modules
+PERL5LIB=${PERL5LIB}:/cluster/project8/vyp/AdamLevine/software/ensembl/Plugins
 export PERL5LIB
 export PATH=$PATH:/cluster/project8/vyp/vincent/Software/tabix-0.2.5/
 condel_config=/cluster/project8/vyp/AdamLevine/software/ensembl/Plugins/config/Condel/config
@@ -44,35 +47,40 @@ okgASN=${annotations_dir}/1kg/results/1KG_ASN-AF_${chr}.vcf.gz
 ####ADD ExAC [ACTION!]
 ##Prepare Build 38 allele frequency annotations [ACTION!]
 
-####RUN VEP
-$perl5142 $vep \
---ASSEMBLY GRCh37 \ ###For Build 37, use GRCh38 for Build 38
---port 3337 \ ###For Build 37, remove for Build 38
---cache \
---dir_cache $dir_cache \
---input_file $vcfin \
---format vcf \
---sift b \
---polyphen b \
---symbol \
---coding_only \
---canonical \
---check_existing \
---check_alleles \
---plugin Carol \
---plugin Condel,${condel_config},b \
---custom $cadd,CADD,vcf,exact \
---custom $EA,EAf,vcf,exact \
---custom $AA,AAf,vcf,exact \
---custom $VP,VPf,vcf,exact \
---custom $OneKG,ONEKGf,vcf,exact \
---custom $OneKGceugbr,CEUBGRf,vcf,exact \
---custom $okg,okg,vcf,exact \
---custom $okgEUR,okgEUR,vcf,exact \
---custom $okgAMR,okgAMR,vcf,exact \
---custom $okgAFR,okgAFR,vcf,exact \
---custom $okgASN,okgASN,vcf,exact \
---stats_text \
---vcf \
---output_file VEP_${chr}.vcf \
---no_progress 
+#####RUN VEP
+#$perl5142 $vep \
+#--ASSEMBLY GRCh37 \ 
+####For Build 37, use GRCh38 for Build 38
+#--port 3337 \
+ ####For Build 37, remove for Build 38
+#--cache \
+#--dir_cache $dir_cache \
+#--input_file $vcfin \
+#--format vcf \
+#--sift b \
+#--polyphen b \
+#--symbol \
+#--coding_only \
+#--canonical \
+#--check_existing \
+#--check_alleles \
+#--plugin Carol \
+#--plugin Condel,${condel_config},b \
+#--custom $cadd,CADD,vcf,exact \
+#--custom $EA,EAf,vcf,exact \
+#--custom $AA,AAf,vcf,exact \
+#--custom $VP,VPf,vcf,exact \
+#--custom $OneKG,ONEKGf,vcf,exact \
+#--custom $OneKGceugbr,CEUBGRf,vcf,exact \
+#--custom $okg,okg,vcf,exact \
+#--custom $okgEUR,okgEUR,vcf,exact \
+#--custom $okgAMR,okgAMR,vcf,exact \
+#--custom $okgAFR,okgAFR,vcf,exact \
+#--custom $okgASN,okgASN,vcf,exact \
+#--stats_text \
+#--vcf \
+#--output_file VEP_${chr}.vcf \
+#--no_progress 
+#
+
+$perl5142 $vep --ASSEMBLY GRCh37  --port 3337 --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol --coding_only --canonical --check_existing --check_alleles --plugin Carol --plugin Condel,${condel_config},b --custom $cadd,CADD,vcf,exact --custom $EA,EAf,vcf,exact --custom $AA,AAf,vcf,exact --custom $VP,VPf,vcf,exact --custom $OneKG,ONEKGf,vcf,exact --custom $OneKGceugbr,CEUBGRf,vcf,exact --custom $okg,okg,vcf,exact --custom $okgEUR,okgEUR,vcf,exact --custom $okgAMR,okgAMR,vcf,exact --custom $okgAFR,okgAFR,vcf,exact --custom $okgASN,okgASN,vcf,exact --stats_text --vcf --output_file VEP_${chr}.vcf --no_progress 
