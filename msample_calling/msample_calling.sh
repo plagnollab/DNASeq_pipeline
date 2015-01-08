@@ -95,7 +95,7 @@ echo "
 #$ -e cluster/error
 #$ -S /bin/bash
 #$ -l h_vmem=7.9G,tmem=7.9G
-#$ -l h_rt=72:0:0
+#$ -l h_rt=96:0:0
 #$ -R y
 #$ -pe smp 1
 #$ -cwd 
@@ -162,10 +162,12 @@ if [[ "$recal" == "yes" ]]; then
 
 	#### creates the tmpDir if needed
 	tmpDir=/scratch0/GATK_chr${chr}
-	if [ ! -e $tmpDir ]; then mkdir $tmpDir; fi
+
 
 
 echo "
+
+if [ ! -e $tmpDir ]; then mkdir $tmpDir; fi
 
 #### extract the indels
 $java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
@@ -177,7 +179,7 @@ $java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
      -o ${output}_chr${chr}_indels.vcf.gz
 
 #### apply the filters for the indels
-$java -jar ${GATK} \
+$java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
     -T VariantFiltration \
     -R $fasta \
     -V ${output}_chr${chr}_indels.vcf.gz \
