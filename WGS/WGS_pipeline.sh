@@ -510,7 +510,8 @@ fi
 
 ############################### creates folders required for qsub and writing logs
 mkdir -p $projectID
-#cp -f $supportFrame $projectID/
+#copy the supportFrame to a known location
+cp -f $supportFrame $projectID/
 supportFrame=${projectID}/`basename $supportFrame`
 touch ${projectID}/README
 echo "
