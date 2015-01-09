@@ -6,7 +6,7 @@ set -e
 # this forces all variables to be defined
 set -u
 # for debugging prints out every line before executing it
-#set -x
+set -x
 
 # This script does the following three tasks:
 # 1) Run alignment to generate BAM and SAM files.
@@ -319,6 +319,34 @@ function mode_CombineGVCFs() {
 }
 
 
+####################### VEP annotation      ##################################################################################
+### 
+### 
+### 
+function mode_annotation() {
+    input=${projectID}/jointgvcf/data/
+    output=${projectID}/annotation/data/
+    mkdir -p ${output}
+    nhours=${nhours-12}
+    ncores=${ncores-1}
+    vmem=${vmem-2}
+    rm -f ${projectID}/annotation/scripts/*.sh
+    for chrCode in `seq 1 $cleanChrLen`
+    do
+        INPUT=${input}/jointgvcf_chr${chrCode}.vcf.gz 
+        ##if the index is missing, or we use the "force" option
+        [[ ! -s ${INPUT} ]] && error "${INPUT} MISSING"
+       #echo $chrCode $output
+       DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../annotation/
+cat >${mainScript%.sh}_chr${chrCode}.sh << EOL
+#expect the chromosome to be part of the filename
+python $DIR/multiallele_to_single_gvcf.py $INPUT > ${output}/annotation_chr${chrCode}-single.vcf
+bash $DIR/run_VEP.sh ${output}/annotation_chr${chrCode}-single.vcf $chrCode > ${output}/annotation_chr${chrCode}-VEP.vcf
+#first arg is groups.txt file
+python $DIR/extract_VEP.py <(cat $INPUT | zgrep -m1 '^#CHROM' | cut -f10- | tr '\t' '\n' | awk '{print("ALL", \$1)}') ${output}/annotation_chr${chrCode}-VEP.vcf > ${output}/annotation_chr${chrCode}-VEP-final.vcf
+EOL
+   done
+}
 
 
 
@@ -489,10 +517,6 @@ do
     fi
 done
 
-
-#what is the purpose of scratch?
-scratch=1
-
 ### Check format of support file.
 ##should accept tab or space as delimiters
 ## but does read support tabs and delimeters?
@@ -510,9 +534,10 @@ fi
 
 ############################### creates folders required for qsub and writing logs
 mkdir -p $projectID
-#copy the supportFrame to a known location
-cp -f $supportFrame $projectID/
-supportFrame=${projectID}/`basename $supportFrame`
+#symlink the supportFrame to a known location
+supportFrameLink=${projectID}/`basename $supportFrame`
+ln -sf `pwd -P`/$supportFrame  $supportFrameLink
+supportFrame=$supportFrameLink
 touch ${projectID}/README
 echo "
 "
@@ -537,7 +562,7 @@ echo "
 #$ -V
 #$ -R y 
 #$ -pe smp ${ncores}
-#$ -l scr=${scratch}G
+#$ -l scr=${scratch-1}G
 #$ -l tmem=${vmem}G,h_vmem=${vmem}G
 #$ -l h_rt=${nhours}:0:0
 #$ -t 1-${njobs}
