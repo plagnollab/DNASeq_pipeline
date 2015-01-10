@@ -339,10 +339,8 @@ function mode_annotation() {
        #echo $chrCode $output
        DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../annotation/
 cat >${mainScript%.sh}_chr${chrCode}.sh << EOL
-#expect the chromosome to be part of the filename
 python $DIR/multiallele_to_single_gvcf.py $INPUT > ${output}/annotation_chr${chrCode}-single.vcf
-bash $DIR/run_VEP.sh ${output}/annotation_chr${chrCode}-single.vcf $chrCode > ${output}/annotation_chr${chrCode}-VEP.vcf
-#first arg is groups.txt file
+bash $DIR/run_VEP.sh ${output}/annotation_chr${chrCode}-single.vcf $chrCode ${output}/VEP_${chrCode}.vcf > ${output}/annotation_chr${chrCode}-VEP.vcf
 python $DIR/extract_VEP.py <(cat $INPUT | zgrep -m1 '^#CHROM' | cut -f10- | tr '\t' '\n' | awk '{print("ALL", \$1)}') ${output}/annotation_chr${chrCode}-VEP.vcf > ${output}/annotation_chr${chrCode}-VEP-final.vcf
 EOL
    done
