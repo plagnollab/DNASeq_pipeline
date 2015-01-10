@@ -1,12 +1,13 @@
 #!/bin/bash
 
-####SET CHROMOSOME
-#ch1r=1
-chr=$2
-
 ####INPUT FILE
 #vcfin=/home/zchads1/cluster/UCL-exomes_v2/variants/Levine_${chr}_single.vcf
 vcfin=$1
+####SET CHROMOSOME
+#ch1r=1
+chr=$2
+#out dir
+outputfile=$3
 
 ####CONFIGURE SOFTWARE SHORTCUTS AND PATHS
 vep=/cluster/project8/vyp/AdamLevine/software/ensembl/src/ensembl-tools/scripts/variant_effect_predictor/variant_effect_predictor.pl
@@ -83,4 +84,4 @@ okgASN=${annotations_dir}/1kg/results/1KG_ASN-AF_${chr}.vcf.gz
 #--no_progress 
 #
 
-$perl5142 $vep --ASSEMBLY GRCh37  --port 3337 --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol --coding_only --canonical --check_existing --check_alleles --plugin Carol --plugin Condel,${condel_config},b --custom $cadd,CADD,vcf,exact --custom $EA,EAf,vcf,exact --custom $AA,AAf,vcf,exact --custom $VP,VPf,vcf,exact --custom $OneKG,ONEKGf,vcf,exact --custom $OneKGceugbr,CEUBGRf,vcf,exact --custom $okg,okg,vcf,exact --custom $okgEUR,okgEUR,vcf,exact --custom $okgAMR,okgAMR,vcf,exact --custom $okgAFR,okgAFR,vcf,exact --custom $okgASN,okgASN,vcf,exact --stats_text --vcf --output_file VEP_${chr}.vcf --no_progress 
+$perl5142 $vep --ASSEMBLY GRCh37  --port 3337 --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol --coding_only --canonical --check_existing --check_alleles --plugin Carol --plugin Condel,${condel_config},b --custom $cadd,CADD,vcf,exact --custom $EA,EAf,vcf,exact --custom $AA,AAf,vcf,exact --custom $VP,VPf,vcf,exact --custom $OneKG,ONEKGf,vcf,exact --custom $OneKGceugbr,CEUBGRf,vcf,exact --custom $okg,okg,vcf,exact --custom $okgEUR,okgEUR,vcf,exact --custom $okgAMR,okgAMR,vcf,exact --custom $okgAFR,okgAFR,vcf,exact --custom $okgASN,okgASN,vcf,exact --stats_text --vcf  --no_progress --output_file $outputfile
