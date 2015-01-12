@@ -217,13 +217,12 @@ function mode_combinegvcf() {
     for chrCode in `seq 1 $cleanChrLen`
     do
         chrCleanCode=${cleanChr[ $chrCode ]}
-        VARIANTS=`echo aligned/*/*_chr${chrCode}.gvcf.gz | xargs -n1 | xargs -I f echo -n ' --variant' f`
+        VARIANTS=`echo aligned/*/*_chr${chrCleanCode}.gvcf.gz | xargs -n1 | xargs -I f echo -n ' --variant' f`
         echo "
-        $java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK \
-        -T CombineGVCFs \
+        $CombineGVCFs \
         -R $fasta \
         -L ${chrPrefix}${chrCleanCode} \
-        -o ${mode}/chr${chr}.gvcf.gz \
+        -o ${mode}/chr${chrCleanCode}.gvcf.gz \
         $VARIANTS
         " > ${mainScript%.sh}_chr${chrCode}.sh
     done
@@ -461,6 +460,7 @@ fi
 GATK=${Software}/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
 #$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar ${GATK}
 HaplotypeCaller="$java -Djava.io.tmpdir=${tempFolder} -Xmx5g -jar $GATK -T HaplotypeCaller"
+CombineGVCFs="$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK -T CombineGVCFs"
 novoalign=${Software}/novocraft3/novoalign
 novosort=${Software}/novocraft3/novosort
 #novoalign=/cluster/project8/vyp/pontikos/Software/novocraft/novoalign
