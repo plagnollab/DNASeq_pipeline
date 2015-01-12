@@ -461,10 +461,10 @@ fi
 GATK=${Software}/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
 #$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar ${GATK}
 HaplotypeCaller="$java -Djava.io.tmpdir=${tempFolder} -Xmx5g -jar $GATK -T HaplotypeCaller"
-#novoalign=${Software}/novocraft3/novoalign
-#novosort=${Software}/novocraft3/novosort
-novoalign=/cluster/project8/vyp/pontikos/Software/novocraft/novoalign
-novosort=/cluster/project8/vyp/pontikos/Software/novocraft/novosort
+novoalign=${Software}/novocraft3/novoalign
+novosort=${Software}/novocraft3/novosort
+#novoalign=/cluster/project8/vyp/pontikos/Software/novocraft/novoalign
+#novosort=/cluster/project8/vyp/pontikos/Software/novocraft/novosort
 samblaster=${Software}/samblaster/samblaster
 ##samtools
 samtools=${Software}/samtools-1.1/samtools
