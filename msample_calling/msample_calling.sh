@@ -8,8 +8,8 @@ try() { "$@" || stop "cannot $*"; }
 fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
 bundle=/scratch2/vyp-scratch2/reference_datasets/GATK_bundle
 
-Rscript=/share/apps/R-3.1.0/bin/Rscript
-Rbin=/share/apps/R-3.1.0/bin/R
+Rscript=/cluster/project8/vyp/vincent/Software/R-3.1.2/bin/Rscript
+Rbin=/cluster/project8/vyp/vincent/Software/R-3.1.2/bin/R
 
 java=/share/apps/jdk1.7.0_45/bin/java
 tmpDir=/scratch0/vyp
@@ -86,6 +86,12 @@ if [[ "$mustBePath" != "path" ]]; then stop "The first column of the file $gVCFl
 if [[ "$mustBeId" != "id" ]]; then stop "The second column of the file $gVCFlist must have the name id $mustBeId"; fi
 
 memoSmall=5
+memo=7.9
+
+
+if [[ "$convertToR" == "yes" ]]; then memo=15.9; fi
+
+
 
 mainScript=cluster/submission/calling.sh
 ## individual scripts of the form cluster/submission/subscript_chr${chr}.sh
@@ -94,7 +100,7 @@ echo "
 #$ -o cluster/out
 #$ -e cluster/error
 #$ -S /bin/bash
-#$ -l h_vmem=7.9G,tmem=7.9G
+#$ -l h_vmem=${memo}G,tmem=${memo}G
 #$ -l h_rt=96:0:0
 #$ -R y
 #$ -pe smp 1
@@ -157,15 +163,17 @@ if [[ "$recal" == "yes" ]]; then
     
 
     for chr in `seq 1 22` X; do
-	    
+	
 	script=cluster/submission/subscript_chr${chr}.sh
-
+	
+	if [[ ! -s ${output}_chr${chr}_filtered.vcf || "$force" == "yes" ]]; then 
+	    
 	#### creates the tmpDir if needed
-	tmpDir=/scratch0/GATK_chr${chr}
+	    tmpDir=/scratch0/GATK_chr${chr}
+	    
 
-
-
-echo "
+	    
+	    echo "
 
 if [ ! -e $tmpDir ]; then mkdir $tmpDir; fi
 
@@ -236,7 +244,7 @@ rm -rf $tmpDir
 rm ${output}_chr${chr}_indels.vcf.gz ${output}_chr${chr}_SNPs.vcf.gz ${output}_chr${chr}_SNPs_filtered.vcf.gz
 
 " >> $script
-	
+	fi
 
     done
     
@@ -250,7 +258,10 @@ if [[ "$annovar" == "yes" ]]; then
 	
 	script=cluster/submission/subscript_chr${chr}.sh
 	
-	echo "
+	if [[ ! -e ${output}_${snpStats}/chr${chr}.done || "$force" == "yes" ]]; then  ## this is not quite right, needs fixing because it does not account for the last step
+	    
+	    echo "
+if [ -e ${output}_${snpStats}/chr${chr}.done ]; then rm ${output}_${snpStats}/chr${chr}.done; fi  ## this is basically a log file, to make sure the job got finished
 
 cut -f1-8 ${output}_chr${chr}_filtered.vcf > ${output}_chr${chr}_for_annovar.vcf
 
@@ -262,7 +273,13 @@ perl ~/Software/pipeline/GATK_v2/custom_filtering.pl ${output}_chr${chr}_filtere
 
 python /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/annovar_vcf_combine_VP.py ${output}_chr${chr}_recal_filtered2.vcf ${output}_chr${chr}_db.exome_summary.csv ${output}_chr${chr}_exome_table.csv
 
+perl /cluster/project8/vyp/vincent/Software/pipeline/msample_calling/make_matrix_calls.pl ${output}_chr${chr}_exome_table.csv ${output} $chr
+
+touch ${output}_${snpStats}/chr${chr}.done  ##here we mark that the scripts finished
+
 " >> $script
+
+	fi
     done
 fi
 
@@ -275,12 +292,16 @@ if [[ "$convertToR" == "yes" ]]; then
 	
 	script=cluster/submission/subscript_chr${chr}.sh
 	
-	echo "
-perl /cluster/project8/vyp/vincent/Software/pipeline/msample_calling/make_matrix_calls.pl ${output}_chr${chr}_exome_table.csv ${output} $chr
+	if [[ ! -s ${output}_snpStats/chr${chr}_snpStats.RData || "$force" == "yes" ]]; then
+
+	    echo "
 
 $Rbin CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} /cluster/project8/vyp/vincent/Software/pipeline/msample_calling/convert_to_R.R cluster/R/convert_to_R_chr${chr}.out
+
 " >> $script
-	
+
+	fi
+
     done
 fi
 
