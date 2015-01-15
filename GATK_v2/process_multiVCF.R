@@ -150,12 +150,12 @@ process.multiVCF <- function(calls,
   hom.variants.folder <- paste(oFolder, '/homozygous_variants', sep= '')
   chrX.folder <- paste(oFolder, '/chrX', sep= '')
   hom.mapping.folder <- paste(oFolder, '/hom_mapping', sep= '')
-  het.variants.folder <- paste(oFolder, '/heterozygous_variants', sep= '')
+  all.rare.variants.folder <- paste(oFolder, '/rare_variants', sep= '')
   known.genes.folder <- paste(oFolder, '/known_genes', sep= '')
   compound.hets.folder <- paste(oFolder, '/compound_hets', sep= '')
   supportFolder <- paste(oFolder, '/support', sep= '')
 
-  for (folder in c(oFolder, chrX.folder, all.variants.folder, hom.variants.folder, het.variants.folder, known.genes.folder, hom.mapping.folder, compound.hets.folder, supportFolder)) {
+  for (folder in c(oFolder, chrX.folder, all.variants.folder, hom.variants.folder, all.rare.variants.folder, known.genes.folder, hom.mapping.folder, compound.hets.folder, supportFolder)) {
     if (!file.exists(folder)) dir.create(folder) else {
       old.files <- list.files(folder, full.names = TRUE, include.dir = FALSE)
       message('Will remove old files')
@@ -404,11 +404,10 @@ process.multiVCF <- function(calls,
     
     
 ##### now the somewhat.rare hets
-    ##if (id == 'Vulliamy_Sample_3365') browser()
     rare.hets <- subset(annotations.loc, somewhat.rare & calls.loc >= 1 & (non.syn | splicing | lof) & !remove.bad.transcripts)
     rare.hets <- rare.hets[, my.names2]
 
-    output.hets <- paste(het.variants.folder, '/', id, '.csv', sep = '')
+    output.hets <- paste(all.rare.variants.folder, '/', id, '.csv', sep = '')
     write.csv(x = rare.hets, file = output.hets, row.names = FALSE)
     message('Outputting all rare heterozygous functional variants in ', output.hets, ', ncalls: ', nrow(rare.hets))
 

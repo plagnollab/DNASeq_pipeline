@@ -43,7 +43,8 @@ for (chr in  c(as.character(1:22), 'X')) {
 #for (chr in  c(as.character(16:16))) {
 
   message('Chromosome ', chr)
-  input.data <- paste(root, '_by_chr/chr', chr, '_snpStats.RData', sep = '')
+  #input.data <- paste(root, '_by_chr/chr', chr, '_snpStats.RData', sep = '')
+  input.data <- paste0(root, '_snpStats/chr', chr, '_snpStats.RData')
 
   if (file.exists(input.data)) {
     message('Will now load ', input.data)
