@@ -126,14 +126,12 @@ if [[ "$genotype" == "yes" ]]; then
 	if [ ! -e ${output}_chr${chr}.vcf.gz.tbi ]; then 
 
 	    echo "
-
 $java -Xmx${memoSmall}g -jar $GATK \\
    -R $fasta \\
    -T GenotypeGVCFs \\
    -L $chr -L $target --interval_set_rule INTERSECTION --interval_padding 100  \\
    --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore --annotation MappingQualityRankSumTest --annotation ReadPosRankSumTest --annotation FisherStrand \\
    --dbsnp ${bundle}/dbsnp_137.b37.vcf \\" >> cluster/submission/subscript_chr${chr}.sh
-	    
 	    
 	    while read path id; do
 		gVCF=${path}/chr${chr}/${id}.gvcf.gz
