@@ -135,6 +135,73 @@ function mode_gvcf_unsplit() {
     #end of while loop
 }
 
+
+
+####################### Bedtools coverageBed of BAM files #####################################################################
+# Take as input the sorted, unique per sample BAM files, and the capture bed files and produces the coverage files
+# Input: BAM files. BED files
+function mode_coverage() {
+    input=${projectID}/align/data/
+    output=${projectID}/coverage/data/
+    mkdir -p $output
+    nhours=${nhours-4}
+    ncores=${ncores-2}
+    vmem=${vmem-4}
+    # Macrogen capture file
+    #bed=/cluster/project8/IBDAJE/SureSelect/from_Macrogen/SureSelect_v4.bed
+    bed=/goon2/project99/IBDAJE_raw/Macrogen/nochr_SureSelect_v4.bed
+    while read code f1 f2
+    do
+    bam=${input}/${code}_sorted_unique.bam  
+    #if file is empty stop
+    [ ! -s $bam ] && stop "${bam} does not exist" 
+cat >${mainScript%.sh}_${code}.sh << EOL
+$coverageBed -abam ${bam} -b ${bed} -d > ${output}/${code}_depth.txt
+EOL
+    done < <(tail -n +2 $supportFrame)
+}
+
+
+####################### vcftools missingness in VCF files #####################################################################
+# Take as input the VCF files and reports missingness
+# Input: VCF files
+function mode_missingness() {
+    input=${projectID}/gvcf/data/
+    input=${projectID}/missingness/data/
+    mkdir -p $output
+    nhours=${nhours-6}
+    ncores=${ncores-1}
+    vmem=${vmem-2}
+    # Macrogen capture file
+    bed=/cluster/project8/IBDAJE/SureSelect/from_Macrogen/SureSelect_v4.bed
+    while read code f1 f2
+    do
+        ##one job per chromosome to save time
+        for chrCode in `seq 1 $cleanChrLen`
+        do
+            chrCleanCode=${cleanChr[ $chrCode ]}
+            #sometimes the dict index contains just the chrom number sometimes
+            #it contains chr<number>
+            #should check which scenario where are in
+            ##if the index is not there, we assume that we have to do the whole job
+            if [ ! -s ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
+            then
+              echo ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi does not exist
+              #if file is empty stop
+              [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
+cat >${mainScript%.sh}_${code}_chr${chrCode}.sh << EOL
+    vcftools --bed ${bed} --gzvcf ${gvcf} --minGQ 20 --minDP 10 --recode --out ${out} > log
+    vcftools --vcf ${out}.recode.vcf --missing-indv --out Levine_${chr}_missing
+EOL
+            else
+                rm -f ${mainScript%.sh}_${code}_chr${chrCode}.sh
+            fi
+        done
+    done < <(tail -n +2 $supportFrame)
+}
+
+
+
 ####################### GATK HaplotypeCaller split by chromosome  ############################################################
 # Take as input the sorted, unique per sample BAM files and produces the gVCF files
 # Splits by chromosome.
@@ -212,17 +279,20 @@ function mode_gvcf() {
 function mode_combinegvcf() {
     nhours=${nhours-12}
     ncores=${ncores-1}
-    vmem=${vmem-4}
+    vmem=${vmem-6}
+    input=${projectID}/gvcf/data/
+    output=${projectID}/combinegvcf/data/
+    mkdir -p $output
     ##one script per chromosome
     for chrCode in `seq 1 $cleanChrLen`
     do
         chrCleanCode=${cleanChr[ $chrCode ]}
-        VARIANTS=`echo aligned/*/*_chr${chrCleanCode}.gvcf.gz | xargs -n1 | xargs -I f echo -n ' --variant' f`
+        VARIANTS=`echo $input/*_chr${chrCleanCode}.gvcf.gz | xargs -n1 | xargs -I f echo -n ' --variant' f`
         echo "
         $CombineGVCFs \
         -R $fasta \
         -L ${chrPrefix}${chrCleanCode} \
-        -o ${mode}/chr${chrCleanCode}.gvcf.gz \
+        -o ${output}/chr${chrCleanCode}.gvcf.gz \
         $VARIANTS
         " > ${mainScript%.sh}_chr${chrCode}.sh
     done
@@ -339,8 +409,7 @@ function mode_annotation() {
        DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../annotation/
 cat >${mainScript%.sh}_chr${chrCode}.sh << EOL
 python $DIR/multiallele_to_single_gvcf.py $INPUT > ${output}/annotation_chr${chrCode}-single.vcf
-bash $DIR/run_VEP.sh ${output}/annotation_chr${chrCode}-single.vcf $chrCode ${output}/VEP_${chrCode}.vcf > ${output}/annotation_chr${chrCode}-VEP.vcf
-python $DIR/extract_VEP.py <(cat $INPUT | zgrep -m1 '^#CHROM' | cut -f10- | tr '\t' '\n' | awk '{print("ALL", \$1)}') ${output}/annotation_chr${chrCode}-VEP.vcf > ${output}/annotation_chr${chrCode}-VEP-final.vcf
+bash $DIR/run_VEP.sh --vcfin ${output}/annotation_chr${chrCode}-single.vcf --chr $chrCode --reference $reference --vcfout ${output}/VEP_${chrCode}.vcfout
 EOL
    done
 }
@@ -468,6 +537,8 @@ novosort=${Software}/novocraft3/novosort
 samblaster=${Software}/samblaster/samblaster
 ##samtools
 samtools=${Software}/samtools-1.1/samtools
+##bedtools
+coverageBed=${Software}/bedtools-2.17.0/bin/coverageBed
 ## Picard
 picard=${Software}/picard-tools-1.100/
 picard_CreateSequenceDictionary=${picard}/CreateSequenceDictionary.jar 
@@ -534,7 +605,7 @@ fi
 mkdir -p $projectID
 #symlink the supportFrame to a known location
 supportFrameLink=${projectID}/`basename $supportFrame`
-ln -sf `pwd -P`/$supportFrame  $supportFrameLink
+ln -sf $supportFrame  $supportFrameLink
 supportFrame=$supportFrameLink
 touch ${projectID}/README
 echo "
