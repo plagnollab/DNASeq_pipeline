@@ -1,52 +1,57 @@
+#! /bin/env python
 import sys,gzip
 
 vcf = gzip.open(sys.argv[1],"r")
 
+#these 9 column headers are standard to all VCF files
+STD_HEADERS=['CHROM','POS','ID','REF','ALT','QUAL','FILTER','INFO','FORMAT']
+#the samples headers depend on the number of samples in the file
+#which we find out once we read the #CHROM line
+SAMPLE_HEADERS=[]
 
-print "##fileformat=VCFv4.1"
-for i in vcf:
-    s=i.rstrip("\n").split("\t")
-    if s[0][0:2]!="##": #remove beginning
-	if s[0][0]=="#":
-		print "\t".join(s) #header
-	if s[0][0]!="#": #data
-		alt=s[4].split(",") #split alternate alleles
-		s[5:9]=[".",".",".","GT"] #QUAL=., FILTER=., INFO=., FORMAT=GT
-		if len(alt)==1: #if single alternate allele
-			genotypes=[]
-			for j in s[9:]:
-				 genotypes.append(j.split(":")[0]) #extract genotype
-			print "\t".join(s[0:9]) +"\t"+ "\t".join(genotypes) #print data
-		if len(alt)>1:
-			s[2] = "." #rs not necessarily correct
-			possible=range(1,len(alt)+1)            
-			possible_string=[]
-			for each in possible:
-				possible_string.append(str(each))
-			alt_count=-1
-			for j in possible_string:
-				alt_count=alt_count+1
-				genotypes=[]
-				for k in s[9:]:
-					genotypes.append(k.split(":")[0].split("/")[0])
-					genotypes.append(k.split(":")[0].split("/")[1])
-				if j in genotypes:
-					new_genotypes=[]
-					for l in genotypes:
-						if l==j:
-							new_genotypes.append("1")
-						elif l=="." or l=="0":
-							new_genotypes.append(l)
-						else:
-							new_genotypes.append("0")
-					count=0
-					out=[]
-					for l in new_genotypes:
-						count=count+1
-						if count%2==0:
-							if previous=='1' and l=='0':
-								out.append('0/1')
-							else:
-								out.append(previous+"/"+l)
-						previous=l
-					print "\t".join(s[0:4])+"\t"+alt[alt_count]+"\t"+"\t".join(s[5:9])+"\t"+"\t".join(out)
+for line in vcf:
+    line=line.strip()
+    #remove beginning
+    #lines which start with '###'
+    #are not tab separated
+    if line.startswith('##'):
+        #print(line)
+        continue
+    #this is tab separated line
+    s=line.split("\t")
+    #header line yay!: #CHROM ...
+    if line.startswith('#'):
+        print(line)
+        headers=s
+        headers[0]=headers[0].strip('#')
+        #the first 9 names in the header are standard (see above)
+        if (headers[0:len(STD_HEADERS)] != STD_HEADERS): raise 'hell'
+        #everything else in the header is a sample name
+        SAMPLE_HEADERS=headers[len(STD_HEADERS):]
+        continue
+    #you can now access elements by their header name
+    s=dict(zip(headers,s))
+    #QUAL=., FILTER=., INFO=., FORMAT=GT
+    #just set everything except GT to .
+    #@pontikos: doesn't VEP use the other fields though?
+    for h in ['QUAL','FILTER','INFO']: s[h]='.'
+    s['FORMAT']='GT'
+    #split alternate alleles
+    alternative_alleles=s['ALT'].split(",")
+    format=s['FORMAT'].split(':')
+    #extract the genotypes of the samples
+    #genotype is always first element of array
+    for h in SAMPLE_HEADERS: s[h]=dict(zip(format,s[h].split(":")))['GT']
+    #if single alternate allele
+    #then just print out as normal
+    if len(alternative_alleles)<=1:
+        print('\t'.join([s[h] for h in headers]))
+        continue
+    #otherwise split over as many lines as there are alternative alleles
+    #each genotype then takes a 1 if matches the alternative or a 0 otherwise
+    for i in range(len(alternative_alleles)):
+        s['ALT']=alternative_alleles[i]
+        print( '\t'.join( [s[h] for h in STD_HEADERS] + ['/'.join([['0','1'][int(int(g)==i)] for g in s[h].split('/')]) for h in SAMPLE_HEADERS] ) )
+
+
+
