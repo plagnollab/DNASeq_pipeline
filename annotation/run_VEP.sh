@@ -72,6 +72,42 @@ condel_config=/cluster/project8/vyp/AdamLevine/software/ensembl/Plugins/config/C
 #file:///scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
 cat $vcfin | grep '^##reference=' | cut -f2 -d'='
 
+#annotations_dir=/cluster/project8/vyp/AdamLevine/annotations
+annotations_dir=/cluster/project8/IBDAJE/VEP_custom_annotations/annotations/{$reference}
+
+# Custom annotations
+####CADD http://cadd.gs.washington.edu/home
+#This needs to be updated with the latest scores [ACTION!]
+#They also now provide a script which is worth exploring
+custom_annotation=" --custom ${annotations_dir}/CADD/cadd.vcf.gz"
+####ExAC
+for pop in 1AFR AMR Adj EAS FIN NFE OTH SAS
+do
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/ExAC/0.3/chr${chr}_${pop}.vcf.gz,vcf,exact"
+done
+####1kg
+for pop in EUR AFR AMR ASN
+do
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/1kg/chr${chr}_${pop}.vcf.gz,vcf,exact"
+done
+####ESP frequency annotations
+for pop in EA AA
+do
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/esp/chr${chr}_${pop}.vcf.gz,vcf,exact"
+done
+####UCLex frequencies and need to be updated [ACTION!]
+#VP=/cluster/project8/vyp/AdamLevine/UCL-exomes_v2/VP_cohort/UCLfreq_${chr}.vcf.gz 
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/UCLex/chr${chr}.vcf.gz,vcf,exact"
+####1KG
+#Do not need all of these different annotations [ACTION!]
+#OneKG=/cluster/project8/vyp/AdamLevine/exome/annotations/OneKG/OneKG_AF_${chr}.vcf.gz
+#OneKGceugbr=/cluster/project8/vyp/AdamLevine/exome/annotations/OneKG_CEUGBR/OneKG-CEUGBR_AF_${chr}.vcf.gz
+#okgEUR=${annotations_dir}/1kg/results/1KG_EUR-AF_${chr}.vcf.gz
+#okgAFR=${annotations_dir}/1kg/results/1KG_AFR-AF_${chr}.vcf.gz
+#okgAMR=${annotations_dir}/1kg/results/1KG_AMR-AF_${chr}.vcf.gz
+#okgASN=${annotations_dir}/1kg/results/1KG_ASN-AF_${chr}.vcf.gz
+
+
 if [[ "$reference" == "hg38_noAlt" ]]
 then
     #fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
@@ -79,7 +115,6 @@ then
     chrPrefix='chr'
     assembly=GRCh38
     port=
-    custom_annotation=
 elif [[ "$reference" == "1kg" ]]
 then
     #fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
@@ -87,30 +122,6 @@ then
     assembly=GRCh37
     chrPrefix=''
     port='--port 3337'
-    ####ANNOTATIONS for GRCh37
-    ####Directory
-    annotations_dir=/cluster/project8/vyp/AdamLevine/annotations
-    ####CADD http://cadd.gs.washington.edu/home
-    #This needs to be updated with the latest scores [ACTION!]
-    #They also now provide a script which is worth exploring
-    cadd=/scratch2/vyp-scratch2/AdamLevine/CADD/cadd.vcf.gz
-    ####ADD ExAC [ACTION!]
-    ####ESP frequency annotations
-    EA=${annotations_dir}/esp/results/EA_AF_${chr}.vcf.gz
-    AA=${annotations_dir}/esp/results/AA_AF_${chr}.vcf.gz
-    ####UCLex frequencies and need to be updated [ACTION!]
-    VP=/cluster/project8/vyp/AdamLevine/UCL-exomes_v2/VP_cohort/UCLfreq_${chr}.vcf.gz 
-    ####1KG
-    #Do not need all of these different annotations [ACTION!]
-    OneKG=/cluster/project8/vyp/AdamLevine/exome/annotations/OneKG/OneKG_AF_${chr}.vcf.gz
-    OneKGceugbr=/cluster/project8/vyp/AdamLevine/exome/annotations/OneKG_CEUGBR/OneKG-CEUGBR_AF_${chr}.vcf.gz
-    okg=${annotations_dir}/1kg/results/1KG_AF_${chr}.vcf.gz
-    okgEUR=${annotations_dir}/1kg/results/1KG_EUR-AF_${chr}.vcf.gz
-    okgAFR=${annotations_dir}/1kg/results/1KG_AFR-AF_${chr}.vcf.gz
-    okgAMR=${annotations_dir}/1kg/results/1KG_AMR-AF_${chr}.vcf.gz
-    okgASN=${annotations_dir}/1kg/results/1KG_ASN-AF_${chr}.vcf.gz
-    #these options are only available for this build at the moment
-    custom_annotation="--custom $cadd,CADD,vcf,exact --custom $EA,EAf,vcf,exact --custom $AA,AAf,vcf,exact --custom $VP,VPf,vcf,exact --custom $OneKG,ONEKGf,vcf,exact --custom $OneKGceugbr,CEUBGRf,vcf,exact --custom $okg,okg,vcf,exact --custom $okgEUR,okgEUR,vcf,exact --custom $okgAMR,okgAMR,vcf,exact --custom $okgAFR,okgAFR,vcf,exact --custom $okgASN,okgASN,vcf,exact"
 elif [[ "$reference" == "hg19" ]]
 then
     fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/hg19_UCSC.fa
@@ -126,37 +137,4 @@ maf="--maf_esp --gmaf --maf_1kg"
 fields=''
 
 $perl5142 $vep $port --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol --coding_only --canonical --check_existing --check_alleles --plugin Carol --stats_text --no_progress --output_file $vcfout --plugin Condel,${condel_config},b --force_overwrite --pick  --fork 2 $maf $fields $custom_annotation
-
-##--ASSEMBLY GRCh37  \
-#--ASSEMBLY GRCh38  \
-#--port 3337 \
-#--cache \
-#--dir_cache $dir_cache \
-#--input_file $vcfin \
-#--format vcf \
-#--sift b \
-#--polyphen b \
-#--symbol \
-#--coding_only \
-#--canonical \
-#--check_existing \
-#--check_alleles \
-#--plugin Carol \
-##--plugin Condel,${condel_config},b \
-##--custom $cadd,CADD,vcf,exact \
-##--custom $EA,EAf,vcf,exact \
-##--custom $AA,AAf,vcf,exact \
-##--custom $VP,VPf,vcf,exact \
-##--custom $OneKG,ONEKGf,vcf,exact \
-##--custom $OneKGceugbr,CEUBGRf,vcf,exact \
-##--custom $okg,okg,vcf,exact \
-##--custom $okgEUR,okgEUR,vcf,exact \
-##--custom $okgAMR,okgAMR,vcf,exact \
-##--custom $okgAFR,okgAFR,vcf,exact \
-##--custom $okgASN,okgASN,vcf,exact \
-#--stats_text \
-#--vcf  \
-#--no_progress \
-#--output_file $vcfout\
-
 
