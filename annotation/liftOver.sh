@@ -17,23 +17,32 @@ let "SGE_TASK_ID=$SGE_TASK_ID-1"
 #scriptname=`basename $0`
 scriptname=liftOver
 mkdir -p ${scriptname}.qsub.out ${scriptname}.qsub.err
-exec >${scriptname}.qsub.out/${scriptname}_${SGE_TASK_ID}_${JOB_ID}.out 2>${scriptname}.qsub.err/${scriptname}_${SGE_TASK_ID}_${JOB_ID}.err
 args=( 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y )
 ch=${args[$SGE_TASK_ID]}
+exec >${scriptname}.qsub.out/${scriptname}_chr${ch}_${JOB_ID}.out 2>${scriptname}.qsub.err/${scriptname}_chr${ch}_${JOB_ID}.err
 liftOver=/cluster/project8/vyp/AdamLevine/software/LiftOver/liftOver
-map=/cluster/project8/vyp/pontikos/hg19ToHg38.over.chain.gz
-for pop in AFR AMR Adj EAS FIN NFE OTH SAS
-do
-    vcfgz=chr${ch}_${pop}.vcf.gz
-    out=${vcfgz%.vcf.gz}-b38.vcf.gz
-    bed=${vcfgz%.gz}.bed
-    mbed=${vcfgz%.gz}-b38.bed
-    zcat $vcfgz | awk '{OFS="\t"; if (!/^#/){print $1,$2-1,$2,$3,$4,$5,$6}}' | sed 's/^/chr/' > $bed
-    $liftOver $bed $map  $mbed ${bed%.bed}-b38-unlifted.bed
-    #echo output `wc -l $input-b38.bed`
-    #echo unlifted `wc -l $input-b38-unlifted.bed`
-    cat <(zgrep '^#' $vcfgz) <(cat $mbed | sed 's/^chr//' | awk '{OFS="\t"; print $1,$3,$4,$5,$6,".",".","."}' | sort -k2 -n | grep ^$ch) | bgzip  > $out
-    tabix -f -p vcf $out
-done
+map=/cluster/project8/vyp/pontikos/hg19ToHg38.over.chain.gz 
 
+# ann is one of ExAC, esp etc
+ann=$1
+ann_dir=/cluster/project8/IBDAJE/VEP_custom_annotations/
+grc37=$ann_dir/GRCh37/$ann
+grc38=$ann_dir/GRCh38/$ann
+
+for vcfgz in $grc37/chr${ch}*.vcf.gz
+do
+    [[ ! -s $vcfgz ]] && continue
+    f=`basename ${vcfgz%.vcf.gz}`
+    inbed=$grc37/${f}.bed
+    outbed=$grc38/${f}.bed
+    unliftedbed=$grc38/${f}_unlifted.bed
+    outvcfgz=$grc38/${f}.vcf.gz
+    zcat $vcfgz | awk '{OFS="\t"; if (!/^#/){print $1,$2-1,$2,$3,$4,$5,$6}}' | sed 's/^/chr/' > $inbed
+    $liftOver $inbed $map  $outbed $unliftedbed
+    echo output `wc -l $outbed`
+    echo unlifted `wc -l $unliftedbed`
+    #filter on chromosome name to remove positions mapped to different chrom or alternative sequences
+    cat <(zgrep '^#' $vcfgz) <(sort -k 2 -n $outbed | sed 's/^chr//' | awk -v chr=$ch '{OFS="\t";if ($1==chr){print $1,$3,$4,$5,$6,".",".","."}}') | bgzip  > $outvcfgz
+    tabix -f -p vcf $outvcfgz
+done
 
