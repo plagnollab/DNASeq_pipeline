@@ -29,20 +29,26 @@ ann_dir=/cluster/project8/IBDAJE/VEP_custom_annotations/
 grc37=$ann_dir/GRCh37/$ann
 grc38=$ann_dir/GRCh38/$ann
 
-for vcfgz in $grc37/chr${ch}*.vcf.gz
+for vcfgz in $grc37/chr${ch}_*.vcf.gz
 do
     [[ ! -s $vcfgz ]] && continue
     f=`basename ${vcfgz%.vcf.gz}`
     inbed=$grc37/${f}.bed
     outbed=$grc38/${f}.bed
     unliftedbed=$grc38/${f}_unlifted.bed
-    outvcfgz=$grc38/${f}.vcf.gz
+    outvcf=$grc38/${f}.vcf
+    header=$grc38/${f}.header
+    outvcfgz=${outvcf}.gz
     zcat $vcfgz | awk '{OFS="\t"; if (!/^#/){print $1,$2-1,$2,$3,$4,$5,$6}}' | sed 's/^/chr/' > $inbed
     $liftOver $inbed $map  $outbed $unliftedbed
     echo output `wc -l $outbed`
     echo unlifted `wc -l $unliftedbed`
+    zgrep '^#' $vcfgz > $header
     #filter on chromosome name to remove positions mapped to different chrom or alternative sequences
-    cat <(zgrep '^#' $vcfgz) <(sort -k 2 -n $outbed | sed 's/^chr//' | awk -v chr=$ch '{OFS="\t";if ($1==chr){print $1,$3,$4,$5,$6,".",".","."}}') | bgzip  > $outvcfgz
+    sort -k 2 -n $outbed | sed 's/^chr//' | awk -v chr=$ch '{OFS="\t";if ($1==chr){print $1,$3,$4,$5,$6,".",".","."}}' > $outvcf.2
+    cat $header $outvcf.2 > $outvcf
+    rm $outvcf.2
+    bgzip -c -f $outvcf > $outvcfgz
     tabix -f -p vcf $outvcfgz
 done
 
