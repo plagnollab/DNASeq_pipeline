@@ -73,31 +73,35 @@ condel_config=/cluster/project8/vyp/AdamLevine/software/ensembl/Plugins/config/C
 cat $vcfin | grep '^##reference=' | cut -f2 -d'='
 
 #annotations_dir=/cluster/project8/vyp/AdamLevine/annotations
-annotations_dir=/cluster/project8/IBDAJE/VEP_custom_annotations/annotations/{$reference}
+annotations_dir=/cluster/project8/IBDAJE/VEP_custom_annotations/${reference}
 
 # Custom annotations
 ####CADD http://cadd.gs.washington.edu/home
 #This needs to be updated with the latest scores [ACTION!]
 #They also now provide a script which is worth exploring
-custom_annotation=" --custom ${annotations_dir}/CADD/cadd.vcf.gz"
+#custom_annotation=" --custom ${annotations_dir}/CADD/cadd.vcf.gz"
+custom_annotation=""
 ####ExAC
-for pop in 1AFR AMR Adj EAS FIN NFE OTH SAS
+for pop in AFR AMR Adj EAS FIN NFE OTH SAS
 do
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/ExAC/0.3/chr${chr}_${pop}.vcf.gz,vcf,exact"
+    shortname=EXAC_${pop}
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/ExAC/0.3/chr${chr}_${pop}.vcf.gz,${shortname},vcf,exact"
 done
 ####1kg
 for pop in EUR AFR AMR ASN
 do
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/1kg/chr${chr}_${pop}.vcf.gz,vcf,exact"
+    shortname=1KG_${pop}
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/1kg/chr${chr}_${pop}.vcf.gz,${shortname},vcf,exact"
 done
 ####ESP frequency annotations
 for pop in EA AA
 do
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/esp/chr${chr}_${pop}.vcf.gz,vcf,exact"
+    shortname=ESP_${pop}
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/esp/chr${chr}_${pop}.vcf.gz,${shortname},vcf,exact"
 done
 ####UCLex frequencies and need to be updated [ACTION!]
 #VP=/cluster/project8/vyp/AdamLevine/UCL-exomes_v2/VP_cohort/UCLfreq_${chr}.vcf.gz 
-custom_annotation="${custom_annotation} --custom ${annotations_dir}/UCLex/chr${chr}.vcf.gz,vcf,exact"
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/UCLex/chr${chr}.vcf.gz,${shortname},vcf,exact"
 ####1KG
 #Do not need all of these different annotations [ACTION!]
 #OneKG=/cluster/project8/vyp/AdamLevine/exome/annotations/OneKG/OneKG_AF_${chr}.vcf.gz
