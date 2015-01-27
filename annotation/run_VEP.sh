@@ -79,7 +79,7 @@ annotations_dir=/cluster/project8/IBDAJE/VEP_custom_annotations/${reference}
 ####CADD http://cadd.gs.washington.edu/home
 #This needs to be updated with the latest scores [ACTION!]
 #They also now provide a script which is worth exploring
-#custom_annotation=" --custom ${annotations_dir}/CADD/cadd.vcf.gz"
+#custom_annotation="--custom ${annotations_dir}/CADD/chr${chr}.vcf.gz,CADD,vcf,exact"
 custom_annotation=""
 ####ExAC
 for pop in AFR AMR Adj EAS FIN NFE OTH SAS
@@ -101,6 +101,7 @@ do
 done
 ####UCLex frequencies and need to be updated [ACTION!]
 #VP=/cluster/project8/vyp/AdamLevine/UCL-exomes_v2/VP_cohort/UCLfreq_${chr}.vcf.gz 
+shortname=UCLEX
 custom_annotation="${custom_annotation} --custom ${annotations_dir}/UCLex/chr${chr}.vcf.gz,${shortname},vcf,exact"
 ####1KG
 #Do not need all of these different annotations [ACTION!]
@@ -140,5 +141,8 @@ maf="--maf_esp --gmaf --maf_1kg"
 #fields="--fields SYMBOL,CLIN_SIG,AA_MAF,EA_MAF,SIFT,PolyPhen,CAROL,Condel"
 fields=''
 
-$perl5142 $vep $port --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol --coding_only --canonical --check_existing --check_alleles --plugin Carol --stats_text --no_progress --output_file $vcfout --plugin Condel,${condel_config},b --force_overwrite --pick  --fork 2 $maf $fields $custom_annotation
+#output='--pick'
+output='--vcf'
+
+$perl5142 $vep $port --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol --coding_only --canonical --check_existing --check_alleles --plugin Carol --stats_text --no_progress --output_file $vcfout --plugin Condel,${condel_config},b --force_overwrite $output --fork 2 $maf $fields $custom_annotation 
 
