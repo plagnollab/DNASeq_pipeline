@@ -23,6 +23,8 @@ try() { "$@" || stop "cannot $*"; }
 ####################### Alignment using Novoalign  ###########################################################################
 # The alignment creates the SAM and BAM files for GATK variant calling
 function mode_align() {
+    outputdir=${projectID}/align
+    mainScript=${outputdir}/scripts/align.sh
     output=${projectID}/align/data/
     mkdir -p $output
     ##10 days? Perhaps more.
@@ -57,15 +59,12 @@ function mode_align() {
             # delete contents of temp dir [vplagnol/pipelines/issues/11]
             rm -f ${tempFolder}/${code}/*
             mkdir -p ${tempFolder}/${code} 
-            echo "
+cat >${mainScript%.sh}_${code}.sh<<EOL
 $novoalign -c ${ncores} -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' --rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam} -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}/${code}_disc.sam  | ${samtools} view -Sb - > ${output}/${code}.bam
-
 ${samtools} view -Sb ${output}/${code}_disc.sam | $novosort - -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_disc_sorted.bam
-
 $novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_sorted_unique.bam ${output}/${code}.bam
-
 rm ${output}/${code}_disc.sam ${output}/${code}.bam
-        "   > ${mainScript%.sh}_${code}.sh
+EOL
         else
             #echo ${output}/${code}_sorted_unique.bam.bai already exists
             rm -f ${mainScript%.sh}_${code}.sh
@@ -142,22 +141,76 @@ function mode_gvcf_unsplit() {
 # Input: BAM files. BED files
 function mode_coverage() {
     input=${projectID}/align/data/
-    output=${projectID}/coverage/data/
-    mkdir -p $output
+    #output=${projectID}/coverage/data/
+    #outputdir=${projectID}/coverage_Macrogen
+    outputdir=${projectID}/coverage_BGI
+    output=${outputdir}/data/
+    mainScript=${outputdir}/scripts/$mode.sh
     nhours=${nhours-4}
     ncores=${ncores-2}
     vmem=${vmem-4}
+    mkdir -p $outputdir/data $outputdir/scripts $outputdir/err $outputdir/out
     # Macrogen capture file
-    #bed=/cluster/project8/IBDAJE/SureSelect/from_Macrogen/SureSelect_v4.bed
-    bed=/goon2/project99/IBDAJE_raw/Macrogen/nochr_SureSelect_v4.bed
+    #bed=/goon2/project99/IBDAJE_raw/Macrogen/nochr_SureSelect_v4.bed
+    # BGI capture file
+    bed=/goon2/project99/IBDAJE_raw/BGI/nochr_target_region.bed
     while read code f1 f2
     do
     bam=${input}/${code}_sorted_unique.bam  
+    depth=${output}/${code}_depth.txt
     #if file is empty stop
-    [ ! -s $bam ] && stop "${bam} does not exist" 
-cat >${mainScript%.sh}_${code}.sh << EOL
-$coverageBed -abam ${bam} -b ${bed} -d > ${output}/${code}_depth.txt
+    #[ ! -s $bam ] && stop "${bam} does not exist" 
+    [ ! -s $bam ] && error "${bam} does not exist" 
+    if [ ! -s $depth ] || [ "$force" == "yes" ]
+    then
+cat >${mainScript%.sh}_${code}.sh<<EOL
+$coverageBed -abam ${bam} -b ${bed} -d | tr '\t' ',' > ${depth}
+for chr in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y
+do
+    grep "^\$chr," ${depth} > ${depth%_depth.txt}_\${chr}_depth.txt
+done
+rm ${depth}
 EOL
+    else
+        rm ${mainScript%.sh}_${code}.sh 
+    fi
+    done < <(tail -n +2 $supportFrame)
+}
+
+
+####################### Picard HsMetrics ######################################################################################
+# Take as input the sorted, unique per sample BAM files, and the capture bed files and produces the coverage files
+# Input: BAM files. BED files
+function mode_hsmetrics() {
+    input=${projectID}/align/data/
+    #output=${projectID}/coverage/data/
+    #outputdir=${projectID}/coverage_Macrogen
+    outputdir=${projectID}/hstmetrics
+    output=${outputdir}/data/
+    mainScript=${outputdir}/scripts/$mode.sh
+    nhours=${nhours-4}
+    ncores=${ncores-1}
+    vmem=${vmem-8}
+    mkdir -p $outputdir/data $outputdir/scripts $outputdir/err $outputdir/out
+    # Macrogen capture file
+    #bed=/goon2/project99/IBDAJE_raw/Macrogen/nochr_SureSelect_v4.bed
+    # BGI capture file
+    bed=/goon2/project99/IBDAJE_raw/BGI/nochr_target_region.bed
+    while read code f1 f2
+    do
+    bam=${input}/${code}_sorted_unique.bam  
+    depth=${output}/${code}_depth.txt
+    #if file is empty stop
+    #[ ! -s $bam ] && stop "${bam} does not exist" 
+    [ ! -s $bam ] && error "${bam} does not exist" 
+    if [ ! -s $depth ] || [ "$force" == "yes" ]
+    then
+cat >${mainScript%.sh}_${code}.sh << EOL
+$java -jar $picard_CalculateHsMetric R=${fasta} INPUT=${bam} OUTPUT=${depth} BAIT_INTERVALS=${bed} TARGET_INTERVALS=${bed}
+EOL
+    else
+        rm ${mainScript%.sh}_${code}.sh 
+    fi
     done < <(tail -n +2 $supportFrame)
 }
 
@@ -167,7 +220,7 @@ EOL
 # Input: VCF files
 function mode_missingness() {
     input=${projectID}/gvcf/data/
-    input=${projectID}/missingness/data/
+    output=${projectID}/missingness/data/
     mkdir -p $output
     nhours=${nhours-6}
     ncores=${ncores-1}
@@ -209,11 +262,13 @@ EOL
 # Output: per sample per chromosome gvcf files.
 function mode_gvcf() {
     input=${projectID}/align/data/
-    output=${projectID}/gvcf/data/
-    mkdir -p $output
+    outputdir=${projectID}/gvcf
+    output=${outputdir}/data
+    mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
     nhours=${nhours-24}
     ncores=${ncores-1}
     vmem=${vmem-8}
+    mainScript=${outputdir}/scripts/gvcf.sh
     #script files get regenerated on every run
     rm -f ${projectID}/gvcf/scripts/*.sh
     #memory2=6
@@ -250,7 +305,8 @@ function mode_gvcf() {
             then
               echo ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi does not exist
               #if file is empty stop
-              [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
+              #[ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
+              [ ! -s ${input}/${code}_sorted_unique.bam ] && error "${input}/${code}_sorted_unique.bam does not exist" 
               #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
               echo "
               $HaplotypeCaller \
@@ -394,11 +450,13 @@ function mode_CombineGVCFs() {
 ### 
 function mode_annotation() {
     input=${projectID}/jointgvcf/data/
-    output=${projectID}/annotation/data/
-    mkdir -p ${output}
+    outputdir=${projectID}/annotation/
+    output=${outputdir}/data/
+    mkdir -p ${output} ${outputdir}/err ${outputdir}/out ${outputdir}/scripts
     nhours=${nhours-12}
     ncores=${ncores-1}
     vmem=${vmem-2}
+    mainScript=${outputdir}/scripts/annotation.sh
     rm -f ${projectID}/annotation/scripts/*.sh
     for chrCode in `seq 1 $cleanChrLen`
     do
@@ -410,6 +468,7 @@ function mode_annotation() {
 cat >${mainScript%.sh}_chr${chrCode}.sh << EOL
 python $DIR/multiallele_to_single_gvcf.py $INPUT > ${output}/annotation_chr${chrCode}-single.vcf
 bash $DIR/run_VEP.sh --vcfin ${output}/annotation_chr${chrCode}-single.vcf --chr $chrCode --reference $reference --vcfout ${output}/VEP_${chrCode}.vcfout
+python $DIR/process_VEP.py <  ${output}/VEP_${chrCode}.vcfout >  ${output}/VEP_${chrCode}_final.tab
 EOL
    done
 }
@@ -609,18 +668,20 @@ ln -sf $supportFrame  $supportFrameLink
 supportFrame=$supportFrameLink
 touch ${projectID}/README
 echo "
+`date` ${mode}
 "
-> ${projectID}/README 
+>> ${projectID}/README 
 
-mkdir -p ${projectID}/$mode/data ${projectID}/$mode/scripts ${projectID}/$mode/out ${projectID}/$mode/err 
-output=${projectID}/$mode/data
-mainScript=${projectID}/$mode/scripts/$mode.sh
+#output dirs get created in the function which is called
+#mkdir -p ${projectID}/$mode/data ${projectID}/$mode/scripts ${projectID}/$mode/out ${projectID}/$mode/err 
+#output=${projectID}/$mode/data
+#mainScript=${projectID}/$mode/scripts/$mode.sh
 # call function (see above)
 echo mode_${mode}
 mode_${mode}
 
 ### The script to be submitted to qsub ###
-njobs=`ls -1 ${projectID}/$mode/scripts/${mode}_*.sh | wc -l`
+njobs=`ls -1 ${outputdir}/scripts/${mode}_*.sh | wc -l`
 
 echo "
 #!/bin/bash
@@ -638,11 +699,11 @@ echo "
 #$ -tc ${tc-25}
 set -u
 set -x
-mkdir -p ${projectID}/${mode}/scripts ${projectID}/${mode}/data ${projectID}/${mode}/err ${projectID}/${mode}/out
-array=( header \`ls -1 ${projectID}/$mode/scripts/${mode}_*.sh \`) 
+mkdir -p ${outputdir}/scripts ${outputdir}/data ${outputdir}/err ${outputdir}/out
+array=( header \`ls -1 ${outputdir}/scripts/${mode}_*.sh \`) 
 script=\${array[ \$SGE_TASK_ID ]} 
 scriptname=\`basename \${script%.sh}\`
-exec >${projectID}/${mode}/out/\${scriptname}_job\${SGE_TASK_ID}_\${JOB_ID}.out 2>${projectID}/${mode}/err/\${scriptname}_job\${SGE_TASK_ID}_\${JOB_ID}.err  
+exec >${outputdir}/out/\${scriptname}_job\${SGE_TASK_ID}_\${JOB_ID}.out 2>${outputdir}/err/\${scriptname}_job\${SGE_TASK_ID}_\${JOB_ID}.err  
 echo \$script 
 bash \$script
 
@@ -653,7 +714,7 @@ cat $mainScript
 echo
 echo
 echo run: qsub $mainScript
-echo number of jobs in array: `ls -1 ${projectID}/$mode/scripts/${mode}_*.sh | wc -l`
+echo number of jobs in array: `ls -1 ${outputdir}/scripts/${mode}_*.sh | wc -l`
 
 
 
