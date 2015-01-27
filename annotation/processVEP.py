@@ -28,6 +28,7 @@ for l in sys.stdin:
         HEADER=l.strip().split('\t')
         continue
     s=l.strip().split('\t')
+    # s will contain all fields for this line (including CSQ)
     s=dict(zip(HEADER, s))
     INFO=dict([tuple(x.split('=')) for x in s['INFO'].split(';')])
     # AFs
@@ -37,8 +38,8 @@ for l in sys.stdin:
     if 'CSQ' in INFO:
         cons=[ dict(zip(CSQ_HEADER,[b for b in a.split('|')])) for a in INFO['CSQ'].split(',') ]
         for csq in CSQ_HEADER: s[csq] = ','.join([co[csq] for co in cons])
-    #print output, anything which was not found in the line gets an empty string
-    print '\t'.join([s.get(h,'')  for h in OUTPUT])
+    #print output, anything which was not found in the line gets a '.'
+    print '\t'.join([s.get(h,'.')  for h in OUTPUT])
     #','.join([csq['Feature']  for csq in cons if csq['Feature_type']=='Transcript']), [s[k] for k in s if 'EXAC' in k]
 
 
