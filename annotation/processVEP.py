@@ -1,4 +1,5 @@
 #! /bin/env python
+from __future__ import print_function
 import sys
 import re
 
@@ -11,9 +12,10 @@ EXAC=['EXAC_AFR', 'EXAC_AMR', 'EXAC_Adj', 'EXAC_EAS', 'EXAC_FIN', 'EXAC_NFE', 'E
 ONEKG=['1KG_EUR', '1KG_AFR', '1KG_AMR', '1KG_ASN', 'ESP_EA', 'ESP_AA']
 UCL=['UCLEX']
 
-OUTPUT=OUTPUT+CSQ+EXAC+ONEKG
-
-print '##fileformat=VCFv4.1'
+ANNOTATION_HEADER=['VID']+CSQ+EXAC+UCL+['BF']
+annotation_file=open('variant_annotations.tab', 'w+')
+genotype_file=open('sample_genotypes.csv', 'w+')
+quality_file=open('sample_genotypes_quality.tab', 'w+')
 for l in sys.stdin:
     #get the format of the VEP consequence (CSQ) field
     #the names of the VEP CSQ fields are "|" delimited
@@ -23,31 +25,80 @@ for l in sys.stdin:
     #ignore all other '##' lines
     if l.startswith('##'): continue
     #line which starts with a single '#' is the header
+    #When we get to the header line, print it out.
     if l.startswith('#'):
         l=l.strip('#')
         HEADER=l.strip().split('\t')
         SAMPLES=HEADER[9:]
-        print '#'+'\t'.join(OUTPUT+SAMPLES)
+        print(*(['VID']+[SAMPLES]),sep=',',file=genotype_file)
+        print(*(['VID']+[SAMPLES]),sep='\t',file=quality_file)
+        print(*(ANNOTATION_HEADER),sep='\t',file=annotation_file)
         continue
     s=l.strip().split('\t')
     # s will contain all fields for this line (including CSQ)
     s=dict(zip(HEADER, s))
-    for k in SAMPLES: s[k]=s[k].split(':')[0]
-    alternative_alleles=s['ALT'].split(',')
-    for alt in alternative_alleles:
-        s['ALT']=alt
-        INFO=dict([tuple(x.split('=')) for x in s['INFO'].split(';')])
-        # AFs
-        # only include AFs where the ref>alt match
-        s.update(dict([(k,af.split(':')[1],) for k in set(INFO).intersection(EXAC) for af in INFO[k].split(',') if ('>'.join([s['REF'],s['ALT']])==af.split(':')[0])]))
-        s.update(dict([(k,af.split(':')[1],) for k in set(INFO).intersection(ONEKG) for af in INFO[k].split(',') if ('>'.join([s['REF'],s['ALT']])==af.split(':')[0])]))
-        if 'CSQ' in INFO:
-            cons=[ dict(zip(CSQ_HEADER,[b for b in a.split('|')])) for a in INFO['CSQ'].split(',') if a.split('|')[0]==s['ALT']]
-            for csq in CSQ_HEADER: s[csq] = ','.join([co[csq] for co in cons])
-        #print output, anything which was not found in the line gets a '.'
-        print '\t'.join([s.get(h,'.')  for h in OUTPUT+SAMPLES])
-        #','.join([csq['Feature']  for csq in cons if csq['Feature_type']=='Transcript']), [s[k] for k in s if 'EXAC' in k]
-
-
+    #for k in SAMPLES: s[k]=s[k].split(':')[0]
+    for k in SAMPLES: s[k]=s[k]
+    VARIANT_ID='_'.join([s['CHROM'],s['POS'],s['REF'],s['ALT']])
+    s['VARIANT_ID']=VARIANT_ID
+    #print output, anything which was not found in the line gets a '.'
+    #','.join([csq['Feature']  for csq in cons if csq['Feature_type']=='Transcript']), [s[k] for k in s if 'EXAC' in k]
+    #print '\t'.join( [VARIANT_ID] + [s.get(h,'.')  for h in OUTPUT] )
+    # GENOTYPE
+    # output of this goes to genotype.csv file
+    # number of times we have the alternative allele
+    def genotype(g):
+        d=dict(zip(s['FORMAT'].split(':'),g.split(':')))
+        geno=d['GT']
+        if geno=='0/0' or geno=='./0' or geno=='0/.': 
+            return 0
+        elif geno=='0/1' or geno=='./1' or geno=='1/.': 
+            return 1
+        elif geno=='1/1': 
+            return 2
+        elif geno=='./.':
+            return 'NA'
+        else:
+            print( VARIANT_ID, geno, sep=',', file=sys.stderr)
+            print( l, file=sys.stderr)
+            raise 'hell'
+    GENOTYPES=[genotype(s.get(h,'.'))for h in SAMPLES]
+    print(*([VARIANT_ID] + GENOTYPES),sep=',',file=genotype_file)
+    # QUALITY
+    def genotype_quality(g):
+        d=dict(zip(s['FORMAT'].split(':'),g.split(':')))
+        allele_depth=d['AD']
+        total_depth=d['DP']
+        return total_depth
+    print(*([VARIANT_ID] + [genotype_quality(s.get(h,'.'))for h in SAMPLES]),sep=',',file=quality_file)
+    # ANNOTATIONS
+    INFO=dict([tuple(x.split('=')) for x in s['INFO'].split(';')])
+    # AFs
+    # only include AFs where the ref>alt match
+    s.update(dict([(k,af.split(':')[1],) for k in set(INFO).intersection(EXAC) for af in INFO[k].split(',') if ('>'.join([s['REF'],s['ALT']])==af.split(':')[0])]))
+    s.update(dict([(k,af.split(':')[1],) for k in set(INFO).intersection(ONEKG) for af in INFO[k].split(',') if ('>'.join([s['REF'],s['ALT']])==af.split(':')[0])]))
+    # determine whether we have a deletion or an insertion
+    # the CSQ Allele is set accordingly
+    # deletion
+    if len(s['REF']) > len(s['ALT']):
+        s['Allele']='-'
+    # insertion
+    elif len(s['REF']) < len(s['ALT']):
+        s['Allele']=s['ALT'].lstrip(s['REF'][:(len(s['REF'])-1)])
+    # variant
+    else:
+        s['Allele']=s['ALT']
+    if 'CSQ' in INFO:
+        #read the comma separated list of CSQs
+        cons=[ dict(zip(CSQ_HEADER,[b for b in a.split('|')])) for a in INFO['CSQ'].split(',') ]
+        #only keep ones where the Allele matches the expected
+        #print s['Allele']
+        #print [ co['Allele'] for co in cons ]
+        cons=[ co for co in cons if co['Allele']==s['Allele'] ]
+        for csq in CSQ_HEADER: s[csq] = ','.join([co[csq] for co in cons])
+    # calculate freq of variant in this batch
+    #GENOTYPES.count(NA)
+    s['BF']=float(GENOTYPES.count(1)+GENOTYPES.count(2)*2) / len(SAMPLES)
+    print(*([VARIANT_ID] + [s.get(h,'.')for h in ANNOTATION_HEADER]),sep='\t',file=annotation_file)
 
 
