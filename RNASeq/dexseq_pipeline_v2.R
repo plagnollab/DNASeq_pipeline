@@ -1,5 +1,6 @@
 library(DEXSeq)
-library(parallel)
+library(BiocParallel)
+
 
 #source("/cluster/project2/vyp/vincent/Software/pipeline/RNASeq/dexseq_tools.R")
 
@@ -39,49 +40,6 @@ plotMA <- function(x, ylim,col = ifelse(x$padj>=0.1, "gray32", "red3"), linecol 
   abline(h=0, lwd=4, col=linecol)
 }
 
-fitDispersionFunction <- function (ecs) {  ##function that includes a fix by VP
-  stopifnot(is(ecs, "ExonCountSet"))
-  if (all(is.na(fData(ecs)$dispBeforeSharing))) {
-    stop("no CR dispersion estimations found, please first call estimateDispersions function")
-  }
-  means <- colMeans(t(counts(ecs))/sizeFactors(ecs))
-  disps <- fData(ecs)$dispBeforeSharing
-  coefs <- c(0.1, 1)
-  iter <- 0
-  while (TRUE) {
-    residuals <- disps/(coefs[1] + coefs[2]/means)
-    good <- which((residuals > 1e-04) & (residuals < 15) )
-    mm <- model.matrix(disps[good] ~ I(1/means[good]))
-    fit <- try(statmod:::glmgam.fit(mm, disps[good], coef.start = coefs),
-               silent = TRUE)
-    if (inherits(fit, "try-error")) {
-      stop("Failed to fit the dispersion function\n")
-    }
-    oldcoefs <- coefs
-    coefs <- coefficients(fit)
-    #message(coefs)
-    if (coefs[1] < 0) {
-      coefs[1] <- 0.001
-      warning("Negative intercept value in the dispersion function, it will be set to 0. Check fit diagnostics plot section from the vignette.")
-      #print(coefs)
-      #break
-    }
-    if (sum(log(coefs/oldcoefs)^2) < 0.005)
-      break
-    iter <- iter + 1
-    if (iter > 10) {
-      warning("Dispersion fit did not converge.")
-      break
-    }
-  }
-  ecs@dispFitCoefs <- coefs
-  fData(ecs)$dispFitted <- ecs@dispFitCoefs[1] + ecs@dispFitCoefs[2]/colMeans(t(counts(ecs))/sizeFactors(ecs))
-  fData(ecs)$dispersion <- pmin(pmax(fData(ecs)$dispBeforeSharing,
-                                     fData(ecs)$dispFitted, na.rm = TRUE), 1e+08)
-  return(ecs)
-}
-
-
 getArgs <- function() {
   myargs.list <- strsplit(grep("=",gsub("--","",commandArgs()),value=TRUE),"=")
   myargs <- lapply(myargs.list,function(x) x[2] )
@@ -94,10 +52,12 @@ getArgs <- function() {
 ########################## read arguments
 dexseq.compute <- TRUE
 
-annotation.file <- '/cluster/project8/vyp/vincent/Software/pipeline/RNASeq/bundle/mouse/biomart/biomart_annotations_mouse.tab'
-iFolder <- '/scratch3/vyp-scratch2/Bochukova_RNASeq/processed'
-support.frame <- 'support/Bochukova.tab'
-code <- 'Bochukova'
+BPPARAM = MulticoreParam(workers=8)
+
+annotation.file <- '/cluster/project8/vyp/vincent/Software/pipeline/RNASeq/bundle/Tc1_mouse/tc1_annotations.tab'
+iFolder <- '/scratch2/vyp-scratch2/IoN_RNASeq/Frances/processed'
+support.frame <- 'data/RNASeq_AD_Tc1J20.tab'
+code <- 'Zanda_AD_Tc1J20'
 
 
 myArgs <- getArgs()
@@ -129,6 +89,13 @@ dexseq.counts <- paste(dexseq.folder, '/dexseq_counts_', code, '.RData', sep = '
 if (!file.exists(dexseq.folder)) dir.create(dexseq.folder)
 
 
+keep.dups <- FALSE
+gff <- '/cluster/project8/vyp/vincent/Software/pipeline/RNASeq/bundle/Tc1_mouse/GTF/Tc1.gff'
+
+my.ids <- support$sample
+if (!keep.dups) countFiles <- paste(iFolder, '/', my.ids, '/dexseq/', my.ids, '_dexseq_counts.txt', sep = '')
+if (keep.dups) countFiles <- paste(iFolder, '/', my.ids, '/dexseq/', my.ids, '_dexseq_counts_keep_dups.txt', sep = '')
+
 
 for (condition in list.conditions) {
 
@@ -137,8 +104,10 @@ for (condition in list.conditions) {
 
   ##handle the type variable
   support.loc$condition <- factor(support[, condition])
-  support.loc <-  subset(support.loc, !is.na(condition) )
+  loc.countFiles <- countFiles[ !is.na(support.loc$condition) ]
+  support.loc <-  support.loc[ !is.na(support.loc$condition), ]
 
+  
   ##handle the type variable
   type.loc <- gsub(x = condition, pattern = 'condition', replacement = 'type')
   if ( (! type.loc %in% names(support.loc)) & ('type' %in% names(support.loc))) {type.loc <- 'type'}  ##if only "type" is present, use it
@@ -165,6 +134,7 @@ for (condition in list.conditions) {
   if (dexseq.compute) {  
     load(dexseq.counts)  ##object mycounts is key
     #DexSeqExons <- subset(DexSeqExons, c(rep(TRUE, 300), rep(FALSE, nrow(counts(DexSeqExons)) - 300))) 
+
     
 
     use.covariate <- FALSE
@@ -190,36 +160,44 @@ for (condition in list.conditions) {
       my.design.loc <- support.loc[, c('condition'), drop = FALSE]  ##just to print basically
     }
 
-    row.names(my.design.loc) <- support.loc$sample
+    row.names(my.design.loc) <- factor(support.loc$sample)
+    
+    DexSeqExons.loc <- DEXSeqDataSetFromHTSeq(loc.countFiles,
+                                              sampleData= my.design.loc,
+                                              design=  formula1,
+                                              flattenedfile= gff)
+    
     write.table(x = my.design.loc, file = paste(loc.dexseq.folder, '/design.tab', sep = ''), row.names = TRUE, quote = FALSE, sep = '\t')
 
-
-    message('Updating the dexseq object')
-    DexSeqExons.loc <- newExonCountSet(countData=counts(DexSeqExons)[, !is.na(support[, condition])],
-                                       design= my.design,
-                                       geneIDs=geneIDs(DexSeqExons),
-                                       exonIDs=exonIDs(DexSeqExons),
-                                       transcripts = DexSeqExons@featureData@data$transcripts,
-                                       exonIntervals = DexSeqExons@featureData@data[, c('chr', 'start', 'end', 'strand')])
     
+    
+    #message('Updating the dexseq object')
+    #DexSeqExons.loc <- DEXSeqDataSet(countData= featureCounts(mycounts),
+    #                                 sampleData = my.design.loc,
+    #                                 design= formula1,
+    #                                 groupID=geneIDs(mycounts),
+    #                                 featureID=exonIDs(mycounts),
+    #                                 transcripts = DexSeqExons@featureData@data$transcripts,
+    #                                 featureRanges = GRanges(DexSeqExons@featureData@data$chr, IRanges (start = DexSeqExons@featureData@data$start, end = DexSeqExons@featureData@data$end)) )
+
+
     message('Starting the computations')
     DexSeqExons.loc <- estimateSizeFactors(DexSeqExons.loc)
 
     
     message('Here is the part that takes a lot of time')
-    DexSeqExons.loc <- DEXSeq::estimateDispersions(object=DexSeqExons.loc,
-                                                    nCores=8,
-                                                    minCount=20,
-                                                    formula = as.formula(formuladispersion))
-    message('Done with estimateDispersions')
+    DexSeqExons.loc <- DEXSeq::estimateDispersions(DexSeqExons.loc, BPPARAM=BPPARAM)
+    message('Done with estimateDispersions')    
+    DexSeqExons.loc <- testForDEU(DexSeqExons.loc, BPPARAM=BPPARAM)
+    message('Done with testDEU')    
+    DexSeqExons.loc <- estimateExonFoldChanges(DexSeqExons.loc, BPPARAM=BPPARAM)
+    message('Done with estimateFoldChange')
     
-    DexSeqExons.loc <- fitDispersionFunction(DexSeqExons.loc)
-    #DexSeqExons.loc <- testForDEU(DexSeqExons.loc, nCores=8, formula0 = as.formula(formula0), formula1 = as.formula(formula1))
-    DexSeqExons.loc <- testForDEU(DexSeqExons.loc, nCores=8)
-    DexSeqExons.loc <- estimatelog2FoldChanges(DexSeqExons.loc)
-
 ######################### output basic table
-    res <- DEUresultTable(DexSeqExons.loc)
+    res <- DEXSeqResults (DexSeqExons.loc)
+    print(head(res))
+
+    save(list = c('res', 'DexSeqExons.loc'), file = 'test_file.RData')
     
     names(res)[1:6] <- c("EnsemblID", "exonID", "dispersion", "pvalue", "padjust", "meanBase")
     res <- merge(res, annotation[, c('EnsemblID', 'external_gene_id', 'chromosome_name', 'start_position', 'end_position', 'strand')], by = 'EnsemblID')
