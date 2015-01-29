@@ -20,7 +20,7 @@ ANNOTATION_HEADER=['VID']+CSQ+EXAC+UCL+['AF','WT','HET','HOM','MISS']
 annotation_file=open('-'.join([basename,'annotations.tab']), 'w+')
 genotype_file=open('-'.join([basename,'genotypes.csv']), 'w+')
 quality_file=open('-'.join([basename,'genotypes_depth.tab']), 'w+')
-for l in sys.stdin:
+for l in infile:
     #get the format of the VEP consequence (CSQ) field
     #the names of the VEP CSQ fields are "|" delimited
     if l.startswith('##INFO=<ID=CSQ,'):
@@ -101,7 +101,7 @@ for l in sys.stdin:
         cons=[ co for co in cons if co['Allele']==s['Allele'] ]
         for csq in CSQ_HEADER: s[csq] = ','.join([co[csq] for co in cons])
     # calculate freq of variant in this batch
-    s['MISS'] = float(GENOTYPES.count(NA)) / len(SAMPLES)
+    s['MISS'] = float(GENOTYPES.count('NA')) / len(SAMPLES)
     s['HET'] = float(GENOTYPES.count(1)) / len(SAMPLES)
     s['HOM'] = float(GENOTYPES.count(2)) / len(SAMPLES)
     s['AF']=float(GENOTYPES.count(1)+GENOTYPES.count(2)*2) / 2*len(SAMPLES)
