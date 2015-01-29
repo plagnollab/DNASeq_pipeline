@@ -360,20 +360,20 @@ function mode_combinegvcf() {
 ### This is the part that combines all the VCFs across samples to do the joint calling.
 ### This is a more practical aprroach of doing joint-calling than using the UnifiedGenotyper
 ### which relies on the BAM files.
-function mode_jointgvcf() {
+function mode_jointGenotyping() {
     input=${projectID}/gvcf/data/
-    output=${projectID}/jointgvcf/data/
+    output=${projectID}/jointGenotyping/data/
     mkdir -p ${output}
     nhours=${nhours-12}
     ncores=${ncores-1}
     vmem=${vmem-4}
-    rm -f ${projectID}/jointgvcf/scripts/*.sh
+    rm -f ${projectID}/jointGenotyping/scripts/*.sh
     for chrCode in `seq 1 $cleanChrLen`
     do 
         ##one job per chromosome to save time
         chrCleanCode=${cleanChr[ $chrCode ]}
         ##if the index is missing, or we use the "force" option
-        if [ ! -s ${output}/jointgvcf_chr${chrCleanCode}.vcf.gz ] || [ "$force" == "yes" ]
+        if [ ! -s ${output}/jointGenotyping_chr${chrCleanCode}.vcf.gz ] || [ "$force" == "yes" ]
         then 
             #Genotypes any number of gVCF files that were produced by the Haplotype Caller into a single joint VCF file.
             echo "
@@ -405,7 +405,7 @@ function mode_jointgvcf() {
                     echo "   --variant $gVCF \\" >> ${mainScript%.sh}_chr${chrCleanCode}.sh
                 fi
             done < <(tail -n +2 $supportFrame)
-            echo "   -o ${output}/jointgvcf_chr${chrCleanCode}.vcf.gz" >> ${mainScript%.sh}_chr${chrCleanCode}.sh
+            echo "   -o ${output}/jointGenotyping_chr${chrCleanCode}.vcf.gz" >> ${mainScript%.sh}_chr${chrCleanCode}.sh
         else 
             # if the file already exists then delete previous script
             rm -f ${mainScript%.sh}_chr${chrCleanCode}.sh
@@ -449,7 +449,7 @@ function mode_CombineGVCFs() {
 ### 
 ### 
 function mode_annotation() {
-    input=${projectID}/jointgvcf/data/
+    input=${projectID}/jointGenotyping/data/
     outputdir=${projectID}/annotation/
     output=${outputdir}/data/
     mkdir -p ${output} ${outputdir}/err ${outputdir}/out ${outputdir}/scripts
@@ -460,7 +460,7 @@ function mode_annotation() {
     rm -f ${projectID}/annotation/scripts/*.sh
     for chrCode in `seq 1 $cleanChrLen`
     do
-        INPUT=${input}/jointgvcf_chr${chrCode}.vcf.gz 
+        INPUT=${input}/jointGenotyping_chr${chrCode}.vcf.gz 
         ##if the index is missing, or we use the "force" option
         [[ ! -s ${INPUT} ]] && error "${INPUT} MISSING"
        #echo $chrCode $output

@@ -6,7 +6,7 @@ computer=CS
 if [[ "$computer" == "CS" ]]; then
     software=/cluster/project8/vyp/vincent/Software
     pythonbin=/share/apps/python-2.7.1/bin/python2.7
-    Rbin=/share/apps/R-3.0.2/bin/R
+    Rbin=/share/apps/R-3.1.0/bin/R
     
     misoRunEvents=/cluster/project8/vyp/vincent/Software/misopy-0.4.9/misopy/run_events_analysis.py
     runMiso=/cluster/project8/vyp/vincent/Software/misopy-0.4.9/misopy/run_miso.py
