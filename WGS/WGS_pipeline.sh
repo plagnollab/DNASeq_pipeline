@@ -466,7 +466,7 @@ function mode_annotation() {
        #echo $chrCode $output
        DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../annotation/
 cat >${mainScript%.sh}_chr${chrCode}.sh << EOL
-python $DIR/multiallele_to_single_gvcf.py $INPUT > ${output}/annotation_chr${chrCode}-single.vcf
+zcat $INPUT | python ${DIR}/multiallele_to_single_gvcf.py > ${output}/annotation_chr${chrCode}-single.vcf
 bash $DIR/run_VEP.sh --vcfin ${output}/annotation_chr${chrCode}-single.vcf --chr $chrCode --reference $reference --vcfout ${output}/VEP_${chrCode}.vcfout
 python $DIR/process_VEP.py <  ${output}/VEP_${chrCode}.vcfout >  ${output}/VEP_${chrCode}_final.tab
 EOL
@@ -604,6 +604,9 @@ picard_CreateSequenceDictionary=${picard}/CreateSequenceDictionary.jar
 picard_MarkDuplicates=${picard}/MarkDuplicates.jar
 picard_CalculateHsMetric=${picard}/CalculateHsMetrics.jar
 picard_SamToFastq=${picard}/SamToFastq.jar
+## vcflib
+# https://github.com/ekg/vcflib
+vcfbreakmulti=/cluster/project8/vyp/pontikos/Software/vcflib/bin/vcfbreakmulti
 
 # current default output folder is aligned
 oFolder=aligned
