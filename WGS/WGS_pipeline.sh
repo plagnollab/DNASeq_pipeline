@@ -362,7 +362,8 @@ function mode_combinegvcf() {
 ### which relies on the BAM files.
 function mode_jointGenotyping() {
     input=${projectID}/gvcf/data/
-    output=${projectID}/jointGenotyping/data/
+    outputdir=${projectID}/jointGenotyping
+    output=${outputdir}/data/
     mkdir -p ${output}
     nhours=${nhours-12}
     ncores=${ncores-1}
@@ -468,7 +469,7 @@ function mode_annotation() {
 cat >${mainScript%.sh}_chr${chrCode}.sh << EOL
 zcat $INPUT | python ${DIR}/multiallele_to_single_gvcf.py > ${output}/annotation_chr${chrCode}-single.vcf
 bash $DIR/run_VEP.sh --vcfin ${output}/annotation_chr${chrCode}-single.vcf --chr $chrCode --reference $reference --vcfout ${output}/VEP_${chrCode}.vcfout
-python $DIR/process_VEP.py <  ${output}/VEP_${chrCode}.vcfout >  ${output}/VEP_${chrCode}_final.tab
+python $DIR/process_VEP.py ${output}/VEP_${chrCode}.vcfout 
 EOL
    done
 }
