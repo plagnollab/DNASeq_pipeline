@@ -31,7 +31,7 @@ map=$ann_dir/chain_files/GRCh37_to_GRCh38.chain.gz
 grc37=$ann_dir/GRCh37/$ann
 grc38=$ann_dir/GRCh38/$ann
 
-#For UCLex and CADD we need this instead as we don't have any pop AF:
+#For UCLex and CADD we need this instead as we don't have any pop specific AF:
 if [[ "$ann" == "UCLex" ]] || [[ "$ann" == "CADD" ]] 
 then
     files=$grc37/chr${ch}.vcf.gz
@@ -46,16 +46,26 @@ do
     outbed=$grc38/${f}.bed
     unliftedbed=$grc38/${f}_unlifted.bed
     outvcf=$grc38/${f}.vcf
-    header=$grc38/${f}.header
+    header=$grc38/header.txt
     outvcfgz=${outvcf}.gz
-    zcat $vcfgz | awk '{OFS="\t"; if (!/^#/){print $1,$2-1,$2,$3,$4,$5,$6}}'  > $inbed
+    if [[ ! -s $inbed ]]
+    then
+        zcat $vcfgz | awk '{OFS="\t"; if (!/^#/){print $1,$2-1,$2,$3,$4,$5,$6}}'  > $inbed
+    fi
     # GRCh37 -> GRCh38
-    $liftOver $inbed $map  $outbed $unliftedbed
+    if [[ ! -s $outbed ]]
+    then
+        $liftOver $inbed $map  $outbed $unliftedbed
+    fi
     echo output `wc -l $outbed`
     echo unlifted `wc -l $unliftedbed`
-    zgrep '^#' $vcfgz > $header
+    if [[ ! -s $header ]]
+    then
+        zgrep '^#' $vcfgz > $header
+    fi
+    sort -T /scratch0/ -k2 -n $outbed | awk -v chr=$ch '{OFS="\t";if ($1==chr){print $1,$3,$4,$5,$6,".",".","."}}' > $outbed.filter
     #filter on chromosome name to remove positions mapped to different chrom or alternative sequences
-    cat $header <(sort -k 2 -n $outbed | awk -v chr=$ch '{OFS="\t";if ($1==chr){print $1,$3,$4,$5,$6,".",".","."}}') > $outvcf
+    cat $header $outbed.filter > $outvcf
     bgzip -f -c $outvcf > $outvcfgz
     tabix -f -p vcf $outvcfgz
 done

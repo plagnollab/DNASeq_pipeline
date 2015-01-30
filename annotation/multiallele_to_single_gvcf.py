@@ -72,6 +72,10 @@ for line in sys.stdin:
             AD=d['AD'].split(',')
             AD[1]=AD[idx+1]
             AD=','.join(AD[:2])
+            # matches REF -> 0
+            # matches ALT -> 1
+            # matches anything else -> .
+            #sorted so that "." precedes number
             GT='/'.join(sorted([{s['REF']:'0',s['ALT']:'1'}.get(n2geno[g],'.') for g in d['GT'].split('/')]))
             DP=str(sum([int(x) for x in AD.split(',')]))
             s1[h]=':'.join( [GT, AD, DP] )

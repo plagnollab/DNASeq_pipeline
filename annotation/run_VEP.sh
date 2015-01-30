@@ -79,8 +79,7 @@ annotations_dir=/cluster/project8/IBDAJE/VEP_custom_annotations/${reference}
 ####CADD http://cadd.gs.washington.edu/home
 #This needs to be updated with the latest scores [ACTION!]
 #They also now provide a script which is worth exploring
-#custom_annotation="--custom ${annotations_dir}/CADD/chr${chr}.vcf.gz,CADD,vcf,exact"
-custom_annotation=""
+custom_annotation="--custom ${annotations_dir}/CADD/chr${chr}.vcf.gz,CADD,vcf,exact"
 ####ExAC
 for pop in AFR AMR Adj EAS FIN NFE OTH SAS
 do
