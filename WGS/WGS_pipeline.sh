@@ -364,10 +364,11 @@ function mode_jointGenotyping() {
     input=${projectID}/gvcf/data/
     outputdir=${projectID}/jointGenotyping
     output=${outputdir}/data/
-    mkdir -p ${output}
+    mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
     nhours=${nhours-12}
     ncores=${ncores-1}
     vmem=${vmem-4}
+    mainScript=${outputdir}/scripts/jointGenotyping.sh
     rm -f ${projectID}/jointGenotyping/scripts/*.sh
     for chrCode in `seq 1 $cleanChrLen`
     do 
