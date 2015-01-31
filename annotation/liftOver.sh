@@ -6,9 +6,9 @@
 #$ -V
 #$ -R y
 #$ -pe smp 1
-#$ -l scr=1G
-#$ -l tmem=2G,h_vmem=1G
-#$ -l h_rt=1:0:0
+#$ -l scr=2G
+#$ -l tmem=5G,h_vmem=5G
+#$ -l h_rt=5:0:0
 #$ -t 1-25
 #$ -tc 25
 set -u
