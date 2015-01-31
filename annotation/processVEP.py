@@ -6,8 +6,11 @@ import re
 # check the INFO header of your VCF for more ouput options
 # also check the INFO CSQ field
 OUTPUT= ['CHROM', 'POS', 'ID', 'REF', 'ALT']
-CSQ=['Allele','Gene','Feature','Feature_type','Consequence','cDNA_position','CDS_position','Protein_position','Amino_acids','Codons','Existing_variation','DISTANCE','STRAND','SYMBOL','SYMBOL_SOURCE','HGNC_ID','CANONICAL','SIFT','PolyPhen','GMAF','AFR_MAF','AMR_MAF','ASN_MAF','EUR_MAF','AA_MAF','EA_MAF','CLIN_SIG','SOMATIC','CAROL','Condel']
+CSQ=['Allele','Gene','Feature','Feature_type','Consequence','cDNA_position','CDS_position','Protein_position','Amino_acids','Codons','Existing_variation','DISTANCE','STRAND','SYMBOL','SYMBOL_SOURCE','HGNC_ID','CANONICAL','SIFT','PolyPhen','CLIN_SIG','SOMATIC','CAROL','Condel']
+#these are in the CSQ field
+MAF=['GMAF','AFR_MAF','AMR_MAF','ASN_MAF','EUR_MAF','AA_MAF','EA_MAF']
 # allele freq (AF) in various populations
+ESP=['EXAC_EA', 'EXAC_AA']
 EXAC=['EXAC_AFR', 'EXAC_AMR', 'EXAC_Adj', 'EXAC_EAS', 'EXAC_FIN', 'EXAC_NFE', 'EXAC_OTH', 'EXAC_SAS']
 ONEKG=['1KG_EUR', '1KG_AFR', '1KG_AMR', '1KG_ASN', 'ESP_EA', 'ESP_AA']
 UCL=['UCLEX']
@@ -16,7 +19,7 @@ filename=sys.argv[1]
 infile=open(filename,'r')
 basename=filename.split('.')[0]
 
-ANNOTATION_HEADER=['VID']+CSQ+EXAC+UCL+['AF','WT','HET','HOM','MISS']
+ANNOTATION_HEADER=['VID']+CSQ+MAF+EXAC+UCL+ONEKG+ESP+['AF','WT','HET','HOM','MISS']
 annotation_file=open('-'.join([basename,'annotations.tab']), 'w+')
 genotype_file=open('-'.join([basename,'genotypes.csv']), 'w+')
 quality_file=open('-'.join([basename,'genotypes_depth.tab']), 'w+')
@@ -79,8 +82,10 @@ for l in infile:
     INFO=dict([tuple(x.split('=')) for x in s['INFO'].split(';')])
     # AFs
     # only include AFs where the ref>alt match
-    s.update(dict([(k,af.split(':')[1],) for k in set(INFO).intersection(EXAC) for af in INFO[k].split(',') if ('>'.join([s['REF'],s['ALT']])==af.split(':')[0])]))
     s.update(dict([(k,af.split(':')[1],) for k in set(INFO).intersection(ONEKG) for af in INFO[k].split(',') if ('>'.join([s['REF'],s['ALT']])==af.split(':')[0])]))
+    s.update(dict([(k,af.split(':')[1],) for k in set(INFO).intersection(ESP) for af in INFO[k].split(',') if ('>'.join([s['REF'],s['ALT']])==af.split(':')[0])]))
+    s.update(dict([(k,af.split(':')[1],) for k in set(INFO).intersection(EXAC) for af in INFO[k].split(',') if ('>'.join([s['REF'],s['ALT']])==af.split(':')[0])]))
+    s.update(dict([(k,af.split(':')[1],) for k in set(INFO).intersection(UCL) for af in INFO[k].split(',') if ('>'.join([s['REF'],s['ALT']])==af.split(':')[0])]))
     # determine whether we have a deletion or an insertion
     # the CSQ Allele is set accordingly
     # deletion
@@ -100,11 +105,12 @@ for l in infile:
         #print [ co['Allele'] for co in cons ]
         cons=[ co for co in cons if co['Allele']==s['Allele'] ]
         for csq in CSQ_HEADER: s[csq] = ','.join([co[csq] for co in cons])
+        for maf in MAF: s[maf] = ','.join(set([str(float(m.split('&')[0].split(':')[1])) for m in s[maf].split(',') if len(m.strip())>0]))
     # calculate freq of variant in this batch
     s['MISS'] = float(GENOTYPES.count('NA')) / len(SAMPLES)
     s['HET'] = float(GENOTYPES.count(1)) / len(SAMPLES)
     s['HOM'] = float(GENOTYPES.count(2)) / len(SAMPLES)
     s['AF']=float(GENOTYPES.count(1)+GENOTYPES.count(2)*2) / 2*len(SAMPLES)
-    print(*([VARIANT_ID] + [s.get(h,'.')for h in ANNOTATION_HEADER]),sep='\t',file=annotation_file)
+    print(*([VARIANT_ID] + [s.get(h,'')for h in ANNOTATION_HEADER]),sep='\t',file=annotation_file)
 
 

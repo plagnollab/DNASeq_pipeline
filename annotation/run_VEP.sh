@@ -143,5 +143,5 @@ fields=''
 #output='--pick'
 output='--vcf'
 
-$perl5142 $vep $port --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol --coding_only --canonical --check_existing --check_alleles --plugin Carol --stats_text --no_progress --output_file $vcfout --plugin Condel,${condel_config},b --force_overwrite $output --fork 2 $maf $fields $custom_annotation 
+$perl5142 $vep $port --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol --coding_only --canonical --check_existing --check_alleles --plugin LoF --plugin Carol --stats_text --no_progress --output_file $vcfout --plugin Condel,${condel_config},b --force_overwrite $output --fork 2 $maf $fields $custom_annotation 
 
