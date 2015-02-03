@@ -266,9 +266,10 @@ function mode_gvcf() {
     output=${outputdir}/data
     mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
     nhours=${nhours-24}
-    ncores=${ncores-1}
-    vmem=${vmem-8}
+    #ncores=${ncores-1}
+    vmem=${vmem-7.8}
     mainScript=${outputdir}/scripts/gvcf.sh
+    tc=`tail -n+2 $supportFrame | wc -l`
     #script files get regenerated on every run
     rm -f ${projectID}/gvcf/scripts/*.sh
     #memory2=6
@@ -460,17 +461,18 @@ function mode_annotation() {
     vmem=${vmem-2}
     mainScript=${outputdir}/scripts/annotation.sh
     rm -f ${projectID}/annotation/scripts/*.sh
-    for chrCode in `seq 1 $cleanChrLen`
+    for i in `seq 1 $cleanChrLen`
     do
+        chrCode=${cleanChr[ $i ]}
         INPUT=${input}/jointGenotyping_chr${chrCode}.vcf.gz 
         ##if the index is missing, or we use the "force" option
         [[ ! -s ${INPUT} ]] && error "${INPUT} MISSING"
        #echo $chrCode $output
        DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../annotation/
 cat >${mainScript%.sh}_chr${chrCode}.sh << EOL
-zcat $INPUT | python ${DIR}/multiallele_to_single_gvcf.py > ${output}/annotation_chr${chrCode}-single.vcf
-bash $DIR/run_VEP.sh --vcfin ${output}/annotation_chr${chrCode}-single.vcf --chr $chrCode --reference $reference --vcfout ${output}/VEP_${chrCode}.vcfout
-python $DIR/process_VEP.py ${output}/VEP_${chrCode}.vcfout 
+zcat $INPUT | python ${DIR}/multiallele_to_single_gvcf.py > ${output}/chr${chrCode}-single.vcf
+bash $DIR/run_VEP.sh --vcfin ${output}/chr${chrCode}-single.vcf --chr $chrCode --reference $reference --vcfout ${output}/VEP_${chrCode}.vcfout
+python $DIR/processVEP.py ${output}/VEP_${chrCode}.vcfout 
 EOL
    done
 }
@@ -669,7 +671,7 @@ fi
 mkdir -p $projectID
 #symlink the supportFrame to a known location
 supportFrameLink=${projectID}/`basename $supportFrame`
-ln -sf $supportFrame  $supportFrameLink
+cp -f $supportFrame  $supportFrameLink
 supportFrame=$supportFrameLink
 touch ${projectID}/README
 echo "
@@ -696,7 +698,7 @@ echo "
 #$ -cwd
 #$ -V
 #$ -R y 
-#$ -pe smp ${ncores}
+#$ -pe smp ${ncores-2}
 #$ -l scr=${scratch-1}G
 #$ -l tmem=${vmem}G,h_vmem=${vmem}G
 #$ -l h_rt=${nhours}:0:0
