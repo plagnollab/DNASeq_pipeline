@@ -73,68 +73,6 @@ EOL
 }
 
 
-####################### GATK HaplotypeCaller genome-wide  ############################################################
-# Take as input the sorted, unique per sample BAM files and produces the gVCF files.
-# The gVCF files will not be split by chromosome. This is only pratical for smaller
-# non-genomewide datasets.
-# Input: BAM files.
-# Output: per sample gvcf files.
-function mode_gvcf_unsplit() {
-    input=${projectID}/align/data/
-    output=${projectID}/gvcf_unsplit/data/
-    mkdir -p $output
-    nhours=${nhours-72}
-    ncores=${ncores-1}
-    vmem=${vmem-8}
-    #memory2=6
-    # GATK_HaplotypeCaller requires a sequence dictionary
-    # Maybe the following should be submitted as interactive long job?
-    #
-    #[[ -e ${fasta%.fasta}.dict ]] && $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
-    if [ ! -e ${fasta%.fasta}.dict ]
-    then 
-        echo $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
-        $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
-    fi
-    #same story
-    if [ ! -e ${fasta}.fai ]
-    then 
-        echo $samtools faidx $fasta
-        $samtools faidx $fasta
-        file ${fasta}.fai
-    fi
-    #start of while loop
-    #each line of the support file is read
-    #and a script each is generated
-    while read code f1 f2
-    do
-      if [ ! -s ${output}/${code}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
-      then
-          echo ${output}/${code}.gvcf.gz.tbi does not exist
-          #if file is empty stop
-          [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
-           #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
-          echo "
-          $HaplotypeCaller \
-           -R $fasta \
-           -I ${input}/${code}_sorted_unique.bam  \
-           --emitRefConfidence GVCF \
-           --variant_index_type LINEAR \
-           --variant_index_parameter 128000 \
-           -stand_call_conf 30.0 \
-           -stand_emit_conf 10.0 \
-           --downsample_to_coverage 250 \
-           --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 60 \
-           -o ${output}/${code}.gvcf.gz
-            " > ${mainScript%.sh}_${code}.sh
-      else
-          rm -f ${mainScript%.sh}_${code}.sh
-      fi
-    done < <(tail -n +2 $supportFrame)
-    #end of while loop
-}
-
-
 
 ####################### Bedtools coverageBed of BAM files #####################################################################
 # Take as input the sorted, unique per sample BAM files, and the capture bed files and produces the coverage files
@@ -149,6 +87,7 @@ function mode_coverage() {
     nhours=${nhours-4}
     ncores=${ncores-2}
     vmem=${vmem-4}
+    #$ -R y 
     mkdir -p $outputdir/data $outputdir/scripts $outputdir/err $outputdir/out
     # Macrogen capture file
     #bed=/goon2/project99/IBDAJE_raw/Macrogen/nochr_SureSelect_v4.bed
@@ -265,11 +204,12 @@ function mode_gvcf() {
     outputdir=${projectID}/gvcf
     output=${outputdir}/data
     mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
-    nhours=${nhours-24}
-    #ncores=${ncores-1}
-    vmem=${vmem-7.8}
     mainScript=${outputdir}/scripts/gvcf.sh
-    tc=`tail -n+2 $supportFrame | wc -l`
+    SGE_PARAMETERS="
+#$ -l scr=1G
+#$ -l tmem=7.8G,h_vmem=7.8G
+#$ -l h_rt=5:0:0
+"
     #script files get regenerated on every run
     rm -f ${projectID}/gvcf/scripts/*.sh
     #memory2=6
@@ -330,53 +270,127 @@ function mode_gvcf() {
     done < <(tail -n +2 $supportFrame)
 }
 
-####################### GATK CombineGVCFs split by chromosome  ############################################################
-# Take as input the per sample gVCF files and produces the combined gvcf file.
-# Splits by chromosome.
-function mode_combinegvcf() {
-    nhours=${nhours-12}
-    ncores=${ncores-1}
-    vmem=${vmem-6}
-    input=${projectID}/gvcf/data/
-    output=${projectID}/combinegvcf/data/
-    mkdir -p $output
-    ##one script per chromosome
-    for chrCode in `seq 1 $cleanChrLen`
+####################### GATK HaplotypeCaller do not split by chromosome ##############################################
+# Take as input the sorted, unique per sample BAM files and produces the gVCF files.
+# The gVCF files will not be split by chromosome. This is only pratical for smaller
+# non-genomewide datasets.
+# Input: BAM files.
+# Output: per sample gvcf files.
+function mode_gvcf_unsplit() {
+    input=${projectID}/align/data/
+    outputdir=${projectID}/gvcf_unsplit/
+    output=$outputdir/data/
+    mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
+    mainScript=${outputdir}/scripts/gvcf_unsplit.sh
+    SGE_PARAMETERS="
+#$ -l scr=1G
+#$ -l tmem=7.8G,h_vmem=7.8G
+#$ -l h_rt=72:0:0
+"
+    # GATK_HaplotypeCaller requires a sequence dictionary
+    # Maybe the following should be submitted as interactive long job?
+    #
+    #[[ -e ${fasta%.fasta}.dict ]] && $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
+    if [ ! -e ${fasta%.fasta}.dict ]
+    then 
+        echo $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
+        $java -jar $picard_CreateSequenceDictionary R=$fasta O=${fasta%.fasta}.dict
+    fi
+    #same story
+    if [ ! -e ${fasta}.fai ]
+    then 
+        echo $samtools faidx $fasta
+        $samtools faidx $fasta
+        file ${fasta}.fai
+    fi
+    #start of while loop
+    #each line of the support file is read
+    #and a script each is generated
+    while read code f1 f2
     do
-        chrCleanCode=${cleanChr[ $chrCode ]}
-        VARIANTS=`echo $input/*_chr${chrCleanCode}.gvcf.gz | xargs -n1 | xargs -I f echo -n ' --variant' f`
-        echo "
-        $CombineGVCFs \
-        -R $fasta \
-        -L ${chrPrefix}${chrCleanCode} \
-        -o ${output}/chr${chrCleanCode}.gvcf.gz \
-        $VARIANTS
-        " > ${mainScript%.sh}_chr${chrCode}.sh
-    done
+      if [ ! -s ${output}/${code}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
+      then
+          echo ${output}/${code}.gvcf.gz.tbi does not exist
+          #if file is empty stop
+          [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
+           #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
+          echo "
+          $HaplotypeCaller \
+           -R $fasta \
+           -I ${input}/${code}_sorted_unique.bam  \
+           --emitRefConfidence GVCF \
+           --variant_index_type LINEAR \
+           --variant_index_parameter 128000 \
+           -stand_call_conf 30.0 \
+           -stand_emit_conf 10.0 \
+           --downsample_to_coverage 250 \
+           --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 60 \
+           -o ${output}/${code}.gvcf.gz
+            " > ${mainScript%.sh}_${code}.sh
+      else
+          rm -f ${mainScript%.sh}_${code}.sh
+      fi
+    done < <(tail -n +2 $supportFrame)
+    #end of while loop
 }
 
 
+
+
+####################### GATK CombineGVCFs   ##################################################################################
+### 
+# Take as input the per sample per chromosome gVCF files and produces the combined gvcf file.
+### 
+### 
+function mode_CombineGVCFs() {
+    input=${projectID}/gvcf/data/
+    batchFile=/cluster/project8/IBDAJE/Macrogen/${batchName}.txt
+    outputdir=${projectID}/${batchName}/
+    mainScript=${outputdir}/scripts/CombineGVCFs.sh
+    mkdir -p $outputdir/data $outputdir/err $outputdir/out $outputdir/scripts
+    SGE_PARAMETERS="
+#$ -l scr=1G
+#$ -l tmem=7.8G,h_vmem=7.8G
+#$ -l h_rt=12:0:0
+"
+    rm -f ${outputdir}/scripts/*.sh
+    for chrCode in `seq 1 $cleanChrLen`
+    do 
+       ##one job per chromosome to save time
+       chrCleanCode=${cleanChr[ $chrCode ]}
+       #add checks to see if file exists before adding to VARIANTS
+       VARIANTS=`cat $batchFile | xargs -I x echo "--variant ${input}/x_chr${chrCleanCode}.gvcf.gz" | tr '\n' ' '`
+       echo "
+       $java -Djava.io.tmpdir=/scratch0/ -Xmx7g -Xms7g -jar $GATK \
+       -T CombineGVCFs \
+       -R $fasta \
+       -L ${chrPrefix}${chrCleanCode} \
+       -o ${outputdir}/data/chr${chrCleanCode}.gvcf.gz \
+       $VARIANTS
+       " > ${mainScript%.sh}_chr${chrCleanCode}.sh
+    done 
+}
 
 ####################### GATK GenotypeGVCFs  ##################################################################################
 ### This is the part that combines all the VCFs across samples to do the joint calling.
 ### This is a more practical aprroach of doing joint-calling than using the UnifiedGenotyper
 ### which relies on the BAM files.
-function mode_jointGenotyping() {
+function mode_GenotypeGVCFs() {
     input=${projectID}/gvcf/data/
-    outputdir=${projectID}/jointGenotyping
+    outputdir=${projectID}/GenotypeGVCFs
     output=${outputdir}/data/
     mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
     nhours=${nhours-12}
     ncores=${ncores-1}
     vmem=${vmem-4}
-    mainScript=${outputdir}/scripts/jointGenotyping.sh
-    rm -f ${projectID}/jointGenotyping/scripts/*.sh
+    mainScript=${outputdir}/scripts/GenotypeGVCFs.sh
+    rm -f ${projectID}/GenotypeGVCFs/scripts/*.sh
     for chrCode in `seq 1 $cleanChrLen`
     do 
         ##one job per chromosome to save time
         chrCleanCode=${cleanChr[ $chrCode ]}
         ##if the index is missing, or we use the "force" option
-        if [ ! -s ${output}/jointGenotyping_chr${chrCleanCode}.vcf.gz ] || [ "$force" == "yes" ]
+        if [ ! -s ${output}/GenotypeGVCFs_chr${chrCleanCode}.vcf.gz ] || [ "$force" == "yes" ]
         then 
             #Genotypes any number of gVCF files that were produced by the Haplotype Caller into a single joint VCF file.
             echo "
@@ -408,7 +422,7 @@ function mode_jointGenotyping() {
                     echo "   --variant $gVCF \\" >> ${mainScript%.sh}_chr${chrCleanCode}.sh
                 fi
             done < <(tail -n +2 $supportFrame)
-            echo "   -o ${output}/jointGenotyping_chr${chrCleanCode}.vcf.gz" >> ${mainScript%.sh}_chr${chrCleanCode}.sh
+            echo "   -o ${output}/GenotypeGVCFs_chr${chrCleanCode}.vcf.gz" >> ${mainScript%.sh}_chr${chrCleanCode}.sh
         else 
             # if the file already exists then delete previous script
             rm -f ${mainScript%.sh}_chr${chrCleanCode}.sh
@@ -416,35 +430,6 @@ function mode_jointGenotyping() {
     done
 }
 
-
-####################### GATK CombineGVCFs   ##################################################################################
-### 
-### 
-### 
-function mode_CombineGVCFs() {
-    nhours=${nhours-30}
-    ncores=${ncores-1}
-    vmem=${vmem-9}
-    tc=${tc-80}
-    rm -f ${projectID}/CombinedGVCFs/scripts/*.sh
-    if [[ ! -f $supportFile ]]
-    then
-        stop "support file does not exists"
-    fi
-    while IFS=',' read -r chrCleanCode input
-    do
-       #echo $chrCode $output
-       VARIANTS=`echo --variant $input | sed 's/,/ --variant /g'`
-       echo "
-       $java -Djava.io.tmpdir=${tempFolder} -Xmx7g -jar $GATK \
-       -T CombineGVCFs \
-       -R $fasta \
-       -L ${chrPrefix}${chrCleanCode} \
-       -o ${output}/chr${chrCleanCode}.gvcf.gz \
-       $VARIANTS
-       " > ${mainScript%.sh}_chr${chrCleanCode}.sh
-    done < <(tail -n+2 $supportFile) 
-}
 
 
 ####################### VEP annotation      ##################################################################################
@@ -545,6 +530,9 @@ do
     --force)
         shift
         force=$1;;
+    --batchName)
+        shift
+        batchName=$1;;
 # @pontikos: what is the point of this option @vplagnol ?
     #--enforceStrict)
         #shift
@@ -591,8 +579,8 @@ fi
 # Two functions of GATK will be used HaplotypeCaller and GenotypeGVCFs 
 GATK=${Software}/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
 #$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar ${GATK}
-HaplotypeCaller="$java -Djava.io.tmpdir=${tempFolder} -Xmx5g -jar $GATK -T HaplotypeCaller"
-CombineGVCFs="$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $GATK -T CombineGVCFs"
+HaplotypeCaller="$java -Djava.io.tmpdir=/scratch0/ -Xmx5g -Xms5g -jar $GATK -T HaplotypeCaller"
+CombineGVCFs="$java -Djava.io.tmpdir=/scratch0/ -Xmx4g -Xms4g -jar $GATK -T CombineGVCFs"
 novoalign=${Software}/novocraft3/novoalign
 novosort=${Software}/novocraft3/novosort
 #novoalign=/cluster/project8/vyp/pontikos/Software/novocraft/novoalign
@@ -697,13 +685,8 @@ echo "
 #$ -e /dev/null
 #$ -cwd
 #$ -V
-#$ -R y 
-#$ -pe smp ${ncores-2}
-#$ -l scr=${scratch-1}G
-#$ -l tmem=${vmem}G,h_vmem=${vmem}G
-#$ -l h_rt=${nhours}:0:0
 #$ -t 1-${njobs}
-#$ -tc ${tc-25}
+$SGE_PARAMETERS
 set -u
 set -x
 mkdir -p ${outputdir}/scripts ${outputdir}/data ${outputdir}/err ${outputdir}/out
