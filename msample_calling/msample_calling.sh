@@ -139,8 +139,10 @@ $java -Xmx${memoSmall}g -jar $GATK \\
    --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore --annotation MappingQualityRankSumTest --annotation ReadPosRankSumTest --annotation FisherStrand \\
    --dbsnp ${bundle}/dbsnp_137.b37.vcf \\" >> cluster/submission/subscript_chr${chr}.sh
 	    
-	    while read path id; do
-		gVCF=${path}/chr${chr}/${id}.gvcf.gz
+	    while read path id format; do
+		if [[ "$format" == "v1" ]]; then gVCF=${path}/chr${chr}/${id}.gvcf.gz; fi
+		if [[ "$format" == "v2" ]]; then gVCF=${path}/chr${chr}.gvcf.gz; fi
+
 		echo "Including $gVCF"
 		
 		if [ ! -s $gVCF ]; then stop "Cannot find $gVCF"; fi
