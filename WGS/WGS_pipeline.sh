@@ -25,17 +25,24 @@ try() { "$@" || stop "cannot $*"; }
 function mode_align() {
     outputdir=${projectID}/align
     mainScript=${outputdir}/scripts/align.sh
-    output=${projectID}/align/data/
-    mkdir -p $output
     ##10 days? Perhaps more.
-    nhours=${nhours-240}
+    #nhours=${nhours-240}
     ncores=${ncores-6}
-    vmem=${vmem-2.6}
+    #vmem=${vmem-2.6}
     ##used for the sort function, seem to crash when using 10
     #memory2=5
     memory2=${memory2-7}
     #
-    tparam=${tparam:-250}
+    #tparam=${tparam:-250}
+    output=${outputdir}/data
+    mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
+    mainScript=${outputdir}/scripts/gvcf.sh
+    SGE_PARAMETERS="
+#$ -l scr=1G
+#$ -pe smp ${ncores}
+#$ -l tmem=3G,h_vmem=3G
+#$ -l h_rt=24:0:0
+"
     for file in $novoalignRef
     do
     ls -lh $file
@@ -344,7 +351,8 @@ function mode_gvcf_unsplit() {
 ### 
 function mode_CombineGVCFs() {
     input=${projectID}/gvcf/data/
-    batchFile=/cluster/project8/IBDAJE/Macrogen/${batchName}.txt
+    batchFile=${batchFile-${supportFile}}
+    batchName=${batchName-`basename ${supportFile%%.*}`}
     outputdir=${projectID}/${batchName}/
     mainScript=${outputdir}/scripts/CombineGVCFs.sh
     mkdir -p $outputdir/data $outputdir/err $outputdir/out $outputdir/scripts
@@ -359,7 +367,7 @@ function mode_CombineGVCFs() {
        ##one job per chromosome to save time
        chrCleanCode=${cleanChr[ $chrCode ]}
        #add checks to see if file exists before adding to VARIANTS
-       VARIANTS=`cat $batchFile | xargs -I x echo "--variant ${input}/x_chr${chrCleanCode}.gvcf.gz" | tr '\n' ' '`
+       VARIANTS=`cat $batchFile | cut -f1 | grep -v code | xargs -I x echo "--variant ${input}/x_chr${chrCleanCode}.gvcf.gz" | tr '\n' ' '`
        echo "
        $java -Djava.io.tmpdir=/scratch0/ -Xmx7g -Xms7g -jar $GATK \
        -T CombineGVCFs \
