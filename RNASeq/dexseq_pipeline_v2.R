@@ -195,20 +195,22 @@ for (condition in list.conditions) {
     
 ######################### output basic table
     res <- DEXSeqResults (DexSeqExons.loc)
-    print(head(res))
-
-    save(list = c('res', 'DexSeqExons.loc'), file = 'test_file.RData')
+    logname <- grep(names(res), pattern = 'log2fold', value = TRUE)
+    #print(head(res));     save(list = c('res', 'DexSeqExons.loc'), file = 'test_file.RData')
+    res.clean <- as(res[, c('groupID', 'featureID', 'exonBaseMean', 'dispersion', 'stat', 'pvalue', logname)], 'data.frame')
+    names(res.clean)<- c("EnsemblID", "exonID", "meanBase", "dispersion", "stat", "pvalue")
     
-    names(res)[1:6] <- c("EnsemblID", "exonID", "dispersion", "pvalue", "padjust", "meanBase")
-    res <- merge(res, annotation[, c('EnsemblID', 'external_gene_id', 'chromosome_name', 'start_position', 'end_position', 'strand')], by = 'EnsemblID')
-    res <- res[ order(res$pvalue),]  
+    res.clean$exon.start <- start(res$genomicData)
+    res.clean$exon.end <- end(res$genomicData)
+    res.clean <- merge(res.clean, annotation[, c('EnsemblID', 'external_gene_id', 'chromosome_name', 'start_position', 'end_position', 'strand')], by = 'EnsemblID')
+    res.clean <- res.clean[ order(res.clean$pvalue),]  
     
-    write.csv(x = res,
+    write.csv(x = res.clean,
               file=paste(loc.dexseq.folder, "/", code, "_", loc.code, "_SignificantExons.csv", sep = ''),
               row.names = FALSE)
     
     message('Saving results in ', dexseq.data)
-    save(list = c('res', 'DexSeqExons.loc'), file = dexseq.data)
+    save(list = c('res.clean', 'DexSeqExons.loc'), file = dexseq.data)
   } else {
     load(dexseq.data)
   }
@@ -217,15 +219,15 @@ for (condition in list.conditions) {
 ########################## Now plot a subset
   file.remove(list.files(dexseq.figs, pattern = 'DEXSeq*', full.names = TRUE)) ##remove the old plots
 
-  n.sig <- sum(res$padjust < 0.01, na.rm = TRUE)
+  n.sig <- sum(res.clean$padjust < 0.01, na.rm = TRUE)
   if (n.sig > 50) {
-    resSigs <- subset(res, padjust<0.01)
-  } else resSigs <- res[1:50,]
+    res.cleanSigs <- subset(res.clean, padjust<0.01)
+  } else res.cleanSigs <- res.clean[1:50,]
 
 
-  for (i in 1:nrow(resSigs)) {
-    gene <- as.character(resSigs$EnsemblID[ i ])
-    gene.pretty <- as.character(resSigs$external_gene_id[ i ])
+  for (i in 1:nrow(res.cleanSigs)) {
+    gene <- as.character(res.cleanSigs$EnsemblID[ i ])
+    gene.pretty <- as.character(res.cleanSigs$external_gene_id[ i ])
     
     message(i, ' ', gene, ' ', gene.pretty)
     output.pdf <- paste(dexseq.figs, '/DEXSeq-', gene.pretty, '.pdf', sep = '')
@@ -254,8 +256,8 @@ for (condition in list.conditions) {
   
     
   pdf(file=paste(dexseq.figs, '/DEXSeq-MeanVsDispCircles.png', sep = ''))
-  try(plotMA(with(res,
-                  data.frame(baseMean = res[,6],log2FoldChange = res[,7], padj = res[,5]),
+  try(plotMA(with(res.clean,
+                  data.frame(baseMean = res.clean[,6],log2FoldChange = res.clean[,7], padj = res.clean[,5]),
                   ylim=c(-4,4), cex=0.8)))
   dev.off()
 
