@@ -141,7 +141,7 @@ $java -Xmx${memoSmall}g -jar $GATK \\
 	    
 	    while read path id format; do
 		if [[ "$format" == "v1" ]]; then gVCF=${path}/chr${chr}/${id}.gvcf.gz; fi
-		if [[ "$format" == "v2" ]]; then gVCF=${path}/chr${chr}.gvcf.gz; fi
+		if [[ "$format" == "v2" ]]; then gVCF=${path}/${id}-chr${chr}.gvcf.gz; fi
 
 		echo "Including $gVCF"
 		
