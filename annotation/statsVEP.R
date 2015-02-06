@@ -73,12 +73,13 @@ for (i in 1:length(samples)) points(cbind(positions,i),col=ifelse(is.na(ann$Feat
 #GMAF
 plot(positions,ann$GMAF,xlab='position',ylab='GMAF',main='',pch='.')
 #HOM
-plot(positions,ann$HOM,xlab='position',ylab='HOM',main='',pch='.')
-plot(positions,ann$HET,xlab='position',ylab='HET',main='',pch='.')
-plot(positions,ann$WT,xlab='position',ylab='WT',main='',pch='.')
-plot(positions,ann$MISSING,xlab='position',ylab='MISSING',main='',pch='.')
+plot(positions,ann$HOM,xlab='position',ylab='HOM count',main='',pch='.')
+plot(positions,ann$HET,xlab='position',ylab='HET count',main='',pch='.')
+plot(positions,ann$WT,xlab='position',ylab='WT count',main='',pch='.')
+plot(positions,ann$MISS,xlab='position',ylab='MISSING count',main='',pch='.')
 #
-pairs(ann[,c(AF,'AF')],pch='.')
+#pairs(ann[,c(AF,'AF')],pch='.')
+plot(ann$AF,ann$GMAF,pch='.')
 #relatedness
 plot(hclust(dist(t(geno[,samples]))),main='relatedness',xlab='hierarchical clustering of samples')
 dev.off()
