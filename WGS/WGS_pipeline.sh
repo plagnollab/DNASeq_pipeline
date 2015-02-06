@@ -269,9 +269,9 @@ function mode_gvcf() {
                --downsample_to_coverage 200 \
                --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
                -o ${output}/${code}_chr${chrCleanCode}.gvcf.gz
-              " > ${mainScript%.sh}_${code}_chr${chrCode}.sh
+              " > ${mainScript%.sh}_${code}_chr${chrCleanCode}.sh
             else
-                rm -f ${mainScript%.sh}_${code}_chr${chrCode}.sh
+                rm -f ${mainScript%.sh}_${code}_chr${chrCleanCode}.sh
             fi
         done
     done < <(tail -n +2 $supportFrame)
@@ -366,16 +366,23 @@ function mode_CombineGVCFs() {
     do 
        ##one job per chromosome to save time
        chrCleanCode=${cleanChr[ $chrCode ]}
-       #add checks to see if file exists before adding to VARIANTS
-       VARIANTS=`cat $batchFile | cut -f1 | grep -v code | xargs -I x echo "--variant ${input}/x_chr${chrCleanCode}.gvcf.gz" | tr '\n' ' '`
-       echo "
-       $java -Djava.io.tmpdir=/scratch0/ -Xmx7g -Xms7g -jar $GATK \
-       -T CombineGVCFs \
-       -R $fasta \
-       -L ${chrPrefix}${chrCleanCode} \
-       -o ${outputdir}/data/chr${chrCleanCode}.gvcf.gz \
-       $VARIANTS
-       " > ${mainScript%.sh}_chr${chrCleanCode}.sh
+       script=${mainScript%.sh}_chr${chrCleanCode}.sh
+       output=${outputdir}/data/chr${chrCleanCode}.gvcf.gz
+       if [ ! -s $output ]
+       then
+           #add checks to see if file exists before adding to VARIANTS
+           VARIANTS=`cat $batchFile | cut -f1 | grep -v code | xargs -I x echo "--variant ${input}/x_chr${chrCleanCode}.gvcf.gz" | tr '\n' ' '`
+           echo "
+           $java -Djava.io.tmpdir=/scratch0/ -Xmx7g -Xms7g -jar $GATK \
+           -T CombineGVCFs \
+           -R $fasta \
+           -L ${chrPrefix}${chrCleanCode} \
+           -o ${output} \
+           $VARIANTS
+           " > ${script}
+       else
+           rm -f ${script}
+       fi
     done 
 }
 
@@ -449,11 +456,13 @@ function mode_annotation() {
     outputdir=${projectID}/annotation/
     output=${outputdir}/data/
     mkdir -p ${output} ${outputdir}/err ${outputdir}/out ${outputdir}/scripts
-    nhours=${nhours-12}
-    ncores=${ncores-1}
-    vmem=${vmem-2}
     mainScript=${outputdir}/scripts/annotation.sh
     rm -f ${projectID}/annotation/scripts/*.sh
+    SGE_PARAMETERS="
+#$ -l scr=1G
+#$ -l tmem=3G,h_vmem=3G
+#$ -l h_rt=2:0:0
+"
     for i in `seq 1 $cleanChrLen`
     do
         chrCode=${cleanChr[ $i ]}
@@ -466,6 +475,7 @@ cat >${mainScript%.sh}_chr${chrCode}.sh << EOL
 zcat $INPUT | python ${DIR}/multiallele_to_single_gvcf.py > ${output}/chr${chrCode}-single.vcf
 bash $DIR/run_VEP.sh --vcfin ${output}/chr${chrCode}-single.vcf --chr $chrCode --reference $reference --vcfout ${output}/VEP_${chrCode}.vcfout
 python $DIR/processVEP.py ${output}/VEP_${chrCode}.vcfout 
+Rscript $DIR/statsVEP.R --annotation VEP_${chrCode}-annotations.csv --genotype VEP_${chrCode}-genotypes.csv --genotype_depth VEP_${chrCode}-genotypes_depth.csv
 EOL
    done
 }
