@@ -18,10 +18,11 @@ print(summary(ann))
 
 #d$ONEKG_AMR
 
-ESP=c('ESP_EA', 'ESP_AA')
-EXAC=c('EXAC_AFR', 'EXAC_AMR', 'EXAC_Adj', 'EXAC_EAS', 'EXAC_FIN', 'EXAC_NFE', 'EXAC_OTH', 'EXAC_SAS')
-UCL=c('UCLEX')
-ONEKG=c('ONEKG_EUR', 'ONEKG_AFR', 'ONEKG_AMR', 'ONEKG_ASN')
+ESP <- c('ESP_EA', 'ESP_AA')
+EXAC <- c('EXAC_AFR', 'EXAC_AMR', 'EXAC_Adj', 'EXAC_EAS', 'EXAC_FIN', 'EXAC_NFE', 'EXAC_OTH', 'EXAC_SAS')
+UCL <- c('UCLEX')
+ONEKG <- c('ONEKG_EUR', 'ONEKG_AFR', 'ONEKG_AMR', 'ONEKG_ASN')
+AF <- c('GMAF',ESP,EXAC,UCL,ONEKG)
 
 #check that numbers make sense in terms of coding variants per chromosome
 table(ann$Feature_type=='Transcript')
@@ -72,7 +73,12 @@ for (i in 1:length(samples)) points(cbind(positions,i),col=ifelse(is.na(ann$Feat
 #GMAF
 plot(positions,ann$GMAF,xlab='position',ylab='GMAF',main='',pch='.')
 #HOM
-plot(positions,ann$HOM,xlab='position',ylab='HOM',main='',type='l')
+plot(positions,ann$HOM,xlab='position',ylab='HOM',main='',pch='.')
+plot(positions,ann$HET,xlab='position',ylab='HET',main='',pch='.')
+plot(positions,ann$WT,xlab='position',ylab='WT',main='',pch='.')
+plot(positions,ann$MISSING,xlab='position',ylab='MISSING',main='',pch='.')
+#
+pairs(ann[,c(AF,'AF')],pch='.')
 #relatedness
 plot(hclust(dist(t(geno[,samples]))),main='relatedness',xlab='hierarchical clustering of samples')
 dev.off()
