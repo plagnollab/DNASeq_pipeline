@@ -89,7 +89,7 @@ memoSmall=5
 memo=7.9
 
 
-if [[ "$convertToR" == "yes" ]]; then memo=15.9; fi
+if [[ "$convertToR" == "yes" ]]; then memo=21.9; fi
 
 
 
@@ -258,7 +258,7 @@ if [[ "$annovar" == "yes" ]]; then
 	
 	script=cluster/submission/subscript_chr${chr}.sh
 	
-	if [[ ! -e ${output}_${snpStats}/chr${chr}.done || "$force" == "yes" ]]; then  ## this is not quite right, needs fixing because it does not account for the last step
+	if [[ ! -e ${output}_snpStats/chr${chr}.done || "$force" == "yes" ]]; then  ## this is not quite right, needs fixing because it does not account for the last step
 	    
 	    echo "
 if [ -e ${output}_${snpStats}/chr${chr}.done ]; then rm ${output}_${snpStats}/chr${chr}.done; fi  ## this is basically a log file, to make sure the job got finished
@@ -275,7 +275,7 @@ python /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/annovar_vcf_combi
 
 perl /cluster/project8/vyp/vincent/Software/pipeline/msample_calling/make_matrix_calls.pl ${output}_chr${chr}_exome_table.csv ${output} $chr
 
-touch ${output}_${snpStats}/chr${chr}.done  ##here we mark that the scripts finished
+touch ${output}_snpStats/chr${chr}.done  ##here we mark that the scripts finished
 
 " >> $script
 
