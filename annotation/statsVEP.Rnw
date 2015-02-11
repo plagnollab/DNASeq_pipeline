@@ -1,0 +1,154 @@
+\documentclass{article}
+
+\begin{document}
+
+\title{ VEP report for chromosome \Sexpr{chromosome} }
+%\subtitle{ Coding }
+%\author{Nikolas Pontikos}
+\maketitle
+
+%\section{Genotypes}
+
+
+<<label=AF-tab,echo=FALSE,results=tex>>=
+print(xtable( apply(ann[,c('GMAF',UCL,ESP)],2,function(x) table(!is.na(x)))))
+x <- apply(ann[,ONEKG],2,function(x) table(!is.na(x)))
+print(xtable(t(t(x)), caption="Number of variants with AF" ))
+@
+
+<<label=exac-tab,echo=FALSE,results=tex>>=
+exac1 <- c('EXAC_AFR', 'EXAC_AMR', 'EXAC_Adj', 'EXAC_EAS')
+print(xtable( apply(ann[,exac1],2,function(x) table(!is.na(x)))))
+exac2 <- c('EXAC_FIN', 'EXAC_NFE', 'EXAC_OTH', 'EXAC_SAS')
+print(xtable(apply(ann[,exac2],2,function(x) table(!is.na(x))),caption="Number of variants with EXAC AF."))
+@
+
+<<label=onekg-tab,echo=FALSE,results=tex>>=
+x <- apply(ann[,ONEKG],2,function(x) table(!is.na(x)))
+print(xtable(t(t(x)), caption="Number of variants with ONEKG AF." ))
+@
+
+<<label=feature-type-tab,echo=FALSE,results=tex>>=
+print(xtable(table(ann$Feature_type), caption="Feature type." ))
+@
+
+<<label=rare-hom,echo=FALSE,results=tex>>=
+print(xtable( t(t(sapply(samples, function(sample) length(which(ann$GMAF<.01 & geno[,sample] == 2)))) ),
+caption="Number of rare homozygous variants (< 0.01 MAF) coding variants should be in the range of 0-10 per sample."
+))
+@
+
+<<label=tab5,echo=FALSE,results=tex>>=
+print(xtable(t(apply(geno[,samples],2,table)),caption="genotypes"))
+@
+
+<<label=tab6,echo=FALSE,results=tex>>=
+x<-t(t(sapply(samples, function(sample) length(which(ann$Feature_type=='Transcript' & geno[,sample]>0)))))
+colnames(x) <- 'number of non-ref coding var'
+print(xtable(x, caption="Number of non-reference coding variants."))
+@
+
+\clearpage
+
+%Number of variants: \Sexpr{ length(ann$Feature_type) }
+%Number of coding variants: \Sexpr{  }
+
+The number of samples is \Sexpr{ length(samples) }.
+Number of rare homozygous variants (< 0.01 MAF) should be in the range of 0-10 per sample 
+The number of non-reference coding variatns should be in the range of 20K per sample.
+%\begin{itemize}
+%\item
+Number of rare variants (< 0.01 MAF) variants should be in the range of 500:
+\Sexpr{ length(which(ann$GMAF<.01)) }.
+%\end{itemize}
+
+\clearpage
+
+%are there large regions of missing annotations?  
+%Check the gap at end of chr6 for 1KG 
+%no data for chr22 exac, make sure everything makes sense 
+%remove redundancy for most columns 
+%maybe zip the tables?  
+%create filtered sets with coding data to push to IoO fix the "?", decide what is 0 and NA- ignore for now
+
+
+%\section{Summary}
+%<<summary>>=
+%print(summary(ann))
+%@
+
+\begin{figure}
+\begin{center}
+<<label=fig1,fig=TRUE,echo=FALSE>>=
+par(mfrow=c(2,1))
+barplot( variants, main='total variants' )
+barplot( avg.depth,main='avg total depth')
+#transcript location
+#plot(NULL,xlim=range(positions),ylim=c(0,length(samples)),xlab='position',ylab='individual',main='Feature type')
+#for (i in 1:length(samples)) points(cbind(positions,i),col=ifelse(is.na(ann$Feature_type),'black','red'),pch=ifelse(is.na(ann$Feature_type),'.','x'))
+@
+\end{center}
+\end{figure}
+
+
+\begin{figure}
+\begin{center}
+<<label=fig2,fig=TRUE,echo=FALSE>>=
+par(mfrow=c(1,1))
+plot(positions,ann$GMAF,xlab='position',ylab='GMAF',main='',pch='.')
+@
+\end{center}
+\caption{ GMAF along chromosome }
+\end{figure}
+
+\begin{figure}
+\begin{center}
+<<label=fig3,fig=TRUE,echo=FALSE>>=
+plot(ann$AF,ann$GMAF,pch='.')
+abline(b=1,a=0)
+@
+\end{center}
+\caption{ AF in samples vs AF in general population }
+\end{figure}
+
+
+%HOM
+%plot(positions,ann$HOM,xlab='position',ylab='HOM count',main='',pch='.')
+%plot(positions,ann$HET,xlab='position',ylab='HET count',main='',pch='.')
+%plot(positions,ann$WT,xlab='position',ylab='WT count',main='',pch='.')
+%plot(positions,ann$MISS,xlab='position',ylab='MISSING count',main='',pch='.')
+% WT / HET / HOM
+
+\begin{figure}
+\begin{center}
+<<label=fig4,fig=TRUE,echo=FALSE>>=
+# avg genotype
+plot(NULL, xlim=c(1,N), ylim=c(0,1), xlab="position in Mb", ylab='avg genotype')
+for (i in 1:length(samples)) lines(1:N, avg.geno[,i], col=i)
+@
+\end{center}
+\caption{ The average genotype per Mb.  Each line represents an individual. }
+\end{figure}
+
+%\begin{figure}
+%\begin{center}
+%<<label=fig5,fig=TRUE,echo=FALSE>>=
+%plot(NULL,xlim=range(positions),ylim=c(0,length(samples)),xlab='position',ylab='individual',main='WT / HET / HOM')
+%for (i in 1:length(samples)) points(cbind(positions,i),col=geno[,samples[i]], pch='.')
+%@
+%\end{center}
+%\caption{ WT  HET  HOM }
+%\end{figure}
+
+\begin{figure}
+\begin{center}
+<<label=fig6,fig=TRUE,echo=FALSE>>=
+plot(hclust(dist(t(geno[,samples]))),main='relatedness',xlab='hierarchical clustering of samples')
+@
+\end{center}
+\caption{ Hierarchical clustering of individuals based on this chromosome. }
+\end{figure}
+
+
+
+\end{document}

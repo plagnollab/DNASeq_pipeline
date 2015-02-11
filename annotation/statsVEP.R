@@ -1,87 +1,81 @@
 #!/usr/bin/env Rscript
-suppressPackageStartupMessages(library("optparse"))
+suppressPackageStartupMessages(library(optparse))
+suppressPackageStartupMessages(library(tools))
+suppressPackageStartupMessages(library(xtable))
 
 option_list <- list(
-    make_option(c('--annotation'), help=''),
-    make_option(c('--genotype'), help=''),
-    make_option(c('--genotype_depth'), help='')
+    make_option(c('--dir'), help=''),
+    make_option(c('--chr'), help='')
 )
 
 option.parser <- OptionParser(option_list=option_list)
 opt <- parse_args(option.parser)
+dir <- opt$dir
+chromosome <- opt$chr
 
-dim(ann <- read.csv(opt$annotation))
-dim(geno <- read.csv(opt$genotype))
-dim(genodepth <- read.csv(opt$genotype_depth))
+#set working dir
+setwd(dir)
+dir <- '.'
 
-print(summary(ann))
+dim(ann <- read.csv(file.path(dir,sprintf('VEP_%s-annotations.csv',chromosome))))
+dim(geno <- read.csv(file.path(dir,sprintf('VEP_%s-genotypes.csv',chromosome))))
+dim(genodepth <- read.csv(file.path(dir,sprintf('VEP_%s-genotypes_depth.csv',chromosome))))
 
-#d$ONEKG_AMR
+#feature type
+ann$Feature_type[which(is.na(ann$Feature_type))] <- ''
+
+# samples
+length(samples <- colnames(geno)[-1])
+genodepth$avg.depth <- rowMeans(genodepth[,-1])
+positions <- as.numeric(sapply((strsplit(ann$VARIANT_ID,'_')),'[[',2))
+
+# 1Mb sliding window
+w <- 10^6
+N <- (ceiling(max(positions)/w))
+
+# genotype depth per window
+# number of variants per window
+var.count <- vector()
+# proportion of variants with annotation MAF per window
+#maf.count <- vector()
+# average depth
+avg.depth <- vector()
+#
+avg.geno <- matrix(0,N,length(samples))
+#
+for (i in 1:N) {
+    r <- which(i*w < positions & positions < (i+1)*w)
+    var.count[[i]] <- length(which(!is.na(ann[r,'GMAF'])))
+    #maf.count[[i]] <- length(which()) / length(r)
+    avg.depth[[i]] <- mean(genodepth[r,'avg.depth'])
+    for (j in 1:length(samples)) {
+        avg.geno[i,j] <- mean(geno[r,samples[[j]]],na.rm=T)
+    }
+}
+
+variants <- sapply( 1:N, function(i) tabulate( 1+as.numeric(!is.na(ann[r <- which(i*w < positions & positions < (i+1)*w),'GMAF'])), nbins=2 ) )
+rowSums(variants)
+colSums(variants)
+
 
 ESP <- c('ESP_EA', 'ESP_AA')
 EXAC <- c('EXAC_AFR', 'EXAC_AMR', 'EXAC_Adj', 'EXAC_EAS', 'EXAC_FIN', 'EXAC_NFE', 'EXAC_OTH', 'EXAC_SAS')
 UCL <- c('UCLEX')
 ONEKG <- c('ONEKG_EUR', 'ONEKG_AFR', 'ONEKG_AMR', 'ONEKG_ASN')
-AF <- c('GMAF',ESP,EXAC,UCL,ONEKG)
+AF <- c('GMAF',ESP,EXAC, UCL,ONEKG)
 
-#check that numbers make sense in terms of coding variants per chromosome
-table(ann$Feature_type=='Transcript')
+initial.options <- commandArgs(trailingOnly = FALSE)
+file.arg.name <- "--file="
+script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
+script.basename <- dirname(script.name)
 
-# missing AFs
-apply(ann[,c('GMAF',ESP,EXAC,UCL,ONEKG)],2,function(x) table(!is.na(x)))
+output <- file.path(dir,sprintf('VEP_%s.tex',chromosome))
 
+# pdf figures are too large, png woud be better but does not work on cluster nodes
+# also tables split across pages
+Sweave( file=file.path(script.basename,"statsVEP.Rnw"), output=output, debug=TRUE)
+texi2pdf( output, clean=TRUE )
 
-# samples
-length(samples <- colnames(geno)[-1])
-
-#Three sanity checks:
-#- nb of non reference coding variants in the range of 20K per sample
-apply(geno[,samples],2,table)
-
-#- Nb of rare (< 0.01 MAF) coding variants in the range of 500
-table(ann$GMAF<.01)
-
-
-#- Nb of rare homozygous variants (< 0.01 MAF) coding variants should be in the range of 0-10
-#- per sample.
-sapply(samples, function(sample) table(ann$GMAF<.01 & geno[,sample] == 2))
-
-
-# are there large regions of missing annotations?
-
-#Check the gap at end of chr6 for 1KG
-
-# no data for chr22 exac, make sure everything makes sense
-
-# remove redundancy for most columns
-
-# maybe zip the tables?
-
-
-#create filtered sets with coding data to push to IoO
-#fix the "?", decide what is 0 and NA- ignore for now
-
-positions <- as.numeric(sapply((strsplit(ann$VARIANT_ID,'_')),'[[',2))
-
-print(plot.file <- gsub('-annotations.csv','.pdf',opt$annotation))
-
-#plots
-pdf(plot.file)
-#transcript location
-plot(NULL,xlim=range(positions),ylim=c(0,length(samples)),xlab='position',ylab='individual',main='Feature type')
-for (i in 1:length(samples)) points(cbind(positions,i),col=ifelse(is.na(ann$Feature_type),'black','red'),pch=ifelse(is.na(ann$Feature_type),'.','x'))
-#GMAF
-plot(positions,ann$GMAF,xlab='position',ylab='GMAF',main='',pch='.')
-#HOM
-plot(positions,ann$HOM,xlab='position',ylab='HOM count',main='',pch='.')
-plot(positions,ann$HET,xlab='position',ylab='HET count',main='',pch='.')
-plot(positions,ann$WT,xlab='position',ylab='WT count',main='',pch='.')
-plot(positions,ann$MISS,xlab='position',ylab='MISSING count',main='',pch='.')
-#
-#pairs(ann[,c(AF,'AF')],pch='.')
-plot(ann$AF,ann$GMAF,pch='.')
-#relatedness
-plot(hclust(dist(t(geno[,samples]))),main='relatedness',xlab='hierarchical clustering of samples')
-dev.off()
-
-
+#knitr would be better
+#library(knitr)
+#knit(file.path(script.basename,'example.Rhtml'))
