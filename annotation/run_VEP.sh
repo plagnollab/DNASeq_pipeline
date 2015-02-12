@@ -22,9 +22,12 @@ function usage() {
     echo --chr
     echo --vcfout
     echo --reference
+    echo --coding_only
     exit 1
 }
 
+
+coding_only=no
 
 ##
 until [ -z "$1" ]
@@ -43,6 +46,9 @@ do
     --reference)
         shift
         reference=$1;;
+    --coding_only)
+        shift
+        coding_only=$1;;
     -* )
         echo "Unrecognized option: $1"
         usage
@@ -52,9 +58,15 @@ do
     if [ "$#" = "0" ]; then break; fi
 done 
 
+if [[ "$coding_only" == yes ]]
+then
+    coding_only="--coding_only"
+else
+    coding_only=
+fi
 
 ####CONFIGURE SOFTWARE SHORTCUTS AND PATHS
-vep=/cluster/project8/vyp/AdamLevine/software/ensembl/src/ensembl-tools/scripts/variant_effect_predictor/variant_effect_predictor.pl
+VEP=/cluster/project8/vyp/AdamLevine/software/ensembl/src/ensembl-tools/scripts/variant_effect_predictor/variant_effect_predictor.pl
 dir_cache=/cluster/project8/vyp/AdamLevine/software/ensembl/cache/
 perl5142=/share/apps/perl-5.14.2/bin/perl
 PERL5LIB=${PERL5LIB}:/cluster/project8/vyp/AdamLevine/software/ensembl/src/bioperl-1.6.1
@@ -79,6 +91,7 @@ annotations_dir=/cluster/project8/IBDAJE/VEP_custom_annotations/${reference}
 ####CADD http://cadd.gs.washington.edu/home
 #This needs to be updated with the latest scores [ACTION!]
 #They also now provide a script which is worth exploring
+#custom_annotation="--custom ${annotations_dir}/CADD/chr${chr}.vcf.gz,CADD,vcf,exact"
 custom_annotation="--custom ${annotations_dir}/CADD/chr${chr}.vcf.gz,CADD,vcf,exact"
 ####ExAC
 for pop in AFR AMR Adj EAS FIN NFE OTH SAS
@@ -114,15 +127,13 @@ custom_annotation="${custom_annotation} --custom ${annotations_dir}/UCLex/chr${c
 
 if [[ "$reference" == "hg38_noAlt" ]]
 then
-    #fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
-    fasta=/cluster/project8/vyp/pontikos/data/reference_genomes/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+    fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
     chrPrefix='chr'
     assembly=GRCh38
     port=
 elif [[ "$reference" == "1kg" ]]
 then
-    #fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
-    fasta=/cluster/project8/vyp/pontikos/data/reference_genomes/human_g1k_v37.fasta
+    fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
     assembly=GRCh37
     chrPrefix=''
     port='--port 3337'
@@ -136,12 +147,70 @@ else
     stop Unsupported reference $reference
 fi
 
+# builtin VEP MAF
+# from http://www.ensembl.org/info/docs/tools/vep/script/vep_options.html#opt_gmaf
+# --gmaf
+# Add the global minor allele frequency (MAF) from 1000 Genomes Phase 1 data for any existing variant to the output. Not used by default
+# --maf_1kg
+# Add allele frequency from continental populations (AFR,AMR,ASN,EUR) of 1000 Genomes Phase 1 to the output.
+# Note the reported allele(s) and frequencies are for the non-reference allele from the original data, not necessarily the alternate allele from user input.
+# Must be used with --cache Not used by default
+# --maf_esp
+# Include allele frequency from NHLBI-ESP populations. Note the reported allele(s) and frequencies are for the non-reference allele from the originial data, not necessarily the alternate allele from user input. Must be used with --cache Not used by default
+# --old_maf
+# For --maf_1kg and --maf_esp report only the frequency (no allele) and convert this frequency so it is always a minor frequency, i.e. < 0.5
+
 maf="--maf_esp --gmaf --maf_1kg"
 #fields="--fields SYMBOL,CLIN_SIG,AA_MAF,EA_MAF,SIFT,PolyPhen,CAROL,Condel"
-fields=''
+fields=""
 
+## Extra fields
+# SYMBOL - the gene symbol
+# SYMBOL_SOURCE - the source of the gene symbol
+# STRAND - the DNA strand (1 or -1) on which the transcript/feature lies
+# ENSP - the Ensembl protein identifier of the affected transcript
+# SWISSPROT - UniProtKB/Swiss-Prot identifier of protein product
+# TREMBL - UniProtKB/TrEMBL identifier of protein product
+# UNIPARC - UniParc identifier of protein product
+# HGVSc - the HGVS coding sequence name
+# HGVSp - the HGVS protein sequence name
+# SIFT - the SIFT prediction and/or score, with both given as prediction(score)
+# PolyPhen - the PolyPhen prediction and/or score
+# MOTIF_NAME - the source and identifier of a transcription factor binding profile aligned at this position
+# MOTIF_POS - The relative position of the variation in the aligned TFBP
+# HIGH_INF_POS - a flag indicating if the variant falls in a high information position of a transcription factor binding profile (TFBP)
+# MOTIF_SCORE_CHANGE - The difference in motif score of the reference and variant sequences for the TFBP
+# CELL_TYPE - List of cell types and classifications for regulatory feature
+# CANONICAL - a flag indicating if the transcript is denoted as the canonical transcript for this gene
+# CCDS - the CCDS identifer for this transcript, where applicable
+# INTRON - the intron number (out of total number)
+# EXON - the exon number (out of total number)
+# DOMAINS - the source and identifer of any overlapping protein domains
+# DISTANCE - Shortest distance from variant to transcript
+# IND - individual name
+# ZYG - zygosity of individual genotype at this locus
+# SV - IDs of overlapping structural variants
+# FREQS - Frequencies of overlapping variants used in filtering
+# GMAF - Minor allele and frequency of existing variation in 1000 Genomes Phase 1
+# AFR_MAF - Minor allele and frequency of existing variation in 1000 Genomes Phase 1 combined African population
+# AMR_MAF - Minor allele and frequency of existing variation in 1000 Genomes Phase 1 combined American population
+# ASN_MAF - Minor allele and frequency of existing variation in 1000 Genomes Phase 1 combined Asian population
+# EUR_MAF - Minor allele and frequency of existing variation in 1000 Genomes Phase 1 combined European population
+# AA_MAF - Minor allele and frequency of existing variant in NHLBI-ESP African American population
+# EA_MAF - Minor allele and frequency of existing variant in NHLBI-ESP European American population
+# CLIN_SIG - Clinical significance of variant from dbSNP
+# BIOTYPE - Biotype of transcript or regulatory feature
+# TSL - Transcript support level
+# PUBMED - Pubmed ID(s) of publications that cite existing variant
+# SOMATIC - Somatic status of existing variation(s)
+# ALLELE_NUM - Allele number from input; 0 is reference, 1 is first alternate etc
+# PICK - indicates if this block of consequence data was picked by --flag_pick or --flag_pick_allele
+ 
 #output='--pick'
 output='--vcf'
+#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin LoF human_ancestor_fa:/scratch2/vyp-scratch2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
+plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz"
+#plugins=""
 
-$perl5142 $vep $port --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol --coding_only --canonical --check_existing --check_alleles --plugin LoF --plugin Carol --stats_text --no_progress --output_file $vcfout --plugin Condel,${condel_config},b --force_overwrite $output --fork 2 $maf $fields $custom_annotation 
+$perl5142 $VEP $port --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --fork 2 $maf $fields $custom_annotation $plugins $coding_only
 
