@@ -1,6 +1,6 @@
 
 case.control.analysis <- function(choice.cases = NULL, output = 'processed/support/case_control', known.genes = c(), SKAT = FALSE, fix.names = NULL,
-                                  annotations.file = '/cluster/project8/vyp/vincent/Software/pipeline/RNASeq/bundle/human/biomart/biomart_extra_annotations_human.tab') {
+                                  annotations.file = '/cluster/project8/vyp/vincent/Software/RNASeq_pipeline/bundle/human/biomart/biomart_extra_annotations_human.tab') {
   message('Now running the case control script')
   
   options(stringsAsFactors = FALSE)

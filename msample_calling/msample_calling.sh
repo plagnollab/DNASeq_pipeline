@@ -91,7 +91,7 @@ memoSmall=5
 memo=7.9
 
 
-if [[ "$convertToR" == "yes" ]]; then memo=21.9; fi
+#if [[ "$convertToR" == "yes" ]]; then memo=21.9; fi
 
 
 

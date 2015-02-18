@@ -4,7 +4,7 @@
 ###TODO: create equivalent files with read depth information
 
 library(snpStats)
-source('/cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/process_multiVCF.R')
+source('/cluster/project8/vyp/vincent/Software/DNASeq_pipeline/GATK_v2/process_multiVCF.R')
 options(stringsAsFactors = FALSE)
 
 
