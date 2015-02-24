@@ -173,6 +173,8 @@ if [[ "$recal" == "yes" ]]; then
 	#### creates the tmpDir if needed
 	    tmpDir=/scratch0/GATK_chr${chr}
 	    
+	    maxGauLoc=${maxGaussians}
+	    if [[ "$chr" == "14" ]]; then maxGauLoc=4; fi
 
 	    
 	    echo "
@@ -209,7 +211,7 @@ $java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
 
 
 ####### first SNPs
-$java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecalibrator -R $fasta --input ${output}_chr${chr}_SNPs.vcf.gz --maxGaussians ${maxGaussians} --mode SNP \
+$java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecalibrator -R $fasta -L $chr --input ${output}_chr${chr}_SNPs.vcf.gz --maxGaussians ${maxGauLoc} --mode SNP \
              -resource:hapmap,VCF,known=false,training=true,truth=true,prior=15.0 ${bundle}/hapmap_3.3.b37.vcf  \
              -resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 ${bundle}/1000G_omni2.5.b37.vcf \
              -resource:dbsnp,VCF,known=true,training=false,truth=false,prior=8.0 ${bundle}/dbsnp_137.b37.vcf \
