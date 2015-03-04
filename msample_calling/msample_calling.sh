@@ -18,12 +18,14 @@ target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/me
 GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
 
 baseFolder=/cluster/project8/vyp/vincent/Software/DNASeq_pipeline
+crunchpl=${baseFolder}/GATK_v2/crunch_controls.pl
+
 
 submit=no
 
 force=no
 genotype=no
-recal=no
+Recal=no
 gVCFlist=none
 
 maxGaussians=6
@@ -58,6 +60,9 @@ until [ -z "$1" ]; do
 	--convertToR )
 	    shift
 	    convertToR=$1;;
+	--finalCrunch )
+	    shift
+	    finalCrunch=$1;;
 	--gVCFlist )
 	    shift
 	    gVCFlist=$1;;
@@ -308,6 +313,31 @@ $Rbin CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} ${ba
 
     done
 fi
+
+
+
+
+if [[ "$finalCrunch" == "yes" ]]; then
+
+    keyWords=data/controlKeywords.tab
+    casekeyWords=data/caseKeywords.tab
+
+    for chr in `seq 1 22` X; do
+	
+	script=cluster/submission/subscript_chr${chr}.sh
+	echo "
+${crunchpl} ${output}_chr${chr}_exome_table.csv $keyWords $casekeyWords ${output}_chr${chr}_exome_crunched.csv data/sampleList_exome.tab none no  ##include all samples
+
+#python /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/annovar_vcf_combine_VP.py ${output}_recal_filtered.vcf ${output}_db.genome_summary.csv ${output}_genome_table.csv
+
+#${crunchpl} ${output}_genome_table.csv $keyWords $casekeyWords ${output}_genome_crunched.csv data/sampleList_genome.tab none no  ##include all samples
+
+" >> $script
+    done
+fi
+
+
+
 
 ##############################
 for chr in `seq 1 22` X; do
