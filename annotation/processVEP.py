@@ -30,7 +30,7 @@ filename=sys.argv[1]
 infile=open(filename,'r')
 basename=filename.split('.')[0]
 
-ANNOTATION_HEADER=['VARIANT_ID']+CSQ+CADD+MAF+EXAC+UCL+[x.replace('1KG','ONEKG') for x in ONEKG]+ESP+['AF','WT','HET','HOM','MISS']
+ANNOTATION_HEADER=['VARIANT_ID']+['ID']+CSQ+CADD+MAF+EXAC+UCL+[x.replace('1KG','ONEKG') for x in ONEKG]+ESP+['AF','WT','HET','HOM','MISS']
 annotation_file=open('-'.join([basename,'annotations.csv']), 'w+')
 genotype_file=open('-'.join([basename,'genotypes.csv']), 'w+')
 quality_file=open('-'.join([basename,'genotypes_depth.csv']), 'w+')
@@ -60,6 +60,7 @@ for l in infile:
     for k in SAMPLES: s[k]=s[k]
     VARIANT_ID='_'.join([s['CHROM'],s['POS'],s['REF'],s['ALT']])
     s['VARIANT_ID']=VARIANT_ID
+
     #print output, anything which was not found in the line gets a '.'
     #','.join([csq['Feature']  for csq in cons if csq['Feature_type']=='Transcript']), [s[k] for k in s if 'EXAC' in k]
     #print '\t'.join( [VARIANT_ID] + [s.get(h,'.')  for h in OUTPUT] )
@@ -117,7 +118,8 @@ for l in infile:
         s['Allele']='-'
     # insertion
     elif len(s['REF']) < len(s['ALT']):
-        s['Allele']=s['ALT'].lstrip(s['REF'][:(len(s['REF'])-1)])
+        #s['Allele']=s['ALT'].lstrip(s['REF'][:(len(s['REF'])-1)])
+        s['Allele']=s['ALT'].lstrip(s['REF'])
     # variant
     else:
         s['Allele']=s['ALT']
