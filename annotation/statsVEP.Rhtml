@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title> VEP report for chromosome {{chromosome}} </title>
+</head>
+<body>
+
+<h1> Allele frequencies </h1>
+
+<!--begin.rcode VEP-{{chromosome}}-ONEKG, echo=FALSE, results="asis"
+print(xtable( apply(ann[,c('GMAF',UCL,ESP)],2,function(x) table(!is.na(x)))),type='html')
+x <- apply(ann[,ONEKG],2,function(x) table(!is.na(x)))
+print(xtable(t(t(x)), caption="Number of variants with ONEKG AF." ),type='html')
+end.rcode-->
+
+<!--begin.rcode VEP-{{chromosome}}-EXAC, echo=FALSE, results="asis"
+print(xtable( apply(ann[,c('GMAF',UCL,ESP)],2,function(x) table(!is.na(x)))),type='html')
+exac1 <- c('EXAC_AFR', 'EXAC_AMR', 'EXAC_Adj', 'EXAC_EAS')
+print(xtable( apply(ann[,exac1],2,function(x) table(!is.na(x)))),type='html')
+exac2 <- c('EXAC_FIN', 'EXAC_NFE', 'EXAC_OTH', 'EXAC_SAS')
+print(xtable(apply(ann[,exac2],2,function(x) table(!is.na(x))),caption="Number of variants with EXAC AF."),type='html')
+end.rcode-->
+
+<!--begin.rcode echo=FALSE, results="asis"
+print(xtable(table(ann$Feature_type), caption="Feature type." ),type='html')
+end.rcode-->
+
+<!--begin.rcode echo=FALSE, results="asis"
+print(xtable( t(t(sapply(samples, function(sample) length(which(ann$GMAF<.01 & geno[,sample] == 2)))) ),
+caption="Number of rare homozygous variants (< 0.01 MAF) coding variants should be in the range of 0-10 per sample."
+),type='html')
+end.rcode-->
+
+<!--begin.rcode echo=FALSE, results="asis"
+print(xtable(t(apply(geno[,samples],2,table)),caption="genotypes"),type='html')
+end.rcode-->
+
+<!--begin.rcode echo=FALSE, results="asis"
+x<-t(t(sapply(samples, function(sample) length(which(ann$Feature_type=='Transcript' & geno[,sample]>0)))))
+colnames(x) <- 'number of non-ref coding var'
+print(xtable(x, caption="Number of non-reference coding variants."),type='html')
+end.rcode-->
+
+</body>
+</html>
+
+
