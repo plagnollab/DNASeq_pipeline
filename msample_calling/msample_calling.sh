@@ -18,12 +18,14 @@ target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/me
 GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
 
 baseFolder=/cluster/project8/vyp/vincent/Software/DNASeq_pipeline
+crunchpl=${baseFolder}/GATK_v2/crunch_controls.pl
+
 
 submit=no
 
 force=no
 genotype=no
-recal=no
+Recal=no
 gVCFlist=none
 
 maxGaussians=6
@@ -58,6 +60,9 @@ until [ -z "$1" ]; do
 	--convertToR )
 	    shift
 	    convertToR=$1;;
+	--finalCrunch )
+	    shift
+	    finalCrunch=$1;;
 	--gVCFlist )
 	    shift
 	    gVCFlist=$1;;
@@ -91,7 +96,7 @@ memoSmall=5
 memo=7.9
 
 
-if [[ "$convertToR" == "yes" ]]; then memo=21.9; fi
+#if [[ "$convertToR" == "yes" ]]; then memo=21.9; fi
 
 
 
@@ -173,6 +178,8 @@ if [[ "$recal" == "yes" ]]; then
 	#### creates the tmpDir if needed
 	    tmpDir=/scratch0/GATK_chr${chr}
 	    
+	    maxGauLoc=${maxGaussians}
+	    if [[ "$chr" == "14" ]]; then maxGauLoc=4; fi
 
 	    
 	    echo "
@@ -209,7 +216,7 @@ $java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
 
 
 ####### first SNPs
-$java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecalibrator -R $fasta --input ${output}_chr${chr}_SNPs.vcf.gz --maxGaussians ${maxGaussians} --mode SNP \
+$java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecalibrator -R $fasta -L $chr --input ${output}_chr${chr}_SNPs.vcf.gz --maxGaussians ${maxGauLoc} --mode SNP \
              -resource:hapmap,VCF,known=false,training=true,truth=true,prior=15.0 ${bundle}/hapmap_3.3.b37.vcf  \
              -resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 ${bundle}/1000G_omni2.5.b37.vcf \
              -resource:dbsnp,VCF,known=true,training=false,truth=false,prior=8.0 ${bundle}/dbsnp_137.b37.vcf \
@@ -263,7 +270,7 @@ if [[ "$annovar" == "yes" ]]; then
 	if [[ ! -e ${output}_snpStats/chr${chr}.done || "$force" == "yes" ]]; then  ## this is not quite right, needs fixing because it does not account for the last step
 	    
 	    echo "
-if [ -e ${output}_${snpStats}/chr${chr}.done ]; then rm ${output}_${snpStats}/chr${chr}.done; fi  ## this is basically a log file, to make sure the job got finished
+if [ -e ${output}_snpStats/chr${chr}.done ]; then rm ${output}_snpStats/chr${chr}.done; fi  ## this is basically a log file, to make sure the job got finished
 
 cut -f1-8 ${output}_chr${chr}_filtered.vcf > ${output}_chr${chr}_for_annovar.vcf
 
@@ -306,6 +313,31 @@ $Rbin CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} ${ba
 
     done
 fi
+
+
+
+
+if [[ "$finalCrunch" == "yes" ]]; then
+
+    keyWords=data/controlKeywords.tab
+    casekeyWords=data/caseKeywords.tab
+
+    for chr in `seq 1 22` X; do
+	
+	script=cluster/submission/subscript_chr${chr}.sh
+	echo "
+${crunchpl} ${output}_chr${chr}_exome_table.csv $keyWords $casekeyWords ${output}_chr${chr}_exome_crunched.csv data/sampleList_exome.tab none no  ##include all samples
+
+#python /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/annovar_vcf_combine_VP.py ${output}_recal_filtered.vcf ${output}_db.genome_summary.csv ${output}_genome_table.csv
+
+#${crunchpl} ${output}_genome_table.csv $keyWords $casekeyWords ${output}_genome_crunched.csv data/sampleList_genome.tab none no  ##include all samples
+
+" >> $script
+    done
+fi
+
+
+
 
 ##############################
 for chr in `seq 1 22` X; do

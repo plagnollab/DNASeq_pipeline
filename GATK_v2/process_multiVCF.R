@@ -5,9 +5,8 @@
 computer <- 'CS'
 
 if (computer == 'CS') {
-  README <- '/cluster/project8/vyp/vincent/Software/pipeline/filter_rare_variants/README'
-  biomart.gene.description <- '/cluster/project8/vyp/vincent/data/biomart/support/biomart_geneNames_hsapiens_gene_ensembl.tab'
-  source('/cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/case_control.R')
+  #biomart.gene.description <- '/cluster/project8/vyp/vincent/data/biomart/support/biomart_geneNames_hsapiens_gene_ensembl.tab'
+  source('/cluster/project8/vyp/vincent/Software/DNASeq_pipeline/GATK_v2/case_control.R')
 }
 
 
@@ -17,8 +16,7 @@ annotate.standard.annovar.output <- function(data,   ##this function does NOT in
                                              bad.genes = c(),
                                              freq.fields = c( 'X1000g2012apr_ALL', 'ESP6500si_ALL'),
                                              choice.transcripts = NULL,
-                                             biomart.gene.description = '/cluster/project8/vyp/vincent/Software/pipeline/RNASeq/bundle/human/biomart/biomart_extra_annotations_human.tab') {
-  #biomart.gene.description = '/cluster/project8/vyp/vincent/data/biomart/support/biomart_geneNames_hsapiens_gene_ensembl.tab') {
+                                             biomart.gene.description = '/cluster/project8/vyp/vincent/Software/RNASeq_pipeline/bundle/human/biomart/biomart_extra_annotations_human.tab') {
 
   data$Chr <- gsub(pattern = '^chr', replacement = '', data$Chr)
   data$signature <- paste(data$Chr, data$Start, data$Ref, data$Obs, sep = '_')
