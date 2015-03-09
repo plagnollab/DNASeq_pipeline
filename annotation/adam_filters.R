@@ -41,7 +41,7 @@ print(dim(d <- d[!is.na(d$EXAC_Adj) & !is.na(d$EXAC_NFE) & !is.na(d$EXAC_AMR),])
 #tolerate no missingness
 #dim( d <- d[which(d$MISS==0),] )
 
-# if there is a stop or indel then CADD score is NA
+# Tony told me that if there is a stop or indel then CADD score is NA
 message(sprintf('CADD score > %d or NA',cadd.thresh))
 print(table( cadd.filter <- is.na(d$CADD) | (d$CADD > cadd.thresh) ))
 
