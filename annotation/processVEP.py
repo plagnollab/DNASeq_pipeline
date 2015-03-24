@@ -10,6 +10,8 @@ OUTPUT= ['CHROM', 'POS', 'ID', 'REF', 'ALT']
 CSQ=['Allele','Gene','Feature','Feature_type','Consequence','cDNA_position','CDS_position','Protein_position','Amino_acids','Codons','Existing_variation','DISTANCE','STRAND','SYMBOL','SYMBOL_SOURCE','HGNC_ID','CANONICAL','SIFT','PolyPhen','CLIN_SIG','SOMATIC','CAROL','Condel','CADD_RAW','CADD_PHRED']
 #CADD
 CADD=['CADD']
+#GO
+GO=['GO']
 # allele freq (AF) in various populations
 #these are in the CSQ field
 MAF=['GMAF','AFR_MAF','AMR_MAF','ASN_MAF','EUR_MAF','AA_MAF','EA_MAF']
@@ -30,7 +32,7 @@ filename=sys.argv[1]
 infile=open(filename,'r')
 basename=filename.split('.')[0]
 
-ANNOTATION_HEADER=['VARIANT_ID']+['ID']+CSQ+CADD+MAF+EXAC+UCL+[x.replace('1KG','ONEKG') for x in ONEKG]+ESP+['AF','WT','HET','HOM','MISS']
+ANNOTATION_HEADER=['VARIANT_ID']+['ID']+CSQ+CADD+GO+MAF+EXAC+UCL+[x.replace('1KG','ONEKG') for x in ONEKG]+ESP+['AF','WT','HET','HOM','MISS']
 annotation_file=open('-'.join([basename,'annotations.csv']), 'w+')
 genotype_file=open('-'.join([basename,'genotypes.csv']), 'w+')
 quality_file=open('-'.join([basename,'genotypes_depth.csv']), 'w+')
@@ -60,7 +62,6 @@ for l in infile:
     for k in SAMPLES: s[k]=s[k]
     VARIANT_ID='_'.join([s['CHROM'],s['POS'],s['REF'],s['ALT']])
     s['VARIANT_ID']=VARIANT_ID
-
     #print output, anything which was not found in the line gets a '.'
     #','.join([csq['Feature']  for csq in cons if csq['Feature_type']=='Transcript']), [s[k] for k in s if 'EXAC' in k]
     #print '\t'.join( [VARIANT_ID] + [s.get(h,'.')  for h in OUTPUT] )
@@ -118,6 +119,7 @@ for l in infile:
         s['Allele']='-'
     # insertion
     elif len(s['REF']) < len(s['ALT']):
+        #sadly this is not always consistent
         #s['Allele']=s['ALT'].lstrip(s['REF'][:(len(s['REF'])-1)])
         s['Allele']=s['ALT'].lstrip(s['REF'])
     # variant
