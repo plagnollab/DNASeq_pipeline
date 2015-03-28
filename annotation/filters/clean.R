@@ -11,11 +11,13 @@ suppressPackageStartupMessages(library(tools))
 message('dim of input file')
 err.cat(dim( v <- read.csv(file('stdin')) ))
 
-v <- v[,-which(colnames(v) %in% c('DISTANCE','CADD_RAW','CADD_PHRED','SOMATIC','CLIN_SIG','Feature_type'))]
-#v <- v[,-grep('ONEKG',colnames(v))]
-v <- v[,-grep('ESP',colnames(v))]
-v <- v[,-grep('geno',colnames(v)]
-v <- v[,-grep('depth',colnames(v)]
+#v <- v[,-which(colnames(v) %in% c('DISTANCE','CADD_RAW','CADD_PHRED','SOMATIC','CLIN_SIG','Feature_type'))]
+#v <- v[,-grep('ESP',colnames(v))]
+v <- v[,which(!grepl('STRAND|SYMBOL_SOURCE|HGNC_ID|CANONICAL',colnames(v)))]
+v <- v[,which(!grepl('geno',colnames(v)))]
+v <- v[,which(!grepl('depth',colnames(v)))]
+#
+#cleanup GO terms (is done in the GO filter)
 
-write.csv(v, quote=FALSE, file='', row.names=FALSE)
+write.csv(v[order(v$R,decreasing=TRUE),], quote=FALSE, file='', row.names=FALSE)
 
