@@ -68,7 +68,7 @@ fi
 ####CONFIGURE SOFTWARE SHORTCUTS AND PATHS
 VEP=/cluster/project8/vyp/AdamLevine/software/ensembl/src/ensembl-tools/scripts/variant_effect_predictor/variant_effect_predictor.pl
 dir_cache=/cluster/project8/vyp/AdamLevine/software/ensembl/cache/
-perl5142=/share/apps/perl-5.14.2/bin/perl
+perl=/share/apps/perl-5.14.2/bin/perl
 PERL5LIB=${PERL5LIB}:/cluster/project8/vyp/AdamLevine/software/ensembl/src/bioperl-1.6.1
 PERL5LIB=${PERL5LIB}:/cluster/project8/vyp/AdamLevine/software/ensembl/src/ensembl/modules
 PERL5LIB=${PERL5LIB}:/cluster/project8/vyp/AdamLevine/software/ensembl/src/ensembl-compara/modules
@@ -111,18 +111,21 @@ do
     shortname=ESP_${pop}
     custom_annotation="${custom_annotation} --custom ${annotations_dir}/esp/chr${chr}_${pop}.vcf.gz,${shortname},vcf,exact"
 done
-####UCLex frequencies and need to be updated [ACTION!]
-#VP=/cluster/project8/vyp/AdamLevine/UCL-exomes_v2/VP_cohort/UCLfreq_${chr}.vcf.gz 
+
+#### 
 shortname=UCLEX
 custom_annotation="${custom_annotation} --custom ${annotations_dir}/UCLex/chr${chr}.vcf.gz,${shortname},vcf,exact"
-####1KG
-#Do not need all of these different annotations [ACTION!]
-#OneKG=/cluster/project8/vyp/AdamLevine/exome/annotations/OneKG/OneKG_AF_${chr}.vcf.gz
-#OneKGceugbr=/cluster/project8/vyp/AdamLevine/exome/annotations/OneKG_CEUGBR/OneKG-CEUGBR_AF_${chr}.vcf.gz
-#okgEUR=${annotations_dir}/1kg/results/1KG_EUR-AF_${chr}.vcf.gz
-#okgAFR=${annotations_dir}/1kg/results/1KG_AFR-AF_${chr}.vcf.gz
-#okgAMR=${annotations_dir}/1kg/results/1KG_AMR-AF_${chr}.vcf.gz
-#okgASN=${annotations_dir}/1kg/results/1KG_ASN-AF_${chr}.vcf.gz
+
+###
+shortname=AJcontrols
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
+
+###
+for disease in CRO IBD UC
+do
+    shortname=ImmunoBase_${disease}
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/ImmunoBase/ImmunoBase_${disease}.bed.gz,${shortname},bed,overlap"
+done
 
 
 if [[ "$reference" == "hg38_noAlt" ]]
@@ -208,9 +211,9 @@ fields=""
  
 #output='--pick'
 output='--vcf'
-#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin LoF human_ancestor_fa:/scratch2/vyp-scratch2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
-plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz"
-#plugins=""
+#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin LoF,human_ancestor_fa:/scratch2/vyp-scratch2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
+#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:/scratch2/vyp-scratch2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
+plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin GO --plugin ExAC,${annotations_dir}/ExAC/0.3/chr${chr}.vcf.gz"
 
-$perl5142 $VEP $port --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --fork 2 $maf $fields $custom_annotation $plugins $coding_only
+$perl $VEP $port --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --fork 2 $maf $fields $custom_annotation $plugins $coding_only
 
