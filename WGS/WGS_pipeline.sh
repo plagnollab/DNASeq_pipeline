@@ -36,7 +36,6 @@ function mode_align() {
     #tparam=${tparam:-250}
     output=${outputdir}/data
     mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
-    mainScript=${outputdir}/scripts/gvcf.sh
     SGE_PARAMETERS="
 #$ -l scr=1G
 #$ -pe smp ${ncores}
@@ -458,10 +457,11 @@ function mode_annotation() {
     mkdir -p ${output} ${outputdir}/err ${outputdir}/out ${outputdir}/scripts
     mainScript=${outputdir}/scripts/annotation.sh
     rm -f ${projectID}/annotation/scripts/*.sh
+    alias pdflatex=/cluster/project8/vyp/pontikos/Software/texlive/2014/bin/x86_64-linux/pdflatex
     SGE_PARAMETERS="
 #$ -l scr=1G
-#$ -l tmem=3G,h_vmem=3G
-#$ -l h_rt=2:0:0
+#$ -l tmem=3.5G,h_vmem=3.5G
+#$ -l h_rt=10:0:0
 "
     for i in `seq 1 $cleanChrLen`
     do
@@ -470,13 +470,21 @@ function mode_annotation() {
         ##if the index is missing, or we use the "force" option
         [[ ! -s ${INPUT} ]] && error "${INPUT} MISSING"
        #echo $chrCode $output
+       script=${mainScript%.sh}_chr${chrCode}.sh
        DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../annotation/
-cat >${mainScript%.sh}_chr${chrCode}.sh << EOL
-zcat $INPUT | python ${DIR}/multiallele_to_single_gvcf.py > ${output}/chr${chrCode}-single.vcf
-bash $DIR/run_VEP.sh --vcfin ${output}/chr${chrCode}-single.vcf --chr $chrCode --reference $reference --vcfout ${output}/VEP_${chrCode}.vcfout
+       #if [[ ! -s  ${output}/VEP_${chrCode}.vcfout_summary.html ]]
+       #if [[ ! -s  ${output}/VEP_${chrCode}.pdf ]]
+       #then
+cat > ${script} << EOL
+#zcat $INPUT | python ${DIR}/multiallele_to_single_gvcf.py > ${output}/chr${chrCode}-single.vcf
+bash $DIR/run_VEP.sh --vcfin ${output}/chr${chrCode}-single.vcf --chr $chrCode --reference $reference --vcfout ${output}/VEP_${chrCode}.vcfout --coding_only $coding_only
 python $DIR/processVEP.py ${output}/VEP_${chrCode}.vcfout 
-Rscript $DIR/statsVEP.R --annotation VEP_${chrCode}-annotations.csv --genotype VEP_${chrCode}-genotypes.csv --genotype_depth VEP_${chrCode}-genotypes_depth.csv
+echo generate html report
+/share/apps/R-3.1.0/bin/Rscript $DIR/statsVEP.R --dir ${output} --chr $chrCode
 EOL
+    #else
+        #rm -f ${script}
+    #fi
    done
 }
 
@@ -514,6 +522,8 @@ cleanChr=(targets 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y )
 cleanChrLen=${#cleanChr[@]}
 #need to decrement because of header
 cleanChrLen=$(( cleanChrLen-1 ))
+
+coding_only=no
 
 ##
 until [ -z "$1" ]
@@ -570,6 +580,9 @@ do
     --aligner-memory)
         shift
         memory2=$1;;
+    --coding_only)
+        shift
+        coding_only=yes;;
     -* )
         echo "Unrecognized option: $1"
         usage
@@ -661,14 +674,22 @@ done
 ### Check format of support file.
 ##should accept tab or space as delimiters
 ## but does read support tabs and delimeters?
-if [[ "$mode" != "CombineGVCFs" ]]
+echo $mode
+if [[ "$mode" != "CombineGVCFs" && "$mode" != "annotation" ]]
 then
     mustBeCode=`head -n1 $supportFrame | cut -f1 -d' ' | cut -f1`  
     mustBeF1=`head -n1 $supportFrame | cut -f2 -d' ' | cut -f2`
     mustBeF2=`head -n1 $supportFrame | cut -f3 -d' ' | cut -f3`
-    if [[ "$mustBeCode" != "code" ]]; then stop "The first column of the file $supportFrame must have the name code $mustBeCode"; fi
+    if [[ "$mustBeCode" != "code" ]]; then stop "The first column of the file $supportFrame must have the name code but found $mustBeCode"; fi
     if [[ "$mustBeF1" != "f1" ]]; then stop "The second column of the file $supportFrame must have the name f1"; fi
     if [[ "$mustBeF2" != "f2" ]]; then stop "The third column of the file $supportFrame must have the name f2"; fi
+    #now check that all files exist
+    while read code f1 f2
+    do
+        if [ ! -e $f1 ]; then stop "$f1 does not exists"; fi
+        if [ ! -e $f2 ]; then stop "$f2 does not exists"; fi
+    done < <(tail -n +2 $supportFile)
+    
 else
     supportFrame=$supportFile
 fi
