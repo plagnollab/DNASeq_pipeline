@@ -14,11 +14,11 @@ opt <- parse_args(option.parser)
 chr <- opt$chr
 ann <- read.csv(sprintf('VEP_%s-annotations.csv',chr))
 geno <- read.csv(sprintf('VEP_%s-genotypes.csv',chr))
-print(dim(geno <- geno[,-which('VARIANT_ID'==colnames(geno))]))
-colnames(geno) <- paste('geno',colnames(geno),sep='.')
+print(dim(geno <- geno[,-which('VARIANT_ID'==names(geno))]))
+names(geno) <- paste('geno',names(geno),sep='.')
 geno.depth <- read.csv(sprintf('VEP_%s-genotypes_depth.csv',chr))
-print(dim(geno.depth <- geno.depth[,-which('VARIANT_ID'==colnames(geno.depth))]))
-colnames(geno.depth) <- paste('depth',colnames(geno.depth),sep='.')
+print(dim(geno.depth <- geno.depth[,-which('VARIANT_ID'==names(geno.depth))]))
+names(geno.depth) <- paste('depth',names(geno.depth),sep='.')
 
 d <- cbind(ann,geno,geno.depth)
 

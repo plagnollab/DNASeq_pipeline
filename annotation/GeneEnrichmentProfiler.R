@@ -14,7 +14,6 @@ opt <- parse_args(option.parser)
 
 BASE.DIR <- '/goon2/scratch2/vyp-scratch2/reference_datasets/GeneEnrichmentProfiler'
 
-
 ###
 if (opt$generate) {
 setwd(BASE.DIR) 

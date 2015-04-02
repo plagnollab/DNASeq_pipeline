@@ -2,6 +2,7 @@
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(tools))
 suppressPackageStartupMessages(library(xtable))
+suppressPackageStartupMessages(library(knitr))
 
 option_list <- list(
     make_option(c('--dir'), help=''),
@@ -69,13 +70,16 @@ file.arg.name <- "--file="
 script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
 script.basename <- dirname(script.name)
 
-output <- file.path(dir,sprintf('VEP_%s.tex',chromosome))
-
+# PDF output: not great for large tables
+#output <- file.path(dir,sprintf('VEP_%s.tex',chromosome))
 # pdf figures are too large, png woud be better but does not work on cluster nodes
 # also tables split across pages
-Sweave( file=file.path(script.basename,"statsVEP.Rnw"), output=output, debug=TRUE)
-texi2pdf( output, clean=TRUE )
+#Sweave( file=file.path(script.basename,"statsVEP.Rnw"), output=output, debug=TRUE)
+#texi2pdf( output, clean=TRUE )
 
-#knitr would be better
-#library(knitr)
-#knit(file.path(script.basename,'example.Rhtml'))
+# HTML output
+output <- file.path(dir,sprintf('VEP_%s.html',chromosome))
+text <- knit_expand(file=file.path(script.basename,'statsVEP.Rhtml'),chromosome=chromosome)
+knit(text=text,output=output)
+
+

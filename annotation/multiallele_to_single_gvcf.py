@@ -2,12 +2,22 @@
 #! /bin/env python
 from __future__ import print_function
 import sys
+import argparse
 
 #these 9 column headers are standard to all VCF files
 STD_HEADERS=['CHROM','POS','ID','REF','ALT','QUAL','FILTER','INFO','FORMAT']
 #the samples headers depend on the number of samples in the file
 #which we find out once we read the #CHROM line
 SAMPLE_HEADERS=[]
+
+
+parser=argparse.ArgumentParser(description='Arguments to multiallele_to_single_gvcf.py')
+parser.add_argument('--GQ',default=None,type=int)
+parser.add_argument('--DP',default=None,type=int)
+
+args=parser.parse_args()
+#args.GQ
+#args.DP
 
 
 def print_line(s):
@@ -47,14 +57,21 @@ for line in sys.stdin:
         d=dict(zip(s['FORMAT'].split(':'),s[h].split(':')))
         GT=d['GT']
         AD=d['AD']
+        DP=d['DP']
         DP=str(sum([int(x) for x in AD.split(',')]))
-        s[h]=':'.join([GT,AD,DP])
+        GQ=d['GQ']
+        # if GQ is '.' the must be missing
+        if GQ == '.' and GT != './.': raise 'hell'
+        # if fails QC set to missing
+        if ((args.DP and int(DP) < args.DP) or (args.GQ and GQ!='.' and int(GQ) < args.GQ)): GT='./.'
+        PL=d['PL']
+        s[h]=':'.join([GT,AD,DP,GQ,PL])
     #split alternate alleles
     alternative_alleles=s['ALT'].split(',')
     #if single alternate allele
     #then just print out as normal
     if len(alternative_alleles)<=1:
-        s['FORMAT']='GT:AD:DP'
+        s['FORMAT']='GT:AD:DP:GQ:PL'
         print_line(s)
         continue
     #otherwise split over as many lines as there are alternative alleles
