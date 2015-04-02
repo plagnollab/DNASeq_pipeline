@@ -2,6 +2,7 @@
 from __future__ import print_function
 import sys
 import re
+import argparse
 
 # check the INFO header of your VCF for more ouput options
 # also check the INFO CSQ field
@@ -19,7 +20,21 @@ MAF=['GMAF','AFR_MAF','AMR_MAF','ASN_MAF','EUR_MAF','AA_MAF','EA_MAF']
 ESP=['ESP_EA', 'ESP_AA']
 ONEKG=['1KG_EUR', '1KG_AFR', '1KG_AMR', '1KG_ASN']
 EXAC=['EXAC_AFR', 'EXAC_AMR', 'EXAC_Adj', 'EXAC_EAS', 'EXAC_FIN', 'EXAC_NFE', 'EXAC_OTH', 'EXAC_SAS']
-UCL=['UCLEX']
+
+
+parser=argparse.ArgumentParser(description='Arguments to processVEP.py')
+parser.add_argument('--file', required=True)
+parser.add_argument('--custom-allele-freq', nargs='+')
+parser.add_argument('--custom-annotation', nargs='+')
+
+args=parser.parse_args()
+filename=args.file
+infile=open(filename,'r')
+basename=filename.split('.')[0]
+CUSTOM_ALLELE_FREQ=args.custom_allele_freq
+if not CUSTOM_ALLELE_FREQ: CUSTOM_ALLELE_FREQ=[]
+CUSTOM_ANNOTATION=args.custom_annotation
+if not CUSTOM_ANNOTATION: CUSTOM_ANNOTATION=[]
 
 #
 def _float(n):
@@ -28,11 +43,7 @@ def _float(n):
     except:
         return('NA')
 
-filename=sys.argv[1]
-infile=open(filename,'r')
-basename=filename.split('.')[0]
-
-ANNOTATION_HEADER=['VARIANT_ID']+['ID']+CSQ+CADD+GO+MAF+EXAC+UCL+[x.replace('1KG','ONEKG') for x in ONEKG]+ESP+['AF','WT','HET','HOM','MISS']
+ANNOTATION_HEADER=['VARIANT_ID']+['ID']+CSQ+CADD+GO+MAF+EXAC+CUSTOM_ANNOTATION+CUSTOM_ALLELE_FREQ+[x.replace('1KG','ONEKG') for x in ONEKG]+ESP+['AF','WT','HET','HOM','MISS']
 annotation_file=open('-'.join([basename,'annotations.csv']), 'w+')
 genotype_file=open('-'.join([basename,'genotypes.csv']), 'w+')
 quality_file=open('-'.join([basename,'genotypes_depth.csv']), 'w+')
@@ -92,16 +103,18 @@ for l in infile:
         total_depth=d['DP']
         return total_depth
     print(*([VARIANT_ID] + [genotype_quality(s.get(h,'.'))for h in SAMPLES]),sep=',',file=quality_file)
-    # CUSTOM ANNOTATIONS mostly AFs but also CADD
+    # CUSTOM ANNOTATIONS mostly AFs but also CADD, ImmunoBase etc
     x=[tuple(x.split('=')) for x in s['INFO'].split(';')]
     x=[y for y in x if len(y)>1]
     INFO=dict(x)
     variant='>'.join([s['REF'],s['ALT']])
+    for custom_ann in set(INFO).intersection(CUSTOM_ANNOTATION): s[custom_ann]=INFO[custom_ann]
     # CADD score
     # AFs
     # only include AFs where the ref>alt match
     def AF(ann):
         for k in set(INFO).intersection(ann):
+            print(k)
             for af in INFO[k].split(','):
                 var,freq,=af.split(':')
                 if (variant!=var): continue
@@ -110,7 +123,7 @@ for l in infile:
     AF(ONEKG)
     AF(ESP)
     AF(EXAC)
-    AF(UCL)
+    AF(CUSTOM_ALLELE_FREQ)
     AF(CADD)
     # determine whether we have a deletion or an insertion
     # the CSQ Allele is set accordingly
