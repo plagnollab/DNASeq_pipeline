@@ -14,8 +14,8 @@ suppressPackageStartupMessages(library(xtable))
 option_list <- list(
     make_option(c('--pedigree'), default='DNA_pedigree_details.csv', help=''),
     make_option(c('--exac.thresh'), default=0.01, help='pop freq threshold'),
-    make_option(c('--onekg.thresh'), default=NULL, help='pop freq threshold'),
-    make_option(c('--esp.thresh'), default=NULL, help='pop freq threshold')
+    make_option(c('--onekg.thresh'), default=0.05, help='pop freq threshold'),
+    make_option(c('--esp.thresh'), default=0.05, help='pop freq threshold')
 )
 
 option.parser <- OptionParser(option_list=option_list)
