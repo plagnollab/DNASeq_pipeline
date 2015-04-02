@@ -46,6 +46,9 @@ for (chr in  c(as.character(1:22), 'X')) {
   #input.data <- paste(root, '_by_chr/chr', chr, '_snpStats.RData', sep = '')
   input.data <- paste0(root, '_snpStats/chr', chr, '_snpStats.RData')
 
+  if (!file.exists(input.data)) {
+    stop("File ", input.data, " does not exist")
+  }
   if (file.exists(input.data)) {
     message('Will now load ', input.data)
     load(input.data)
