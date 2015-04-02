@@ -50,7 +50,7 @@ if (!is.null(opt$cadd.thresh)) {
 }
 
 
-# Filter on consequence
+# Filter on consequence, these need to ORed rather than ANDed
 # missense
 # We are interested in damaging variants:
 # frameshift, stop or splice
@@ -58,7 +58,7 @@ if (!is.null(opt$csq.filter)) {
     csq.filter <- opt$csq.filter
     message( sprintf('%s in consequence field',opt$csq.filter) )
     err.cat(table(csq.filter <- grepl(opt$csq.filter, d$Consequence)))
-    d <- d[csq.filter,]
+    #d <- d[csq.filter,]
 }
 
 # CAROL Deleterious
@@ -66,7 +66,7 @@ if (!is.null(opt$carol.filter)) {
     carol.filter <- opt$carol.filter
     message( sprintf('CAROL %s',opt$carol.filter) )
     err.cat(table(carol.filter <- grepl(opt$carol.filter,d$CAROL)))
-    d <- d[carol.filter,]
+    #d <- d[carol.filter,]
 }
 
 # Condel deleterious
@@ -74,9 +74,10 @@ if (!is.null(opt$condel.filter)) {
     condel.filter <- opt$condel.filter
     message(sprintf('Condel %s',opt$condel.filter))
     err.cat(table(condel.filter <- grepl(opt$condel.filter, d$Condel)))
-    d <- d[condel.filter,]
+    #d <- d[condel.filter,]
 }
 
+d <- d[csq.filter | carol.filter | condel.filter,]
 
 write.csv( d[order(d$CADD,decreasing=TRUE),] , quote=FALSE, file='', row.names=FALSE)
 

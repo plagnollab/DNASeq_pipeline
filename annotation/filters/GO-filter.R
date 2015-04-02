@@ -22,6 +22,7 @@ err.cat(dim( d <- read.csv(file('stdin')) ))
 d$GO <- gsub('positive_regulation_of_synaptic_transmission&_glutamatergic','positive_regulation_of_synaptic_transmission_glutamatergic', d$GO)
 d$GO <- gsub('regulation_of_transcription&_DNA-templated', 'regulation_of_transcription_DNA-templated', d$GO)
 
+err.cat('dim of GO terms')
 err.cat(dim(go.term <- read.table(go,sep=';',header=TRUE)))
 
 #lapply(strsplit(d$GO,'&'), function(x) {
@@ -35,13 +36,27 @@ for (x in go.term$go) {
 
 err.cat(length(indexes <- sort(unique(indexes))))
 
-d <- d[indexes,]
+go.filter  <- indexes
 
 #cleanup GO terms
-for (i in 1:nrow(d)) {
-    y <- unlist(strsplit(d$GO[i],'&'))
-    d$GO[i] <- paste(unique(grep(paste(go.term$go,collapse='|'),y,value=TRUE)),collapse='&',sep='&')
+for (i in 1:nrow(d[go.filter,])) {
+     y <- unlist(strsplit(d[go.filter,GO[i]],'&'))
+     d[go.filter,GO[i]] <- paste(unique(grep(paste(go.term$go,collapse='|'),y,value=TRUE)),collapse='&',sep='&')
 }
+
+
+# barcode
+barcode <- read.table('/cluster/project8/IBDAJE/barcode.txt', header=TRUE)
+
+grepl('bowel',d$COMMENT)
+grepl('immune',d$COMMENT)
+
+# gensetenrichment (xavier)
+#gt <- read.csv('/goon2/scratch2/vyp-scratch2/reference_datasets/GeneEnrichmentProfiler/gene_tissues.csv')
+gt <- read.csv('/goon2/scratch2/vyp-scratch2/reference_datasets/GeneEnrichmentProfiler/gene_tissues_ensg.csv')
+
+
+# ibd gene list
 
 write.csv(d, quote=FALSE, file='',row.names=FALSE)
 

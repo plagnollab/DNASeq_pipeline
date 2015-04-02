@@ -15,7 +15,9 @@ option_list <- list(
     make_option(c('--pedigree'), default='DNA_pedigree_details.csv', help=''),
     make_option(c('--exac.thresh'), default=0.01, help='pop freq threshold'),
     make_option(c('--onekg.thresh'), default=0.05, help='pop freq threshold'),
-    make_option(c('--esp.thresh'), default=0.05, help='pop freq threshold')
+    make_option(c('--esp.thresh'), default=0.05, help='pop freq threshold'),
+    make_option(c('--ajcontrols.thresh'), default=NULL, type='numeric', help='pop freq threshold'),
+    make_option(c('--uclex.thresh'), default=NULL, type='numeric', help='pop freq threshold')
 )
 
 option.parser <- OptionParser(option_list=option_list)
@@ -35,6 +37,32 @@ af.filter <- function(xx,xx.thresh) {
     d <- d[which(is.na(i) | i==ncol(xx.filter)),]
     return(d)
 }
+
+#AJcontrols
+if (!is.null(opt$ajcontrols.thresh)) {
+    ajcontrols.thresh <- as.numeric(opt$ajcontrols.thresh)
+    message('*** AJcontrols FILTERING ***')
+    ajcontrols <- data.frame(
+    pop=c('AJcontrols'),
+    description=c('ajcontrols')
+    )
+    d <- af.filter(ajcontrols,ajcontrols.thresh)
+}
+
+
+
+#UCLEX
+if (!is.null(opt$uclex.thresh)) {
+    uclex.thresh <- opt$uclex.thresh
+    message('*** UCLEX FILTERING ***')
+    uclex <- data.frame(
+    pop=c('UCLEX'),
+    description=c('uclex')
+    )
+    d <- af.filter(uclex,uclex.thresh)
+}
+
+
 
 #EXAC
 if (!is.null(opt$exac.thresh)) {
@@ -71,8 +99,6 @@ if (!is.null(opt$esp.thresh)) {
     d <- af.filter(esp,esp.thresh)
 }
 
-
-#UCLEX
 #c('GMAF','AFR_MAF','AMR_MAF','ASN_MAF','EUR_MAF','AA_MAF','EA_MAF')
 
 write.csv(d, file='', quote=FALSE, row.names=FALSE)
