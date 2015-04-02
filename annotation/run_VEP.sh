@@ -121,6 +121,10 @@ shortname=AJcontrols
 custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
 
 ###
+shortname=AJcases
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcases/chr${chr}.vcf.gz,${shortname},vcf,exact"
+
+###
 for disease in CRO IBD UC
 do
     shortname=ImmunoBase_${disease}
