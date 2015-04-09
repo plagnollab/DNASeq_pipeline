@@ -4,6 +4,18 @@ The main script for the annotation is ```run_VEP.sh``` which expects as input a 
 The output VCF file is then parsed by ```processVEP.sh``` which formats the annotation in to separate columns and recodes the genotypes as 0 (WT), 1 (HET), 2 (HOM) or NA for missing.  This script creates three separate files from one input file: an annotation file, a genotype file and genotype quality file.
 Finally, the output of ```processVEP.sh``` is processed by ```statsVEP.sh``` which does some sanity checks, generates summary stats and plots.
 
+There are two subdirectories:
+
+* annotate
+* filters
+
+## Annotate
+
+Scripts to add annotation such as frequencies and gene expressoin.
+
+### Filters
+
+Scripts do to the filtering on frequencies, GO terms, etc
 
 
 # Old
