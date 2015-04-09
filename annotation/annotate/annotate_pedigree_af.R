@@ -3,10 +3,10 @@
 err.cat <- function(x)  cat(x, '\n', file=stderr())
 
 ### 
-#err.cat(dim( d <- read.csv(file('stdin')) ))
-
+err.cat(dim( d <- read.csv(file('stdin')) ))
+#
 samples <- gsub('geno\\.','',grep('geno',colnames(d),value=TRUE))
-
+#
 pedigree <- 'DNA_pedigree_details.csv'
 
 # pedigree
@@ -25,8 +25,8 @@ err.cat(controls <- sample.affection[which(sample.affection$Affection==1),'uclex
 message('number of controls')
 err.cat(length(controls))
 
-
-calculate <- function(group, group.name){ #group: list of individuals of interest, group.name: subfamily name
+#group: list of individuals of interest, group.name: subfamily name
+calculate <- function(group, group.name){ 
     #With geno. prefix
     geno.group <- paste("geno",group,sep=".")
     #Genotype columns
