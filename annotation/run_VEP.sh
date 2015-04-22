@@ -28,6 +28,7 @@ function usage() {
 
 
 coding_only=no
+custom=
 
 ##
 until [ -z "$1" ]
@@ -49,6 +50,9 @@ do
     --coding_only)
         shift
         coding_only=$1;;
+    --custom)
+        shift
+        custom=$1;;
     -* )
         echo "Unrecognized option: $1"
         usage
@@ -113,23 +117,45 @@ do
 done
 
 #### 
-shortname=UCLEX
-custom_annotation="${custom_annotation} --custom ${annotations_dir}/UCLex/chr${chr}.vcf.gz,${shortname},vcf,exact"
+function UCLEX() {
+    shortname=UCLEX
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/UCLex/chr${chr}.vcf.gz,${shortname},vcf,exact"
+}
 
 ###
-shortname=AJcontrols
-custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
+function AJcontrols() {
+    shortname=AJcontrols
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
+}
 
 ###
-shortname=AJcases
-custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcases/chr${chr}.vcf.gz,${shortname},vcf,exact"
+function AJcases() {
+    shortname=AJcases
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcases/chr${chr}.vcf.gz,${shortname},vcf,exact"
+}
 
 ###
-for disease in CRO IBD UC
-do
-    shortname=ImmunoBase_${disease}
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/ImmunoBase/ImmunoBase_${disease}.bed.gz,${shortname},bed,overlap"
-done
+function BroadAJcontrols() {
+    shortname=BroadAJcontrols
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/BroadAJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
+}
+
+###
+function ImmunoBase() {
+    for disease in CRO IBD UC
+    do
+        shortname=ImmunoBase_${disease}
+        custom_annotation="${custom_annotation} --custom ${annotations_dir}/ImmunoBase/ImmunoBase_${disease}.bed.gz,${shortname},bed,overlap"
+    done
+}
+
+if [[ "$custom" != "" ]]
+then
+    for x in `echo $custom | tr ',' ' '`
+    do
+        $x
+    done
+fi
 
 
 if [[ "$reference" == "hg38_noAlt" ]]
