@@ -48,8 +48,20 @@ Beside the built-in Consequence field which is output by VEP there are additiona
 ### Filters
 
 The first step of filtering is on the allele frequency.
-Filtering can also be done on consequence
-Finally filtering is usualldy done on expression data
+Filtering can also be done on consequence.
+Finally filtering is usualldy done on expression data.
+
+### Consequence filtering
+
+Option 1:
+```
+[frameshift, stop, start, splice] OR [missense AND [Condel deleterious OR CAROL deleterious OR CADD>20]]
+```
+
+Option 2:
+```
+CADD>x (x=10?) AND [frameshift, stop, start, splice, deleterious missense in CSQ]
+```
 
 
 
