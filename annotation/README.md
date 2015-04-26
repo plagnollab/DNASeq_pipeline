@@ -1,7 +1,20 @@
-# New
+# Variant annotation
+
+
+## Summary
+The annotation of both coding and non-coding variants was done using the [Variant Effect Predictor](http://www.ensembl.org/info/docs/tools/vep/index.html)(VEP).
+All variants were annotated with [1000 Genomes](www.1000genomes.org) allele frequencies.
+Additionally, coding variants were annotated with allele frequencies from [ExAC](http://exac.broadinstitute.org/).
+Variants were further annotated with Combined Annotation Dependent Depletion (CADD) , Combined Annotation scoRing toOL (CAROL) and CONsensus DELeteriousness (Condel) consequence scores, to assess their functional impact.
+
+## Code
 
 The main script for the annotation is ```run_VEP.sh``` which expects as input a single allelic VCF file (only one alternative allele allowed per line) and outputs a VCF file containing the annotations as well as the VEP statistics in HTML format.
-The output VCF file is then parsed by ```processVEP.sh``` which formats the annotation in to separate columns and recodes the genotypes as 0 (WT), 1 (HET), 2 (HOM) or NA for missing.  This script creates three separate files from one input file: an annotation file, a genotype file and genotype quality file.
+The output VCF file is then parsed by ```processVEP.sh``` which formats the annotation in to separate columns and recodes the genotypes as 0 (WT), 1 (HET), 2 (HOM) or NA for missing.  This script creates three separate files from one input file:
+*  annotation file
+*  genotype file
+*  genotype quality file.
+
 Finally, the output of ```processVEP.sh``` is processed by ```statsVEP.sh``` which does some sanity checks, generates summary stats and plots.
 
 There are two subdirectories:
@@ -9,82 +22,34 @@ There are two subdirectories:
 * annotate
 * filters
 
-## Annotate
+## Additional annotation
 
-Scripts to add annotation such as frequencies and gene expressoin.
+VEP has builtin annotation but can also take custom annotation.
+There is also a number of [plugins available](https://github.com/ensembl-variation/VEP_plugins)
+
+## Consequence annotation scores
+
+Variants in coding regions can have a functional impact.
+Beside the built-in Consequence field which is output by VEP there are additional plugins to score the likely function impact of variants:
+* [CADD](http://cadd.gs.washington.edu/): Combined Annotation Dependent Depletion<sup>[1][CADD]</sup> 
+* [CONDEL](http://bg.upf.edu/fannsdb/): CONsensus DELeteriousness score that combines various tools (MutationAssessor, FATHMM).
+* [POLYPHEN](http://genetics.bwh.harvard.edu/pph2/): Polymorphism Phenotyping v2) is a tool which predicts possible impact of an amino acid substitution on the structure and function of a human protein using straightforward physical and comparative considerations.
+* [SIFT](http://sift.jcvi.org/): predicts whether an amino acid substitution affects protein function
+* [CAROL](https://www.sanger.ac.uk/resources/software/carol/): Combined Annotation scoRing toOL (CAROL) combines information PolyPhen-2 and SIFT
+
+[CADD]: http://www.nature.com/ng/journal/v46/n3/full/ng.2892.html  "Kircher M, Witten DM, Jain P, O'Roak BJ, Cooper GM, Shendure J. A general framework for estimating the relative pathogenicity of human genetic variants. Nat Genet. 2014 Feb 2."
+
+## Frequency annotation
+
+* (1000 genomes)[http://www.1000genomes.org/]
+* (ExAC)[http://exac.broadinstitute.org/]
+* UCLex
 
 ### Filters
 
-Scripts do to the filtering on frequencies, GO terms, etc
+The first step of filtering is on the allele frequency.
+Filtering can also be done on consequence
+Finally filtering is usualldy done on expression data
 
 
-# Old
 
-
-See http://www.ensembl.org/info/docs/tools/vep/script/vep_other.html#assembly
-
-If using Build 37:
-
-```
---ASSEMBLY GRCh37 \
---port 3337
-```
-
-If using Build 38:
-```
---ASSEMBLY GRCh38
-```
-
-Script to convert multiallelic variants to multiple variants each with a single alternate allele
-(note that quality score information is not retained). This reads in a gz vcf.
-```
-multi_to_single_gvcf.py
- ```
-Script to run VEP:
-```
-bash run_VEP.sh
-```
-You will see that this script points to VEP in my home directory which is obviously not going to work.
-In addition I was using version 75. They are now up to version 78 but we need to check that you can still use this with Build 37. You will see that I ask it for the effect of the variant on every possible Ensembl transcript.
-One can just ask for the most damaging or the canonical.
-We need to review the information here http://www.ensembl.org/info/docs/tools/vep/script/vep_options.html.
- 
-After running the VEP I use this script to format the results.
-
-```
-extract_VEP.py
-```
-
-Like this:
-```sh
-python extract_VEP.py groups.txt VEP_out.vcf > Formatted.txt
-```
-
-This also extracts the effects for the correct allele (e.g. if there are C>T and C>A allele frequency annotations,
-the VEP will include both but we are only interested in the one that is relevant given our particular alternate allele).
- 
-The groups file looks like this:
-```
-/cluster/project8/vyp/AdamLevine/UCL-exomes_v2/groups.txt
-```
-
-This calculates the number of WT, HET, HOM, etc. individuals for each variant within a group
-(e.g. all samples or those with a particular phenotype, etc.). I find this useful but it is not necessary.
- 
-The VEP_out.vcf is the output from the VEP.
-You can see examples here:
-```
-/cluster/project8/vyp/AdamLevine/UCL-exomes_v2/annotate
-```
-
-Look at `VEP_1.vcf` and then `Formatted_1_with_genotypes.txt`
- 
-I am currently formatting the ExAC data so that we can include this.
- 
-Vincent, it may take us a little while to get this up and running
-(we will need to install the VEP scripts in a shared directory somewhere).
-In the meanwhile I am happy to run it myself on your data (if it is build 37).
-You just need to point me to the VCFs.
- 
-
- 
