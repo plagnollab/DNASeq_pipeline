@@ -2,10 +2,10 @@
 
 
 ## Summary
-The annotation of both coding and non-coding variants was done using the [Variant Effect Predictor](http://www.ensembl.org/info/docs/tools/vep/index.html)(VEP).
-All variants were annotated with [1000 Genomes](www.1000genomes.org) allele frequencies.
-Additionally, coding variants were annotated with allele frequencies from [ExAC](http://exac.broadinstitute.org/).
-Variants were further annotated with Combined Annotation Dependent Depletion (CADD) , Combined Annotation scoRing toOL (CAROL) and CONsensus DELeteriousness (Condel) consequence scores, to assess their functional impact.
+The annotation of both coding and non-coding variants is done using the [Variant Effect Predictor](http://www.ensembl.org/info/docs/tools/vep/index.html)(VEP).
+All variants are annotated with [1000 Genomes](www.1000genomes.org) allele frequencies.
+Additionally, coding variants are annotated with allele frequencies from [ExAC](http://exac.broadinstitute.org/).
+Variants are further annotated with Combined Annotation Dependent Depletion (CADD)<sup>[1][CADD]</sup>, Combined Annotation scoRing toOL (CAROL) and CONsensus DELeteriousness (Condel) consequence scores, to assess their functional impact.
 
 ## Code
 
