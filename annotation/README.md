@@ -41,8 +41,8 @@ Beside the built-in Consequence field which is output by VEP there are additiona
 
 ## Frequency annotation
 
-* (1000 genomes)[http://www.1000genomes.org/]
-* (ExAC)[http://exac.broadinstitute.org/]
+* [1000 genomes](http://www.1000genomes.org/)
+* [ExAC](http://exac.broadinstitute.org/)
 * UCLex
 
 ### Filters
