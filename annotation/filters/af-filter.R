@@ -12,7 +12,6 @@ suppressPackageStartupMessages(library(xtable))
 
 
 option_list <- list(
-    make_option(c('--pedigree'), default='DNA_pedigree_details.csv', help=''),
     make_option(c('--exac.thresh'), default=0.01, help='pop freq threshold'),
     make_option(c('--onekg.thresh'), default=0.05, help='pop freq threshold'),
     make_option(c('--esp.thresh'), default=0.05, help='pop freq threshold'),
@@ -49,7 +48,16 @@ if (!is.null(opt$ajcontrols.thresh)) {
     d <- af.filter(ajcontrols,ajcontrols.thresh)
 }
 
-
+#BroadAJcontrols
+if (!is.null(opt$ajcontrols.thresh)) {
+    ajcontrols.thresh <- as.numeric(opt$ajcontrols.thresh)
+    message('*** BroadAJcontrols FILTERING ***')
+    ajcontrols <- data.frame(
+    pop=c('BroadAJcontrols'),
+    description=c('broadajcontrols')
+    )
+    d <- af.filter(ajcontrols,ajcontrols.thresh)
+}
 
 #UCLEX
 if (!is.null(opt$uclex.thresh)) {
@@ -61,7 +69,6 @@ if (!is.null(opt$uclex.thresh)) {
     )
     d <- af.filter(uclex,uclex.thresh)
 }
-
 
 
 #EXAC

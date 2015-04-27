@@ -1,9 +1,14 @@
 #!/usr/bin/env Rscript
 
+#Make a more stringent filtering sequence (in addition to the existing one). Perhaps the following?
+# GO & expression
+# Condel & CAROL deleterious
+# Frequency <0.01
+
 err.cat <- function(x)  cat(x, '\n', file=stderr())
 
 ## Filtering based on go terms.
-message('*** GO FILTERING ***')
+message('*** STRINGENT FILTERING ***')
 
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(tools))
@@ -21,12 +26,8 @@ go <- opt$go
 
 err.cat(dim( d <- read.csv(file('stdin')) ))
 
-#d$GO <- gsub('positive_regulation_of_synaptic_transmission&_glutamatergic','positive_regulation_of_synaptic_transmission_glutamatergic', d$GO)
-#d$GO <- gsub('regulation_of_transcription&_DNA-templated', 'regulation_of_transcription_DNA-templated', d$GO)
-
 err.cat('dim of GO terms')
 err.cat( dim(go.term <- read.csv(go,header=TRUE)) )
-
 
 go.regex <- paste(go.term$go,collapse='|')
 indexes <- grep(go.regex,d$GO)
@@ -43,11 +44,5 @@ for (i in 1:nrow(d)) {
 
 
 write.csv(d, quote=FALSE, file='',row.names=FALSE)
-
-
-
-
-
-
 
 

@@ -32,7 +32,7 @@ grc37=$ann_dir/GRCh37/$ann
 grc38=$ann_dir/GRCh38/$ann
 
 #For UCLex and CADD we need this instead as we don't have any pop specific AF:
-if [[ "$ann" == "UCLex" ]] || [[ "$ann" == "CADD" ]] 
+if [[ "$ann" == "ExAC" ]] || [[ "$ann" == "UCLex" ]] || [[ "$ann" == "CADD" ]] 
 then
     files=$grc37/chr${ch}.vcf.gz
 else
