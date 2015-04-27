@@ -3,42 +3,10 @@
 Filters modified to work with bash pipe command.
 File is read from stdin and output written to stdout, so can be piped to another filter.
 
-Here is an example script:
+Here is an example script of how to pipe filter:
 
 ```
-#!/bin/bash
-#$ -S /bin/bash
-#$ -o /dev/null
-#$ -e /dev/null
-#$ -cwd
-#$ -V
-#$ -l tmem=6G,h_vmem=6G
-#$ -l h_rt=24:0:0
-#$ -t 1-25
-set -u
-set -x
-scriptname=annotate
-mkdir -p ${scriptname}.qsub.out ${scriptname}.qsub.err
-exec >${scriptname}.qsub.out/${scriptname}_${SGE_TASK_ID}_${JOB_ID}.out 2>${scriptname}.qsub.err/${scriptname}_${SGE_TASK_ID}_${JOB_ID}.err
-args=( header 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y )
-f=${args[$SGE_TASK_ID]}
-chrCode=$f
-
-
-function VEP() {
-    DIR=~/bin/DNASeq_pipeline/annotation
-    reference=1kg
-    zcat chr${chrCode}.vcf.gz | python ${DIR}/multiallele_to_single_gvcf.py --GQ 10 --DP 5 > chr${chrCode}-single.vcf
-    bash $DIR/run_VEP.sh --vcfin chr${chrCode}-single.vcf --chr $chrCode --reference $reference --vcfout VEP_${chrCode}.vcfout --coding_only yes --custom UCLEX,AJcontrols,AJcases,BroadAJcontrols,ImmunoBase
-}
-
-
-function annotate() {
-    DIR=~/bin/DNASeq_pipeline/annotation
-    python $DIR/processVEP.py --custom-allele-freq UCLEX AJcontrols AJcases BroadAJcontrols --custom-annotation ImmunoBase_CRO ImmunoBase_IBD ImmunoBase_UC --file VEP_${chrCode}.vcfout
-    #combine annotation, genotype and depth into a single VEP file.
-    Rscript $DIR/combine.R --chr $chrCode | Rscript $DIR/annotate/annotate_expression.R | Rscript $DIR/annotate/annotate_pedigree_af.R| Rscript scripts/Group_Counts.R > VEP_${chrCode}.csv
-}
+chrCode=22
 
 function filter() {
     DIR=~/bin/DNASeq_pipeline/annotation/filters/
@@ -71,8 +39,7 @@ function stringent_filter() {
     wc -l af-csq-go-filtered-VEP_$chrCode.csv
 }
 
-#VEP
-#annotate
 filter
 #tonyfilter
+#stringent_filter
 ```
