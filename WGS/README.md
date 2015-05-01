@@ -164,6 +164,17 @@ Finally [novosort]() is ran on the BAM.
 The default output folder is:
 > aligned
 
+There are two output files:
+
+```
+*_sorted_unique.bam
+*_disc_sorted.bam
+```
+
+```sorted_unique.bam``` contains sorted unique reads, this is the file that should be used assess sequencing depth.
+```disc_sorted.bam``` contains discordant reads and should be used for the purpose of CNV calling.
+
+
 ## Single sample variant calling
 
 The variant calling is done by [GATK](http://www.broadinstitute.org/partnerships/education/broade/best-practices-variant-calling-gatk) using [HaplotypeCaller](https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php).
