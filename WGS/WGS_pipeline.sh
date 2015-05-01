@@ -66,6 +66,8 @@ function mode_align() {
             rm -f ${tempFolder}/${code}/*
             mkdir -p ${tempFolder}/${code} 
 cat >${mainScript%.sh}_${code}.sh<<EOL
+# disc is for discordant reads, which can be used for CNV calling purposes
+# unique_sorted.bam is the file that should be used!
 $novoalign -c ${ncores} -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' --rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam} -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}/${code}_disc.sam  | ${samtools} view -Sb - > ${output}/${code}.bam
 ${samtools} view -Sb ${output}/${code}_disc.sam | $novosort - -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_disc_sorted.bam
 $novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_sorted_unique.bam ${output}/${code}.bam
@@ -478,7 +480,7 @@ function mode_annotation() {
 cat > ${script} << EOL
 #zcat $INPUT | python ${DIR}/multiallele_to_single_gvcf.py > ${output}/chr${chrCode}-single.vcf
 bash $DIR/run_VEP.sh --vcfin ${output}/chr${chrCode}-single.vcf --chr $chrCode --reference $reference --vcfout ${output}/VEP_${chrCode}.vcfout --coding_only $coding_only
-python $DIR/processVEP.py ${output}/VEP_${chrCode}.vcfout 
+python $DIR/processVEP.py --custom-allele-freq UCLEX AJcontrols --custom-annotations ImmunoBase_CRO ImmunoBase_IBD ImmunoBase_UC --file ${output}/VEP_${chrCode}.vcfout 
 echo generate html report
 /share/apps/R-3.1.0/bin/Rscript $DIR/statsVEP.R --dir ${output} --chr $chrCode
 EOL
