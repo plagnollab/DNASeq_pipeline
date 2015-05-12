@@ -21,7 +21,7 @@ bash WGS_pipeline.sh
      --mode align
      --supportFrame examples/support.txt
      --reference 1kg
-     --tparam 320
+     --aligner-tparam 320
      --inputFormat STDFQ 
      --projectID Project1
 ```
