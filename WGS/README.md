@@ -56,7 +56,7 @@ bash WGS_pipeline.sh
      --mode align
      --supportFrame examples/support.txt
      --reference 1kg
-     --tparam 320
+     --aligner-tparam 320
      --inputFormat STDFQ 
      --projectID Project1
      --extraID Project1_
@@ -71,7 +71,7 @@ bash WGS_pipeline.sh
      --mode gvcfs
      --supportFrame examples/support.txt
      --reference 1kg
-     --tparam 320
+     --aligner-tparam 320
      --inputFormat STDFQ 
      --projectID Project1
 ```
@@ -93,7 +93,7 @@ with.
      --mode [align|gvcf|jointvcf]
      --supportFrame < >
      --reference [hg38_noAlt|1kg]
-     --tparam 320
+     --aligner-tparam 320
      --inputFormat STDFQ 
      --extraID < >
      --projectID < >
