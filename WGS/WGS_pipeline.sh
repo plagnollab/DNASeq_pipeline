@@ -292,7 +292,7 @@ function mode_gvcf_unsplit() {
     mainScript=${outputdir}/scripts/gvcf_unsplit.sh
     
     targetArgument=""
-    if [[ $"bedFile" != "NA" ]]; then targetArgument="-L $bedFile"; fi
+    if [[ "$bedFile" != "NA" ]]; then targetArgument="-L $bedFile"; fi
 
     SGE_PARAMETERS="
 #$ -l scr=1G
