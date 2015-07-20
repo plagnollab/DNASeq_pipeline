@@ -330,6 +330,10 @@ function mode_gvcf_unsplit() {
     output=$outputdir/data/
     mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
     mainScript=${outputdir}/scripts/gvcf_unsplit.sh
+    
+    targetArgument=""
+    if [[ "$bedFile" != "NA" ]]; then targetArgument="-L $bedFile"; fi
+
     SGE_PARAMETERS="
 #$ -l scr=1G
 #$ -l tmem=7.8G,h_vmem=7.8G
@@ -364,7 +368,7 @@ function mode_gvcf_unsplit() {
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
           echo "
           $HaplotypeCaller \
-           -R $fasta \
+           -R $fasta $targetArgument \
            -I ${input}/${code}_sorted_unique.bam  \
            --emitRefConfidence GVCF \
            --variant_index_type LINEAR \
@@ -565,6 +569,7 @@ cleanChrLen=${#cleanChr[@]}
 #need to decrement because of header
 cleanChrLen=$(( cleanChrLen-1 ))
 
+bedFile=NA
 coding_only=no
 
 ##
@@ -591,6 +596,9 @@ do
     --mode)
         shift
         mode=$1;;
+    --bedFile)
+        shift
+        bedFile=$1;;
     --projectID)
         shift
         projectID=$1;;

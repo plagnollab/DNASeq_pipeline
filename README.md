@@ -5,8 +5,8 @@
 Set of pipelines in place at the UGI to work on short read sequence data.
 Consists of:
 
-* [WGS](WGS)
-* [WES](WES)
+* [WGS](WGS) Whole Genome Sequencing
+* [WES](WES) Whole Exome Sequencing
 * [DCUTILS] (DCUTILS) utilities written by @davenomiddlenamecurtis
 
 
