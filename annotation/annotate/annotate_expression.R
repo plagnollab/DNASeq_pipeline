@@ -2,7 +2,7 @@
 err.cat <- function(x)  cat(x, '\n', file=stderr())
 
 ### 
-err.cat(dim( d <- read.csv(file('stdin')) ))
+err.cat(dim( d <- read.csv(file('stdin'),check.names=FALSE) ))
 
 
 # it is to use grep here I think because ENSG ids are fixed width (15 char)
@@ -30,7 +30,7 @@ for (j in 1:nrow(xavier)) {
 
 
 message('*** IBD_GENE_LIST ***')
-ibd.gene.list <- read.csv('/cluster/project8/IBDAJE/variants/IBD_GENE_LIST.txt',header=FALSE)
+ibd.gene.list <- read.csv('/cluster/project8/IBDAJE/variants/IBD_GENE_LIST.csv',header=FALSE)
 d$ibd.gene.list <- FALSE
 for (j in 1:nrow(ibd.gene.list)) {
     gene <- ibd.gene.list[j,1]
