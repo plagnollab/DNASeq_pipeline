@@ -5,6 +5,7 @@ Only the following parameters need to be modified.  The rest should be standard.
 
 ```
 BASEDIR=/goon2/scratch2/vyp-scratch2/RoseRichardson/1327-UCL-Fam2_Report/
+cp /goon2/scratch2/vyp-scratch2/Software/DNASeq_pipeline/WGS/RUNME.md .
 reference=1kg
 projectID=RoseRichardson_Fam2
 extraID=RoseRichardson_Fam2
