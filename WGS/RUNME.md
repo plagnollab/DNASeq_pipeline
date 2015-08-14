@@ -7,6 +7,9 @@ Only the following parameters need to be modified.  The rest should be standard.
 SOFTWARE=/goon2/scratch2/vyp-scratch2/Software
 BASEDIR=/goon2/scratch2/vyp-scratch2/RoseRichardson/1327-UCL-Fam2_Report/
 cp $SOFTWARE/DNASeq_pipeline/WGS/RUNME.md .
+```
+
+```
 reference=1kg
 projectID=RoseRichardson_Fam2
 extraID=RoseRichardson_Fam2
@@ -29,6 +32,6 @@ qsub ${projectID}/align/scripts/align.sh
 # Create the VCFs
 
 ```
-bash $SOFTWARE/WGS_pipeline.sh --mode gvcfs --supportFrame ${BASEDIR}/support.txt --reference ${reference} --aligner-tparam 320 --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
+bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcfs --supportFrame ${BASEDIR}/support.txt --reference ${reference} --aligner-tparam 320 --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
 ```
 
