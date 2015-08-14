@@ -32,6 +32,6 @@ qsub ${projectID}/align/scripts/align.sh
 # Create the VCFs
 
 ```
-bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcfs --supportFrame ${BASEDIR}/support.txt --reference ${reference} --aligner-tparam 320 --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
+bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference} --aligner-tparam 320 --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
 ```
 
