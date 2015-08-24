@@ -30,6 +30,8 @@ parser=argparse.ArgumentParser(description='Arguments to processVEP.py')
 parser.add_argument('--file', required=True)
 parser.add_argument('--custom-allele-freq', nargs='+')
 parser.add_argument('--custom-annotation', nargs='+')
+parser.add_argument('--genotypes', default=False, action='store_true', help='')
+parser.add_argument('--depth', default=False, action='store_true', help='')
 
 args=parser.parse_args()
 filename=args.file
@@ -47,10 +49,11 @@ def _float(n):
     except:
         return('NA')
 
-ANNOTATION_HEADER=['VARIANT_ID']+['ID']+CSQ+CADD+GO+MAF+EXAC+CUSTOM_ANNOTATION+CUSTOM_ALLELE_FREQ+[x.replace('1KG','ONEKG') for x in ONEKG]+ESP+['AF','WT','HET','HOM','MISS']
+ANNOTATION_HEADER=['VARIANT_ID']+['ID']+CSQ+CADD+GO+MAF+EXAC+CUSTOM_ANNOTATION+CUSTOM_ALLELE_FREQ+[x.replace('1KG','ONEKG') for x in ONEKG]+ESP
+if args.genotypes: ANNOTATION_HEADER=['AF','WT','HET','HOM','MISS']
 annotation_file=open('-'.join([basename,'annotations.csv']), 'w+')
 genotype_file=open('-'.join([basename,'genotypes.csv']), 'w+')
-quality_file=open('-'.join([basename,'genotypes_depth.csv']), 'w+')
+depth_file=open('-'.join([basename,'genotypes_depth.csv']), 'w+')
 for l in infile:
     #get the format of the VEP consequence (CSQ) field
     #the names of the VEP CSQ fields are "|" delimited
@@ -67,7 +70,7 @@ for l in infile:
         SAMPLES=HEADER[9:]
         GENOTYPE_HEADER=['VARIANT_ID']+SAMPLES
         print(*(GENOTYPE_HEADER),sep=',',file=genotype_file)
-        print(*(GENOTYPE_HEADER),sep=',',file=quality_file)
+        print(*(GENOTYPE_HEADER),sep=',',file=depth_file)
         print(*(ANNOTATION_HEADER),sep=',',file=annotation_file)
         continue
     s=l.strip().split('\t')
@@ -98,15 +101,18 @@ for l in infile:
             print( VARIANT_ID, geno, sep=',', file=sys.stderr)
             print( l, file=sys.stderr)
             raise 'hell'
-    GENOTYPES=[genotype(s.get(h,'NA'))for h in SAMPLES]
-    print(*([VARIANT_ID] + GENOTYPES),sep=',',file=genotype_file)
-    # QUALITY
-    def genotype_quality(g):
+    if args.genotypes:
+        GENOTYPES=[genotype(s.get(h,'NA'))for h in SAMPLES]
+        print(*([VARIANT_ID] + GENOTYPES),sep=',',file=genotype_file)
+    # DEPTH
+    def genotype_depth(g):
         d=dict(zip(s['FORMAT'].split(':'),g.split(':')))
         allele_depth=d['AD']
         total_depth=d['DP']
         return total_depth
-    print(*([VARIANT_ID] + [genotype_quality(s.get(h,'.'))for h in SAMPLES]),sep=',',file=quality_file)
+    if args.depth:
+        DEPTH=[genotype_depth(s.get(h,'.')) for h in SAMPLES]
+        print(*([VARIANT_ID] + DEPTH),sep=',',file=depth_file)
     # CUSTOM ANNOTATIONS mostly AFs but also CADD, ImmunoBase etc
     x=[tuple(x.split('=')) for x in s['INFO'].split(';')]
     x=[y for y in x if len(y)>1]
@@ -118,8 +124,12 @@ for l in infile:
     # only include AFs where the ref>alt match
     def AF(ann):
         for k in set(INFO).intersection(ann):
-            print(k)
+            #print(k)
             for af in INFO[k].split(','):
+                #print(af)
+                #sometimes there might be a comma for multiallelic
+                #af=af.split(',')[0]
+                if ':' not in af: continue
                 var,freq,=af.split(':')
                 if (variant!=var): continue
                 k=k.replace('1KG','ONEKG')
@@ -171,11 +181,12 @@ for l in infile:
                 #[str(_float(m.split('&')[0].split(':')[1]))]
              #s[maf] = ';'.join(set)
     # calculate freq of variant in this batch
-    s['MISS'] = float(GENOTYPES.count('NA'))
-    s['WT'] = float(GENOTYPES.count(0))
-    s['HET'] = float(GENOTYPES.count(1))
-    s['HOM'] = float(GENOTYPES.count(2))
-    s['AF']=float(GENOTYPES.count(1)+GENOTYPES.count(2)*2) / (2*len(SAMPLES))
+    if args.genotypes:
+        s['MISS'] = float(GENOTYPES.count('NA'))
+        s['WT'] = float(GENOTYPES.count(0))
+        s['HET'] = float(GENOTYPES.count(1))
+        s['HOM'] = float(GENOTYPES.count(2))
+        s['AF']=float(GENOTYPES.count(1)+GENOTYPES.count(2)*2) / (2*len(SAMPLES))
     print(*([s.get(h,'NA') for h in ANNOTATION_HEADER]),sep=',',file=annotation_file)
 
 

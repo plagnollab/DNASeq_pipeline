@@ -124,6 +124,46 @@ EOL
     done < <(tail -n +2 $supportFrame)
 }
 
+####################### samtools depth of BAM files ###########################################################################
+# Take as input the sorted, unique per sample BAM files, and produces the depth at each position
+# Input: BAM files.
+function mode_depth() {
+    input=${projectID}/align/data/
+    #output=${projectID}/coverage/data/
+    #outputdir=${projectID}/coverage_Macrogen
+    outputdir=${projectID}/depth
+    output=${outputdir}/data/
+    mainScript=${outputdir}/scripts/$mode.sh
+    nhours=${nhours-4}
+    ncores=${ncores-2}
+    vmem=${vmem-4}
+    #$ -R y 
+    mkdir -p $outputdir/data $outputdir/scripts $outputdir/err $outputdir/out
+    while read code f1 f2
+    do
+    bam=${input}/${code}_sorted_unique.bam  
+    depth=${output}/${code}_depth.txt
+    #if file is empty stop
+    #[ ! -s $bam ] && stop "${bam} does not exist" 
+    [ ! -s $bam ] && error "${bam} does not exist" 
+    if [ ! -s $depth ] || [ "$force" == "yes" ]
+    then
+cat >${mainScript%.sh}_${code}.sh<<EOL
+samtools depth ${bam} | tr '\t' ',' > ${depth}
+for chr in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y
+do
+    grep "^\$chr," ${depth} > ${depth%_depth.txt}_\${chr}_depth.txt
+done
+rm ${depth}
+EOL
+    else
+        rm ${mainScript%.sh}_${code}.sh 
+    fi
+    done < <(tail -n +2 $supportFrame)
+}
+
+
+
 
 ####################### Picard HsMetrics ######################################################################################
 # Take as input the sorted, unique per sample BAM files, and the capture bed files and produces the coverage files
@@ -290,6 +330,10 @@ function mode_gvcf_unsplit() {
     output=$outputdir/data/
     mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
     mainScript=${outputdir}/scripts/gvcf_unsplit.sh
+    
+    targetArgument=""
+    if [[ "$bedFile" != "NA" ]]; then targetArgument="-L $bedFile"; fi
+
     SGE_PARAMETERS="
 #$ -l scr=1G
 #$ -l tmem=7.8G,h_vmem=7.8G
@@ -324,7 +368,7 @@ function mode_gvcf_unsplit() {
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
           echo "
           $HaplotypeCaller \
-           -R $fasta \
+           -R $fasta $targetArgument \
            -I ${input}/${code}_sorted_unique.bam  \
            --emitRefConfidence GVCF \
            --variant_index_type LINEAR \
@@ -525,6 +569,7 @@ cleanChrLen=${#cleanChr[@]}
 #need to decrement because of header
 cleanChrLen=$(( cleanChrLen-1 ))
 
+bedFile=NA
 coding_only=no
 
 ##
@@ -551,6 +596,9 @@ do
     --mode)
         shift
         mode=$1;;
+    --bedFile)
+        shift
+        bedFile=$1;;
     --projectID)
         shift
         projectID=$1;;
