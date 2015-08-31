@@ -46,7 +46,7 @@ def _float(n):
         return('NA')
 
 ANNOTATION_HEADER=['VARIANT_ID']+['ID']+CSQ+CADD+GO+MAF+EXAC+CUSTOM_ANNOTATION+CUSTOM_ALLELE_FREQ+[x.replace('1KG','ONEKG') for x in ONEKG]+ESP
-if args.genotypes: ANNOTATION_HEADER=['AF','WT','HET','HOM','MISS']
+if args.genotypes: ANNOTATION_HEADER+=['AF','WT','HET','HOM','MISS']
 annotation_file=open('-'.join([basename,'annotations.csv']), 'w+')
 genotype_file=open('-'.join([basename,'genotypes.csv']), 'w+')
 depth_file=open('-'.join([basename,'genotypes_depth.csv']), 'w+')
@@ -99,6 +99,8 @@ for l in infile:
             raise 'hell'
     if args.genotypes:
         GENOTYPES=[genotype(s.get(h,'NA'))for h in SAMPLES]
+        # if all genotypes are NA then skip this variant
+        if GENOTYPES.count('NA')==len(SAMPLES): continue
         print(*([VARIANT_ID] + GENOTYPES),sep=',',file=genotype_file)
     # DEPTH
     def genotype_depth(g):
