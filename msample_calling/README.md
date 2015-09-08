@@ -25,7 +25,7 @@ The output goes to:
 
 ## Step 1: GenotypegVCF 
 
-This step is combine the gVCFs to do joint calling.
+This step does the joint calling on multiple gVCFs:
 
 ```
 $java -Xmx${memoSmall}g -jar $GATK -R $fasta -T GenotypeGVCFs -L $chr -L $target --interval_set_rule INTERSECTION --interval_padding 100 --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore --annotation MappingQualityRankSumTest
