@@ -25,7 +25,87 @@ The output goes to:
 
 ## Step 1: GenotypegVCF 
 
+This step is combine the gVCFs to do joint calling.
+
+```
+$java -Xmx${memoSmall}g -jar $GATK -R $fasta -T GenotypeGVCFs -L $chr -L $target --interval_set_rule INTERSECTION --interval_padding 100 --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore --annotation MappingQualityRankSumTest
+   --annotation ReadPosRankSumTest --annotation FisherStrand
+  --dbsnp ${bundle}/dbsnp_137.b37.vcf
+  --variant $gVCF
+  -o ${output}_chr${chr}.vcf.gz
+```
+
 ## Step 2: Recalibration 
+
+Extract the indels:
+```
+$java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
+     -T SelectVariants \
+     -R $fasta \
+     -V ${output}_chr${chr}.vcf.gz \
+     -selectType INDEL \
+     -selectType MIXED \
+     -o ${output}_chr${chr}_indels.vcf.gz
+```
+
+Apply the filters for the indels:
+```
+$java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
+    -T VariantFiltration \
+    -R $fasta \
+    -V ${output}_chr${chr}_indels.vcf.gz \
+    --filterExpression \"QD < 2.0 || FS > 50.0 || ReadPosRankSum < -20.0\" \
+    --filterName \"FAIL\" \
+    -o ${output}_chr${chr}_indels_filtered.vcf.gz
+```
+
+Extract the SNPs:
+```
+$java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
+     -T SelectVariants \
+     -R $fasta \
+     -V ${output}_chr${chr}.vcf.gz \
+     -selectType SNP \
+     -o ${output}_chr${chr}_SNPs.vcf.gz
+```
+
+First SNPs:
+```
+$java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecalibrator -R $fasta -L $chr --input ${output}_chr${chr}_SNPs.vcf.gz --maxGaussians ${maxGauLoc} --mode SNP \
+             -resource:hapmap,VCF,known=false,training=true,truth=true,prior=15.0 ${bundle}/hapmap_3.3.b37.vcf  \
+             -resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 ${bundle}/1000G_omni2.5.b37.vcf \
+             -resource:dbsnp,VCF,known=true,training=false,truth=false,prior=8.0 ${bundle}/dbsnp_137.b37.vcf \
+             -an QD -an FS -an ReadPosRankSum -an InbreedingCoeff \
+             -tranche 100.0 -tranche 99.9 -tranche 99.8 -tranche 99.6 -tranche 99.5 -tranche 99.4 -tranche 99.3 -tranche 99.0 -tranche 98.0 -tranche 97.0 -tranche 90.0 \
+             --minNumBadVariants ${numBad} \
+             -recalFile ${output}_chr${chr}_SNPs_combrec.recal \
+             -tranchesFile ${output}_chr${chr}_SNPs_combtranch \
+             -rscriptFile  ${output}_chr${chr}_recal_plots_snps.R
+```
+```
+${Rscript} ${output}_chr${chr}_recal_plots_snps.R
+```
+
+Apply recal:
+```
+$java -Xmx${memoSmall}g -jar ${GATK} -T ApplyRecalibration -R $fasta \
+       -o ${output}_chr${chr}_SNPs_filtered.vcf.gz \
+       --ts_filter_level 99.5 \
+       --recal_file ${output}_chr${chr}_SNPs_combrec.recal --tranches_file ${output}_chr${chr}_SNPs_combtranch --mode SNP \
+       --input ${output}_chr${chr}_SNPs.vcf.gz
+```
+
+Now we merge SNPs and indels:
+```
+$java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
+       -T CombineVariants --assumeIdenticalSamples \
+       -R $fasta \
+       --variant:SNPs ${output}_chr${chr}_SNPs_filtered.vcf.gz \
+       --variant:indels ${output}_chr${chr}_indels_filtered.vcf.gz \
+       -genotypeMergeOptions PRIORITIZE  \
+       -priority SNPs,indels \
+       -o ${output}_chr${chr}_filtered.vcf
+```
 
 ## Step 3: Annotation and custom filtering
 
