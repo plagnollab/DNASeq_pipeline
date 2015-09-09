@@ -46,6 +46,8 @@ for line in sys.stdin:
         continue
     #you can now access elements by their header name
     s=dict(zip(headers,s))
+    #split alternate alleles
+    alternative_alleles=s['ALT'].split(',')
     #I would expect each sample to be formatted according to the format column.
     #However I found in practise this not true.
     #Only the first two fields: GT (genotype) and AD (allele depth)
@@ -53,21 +55,21 @@ for line in sys.stdin:
     #can be missing.
     #So I calculate DP from AD instead.
     #I ignore the other fields for now.
+    #Actually, if the genotype is missing then none of the fields are compulsory.
+    #In fact AD can be '.' even when geno is 0/0 if using HaplotypeCaller with multiple BAMs.
     for h in SAMPLE_HEADERS:
         d=dict(zip(s['FORMAT'].split(':'),s[h].split(':')))
         GT=d['GT']
-        AD=d['AD']
-        DP=d['DP']
-        DP=str(sum([int(x) for x in AD.split(',')]))
-        GQ=d['GQ']
+        AD=d.get('AD',','.join(['0']*(len(alternative_alleles)+1)))
+        DP=d.get('DP','0')
+        DP=str(sum([int(x) if x!='.' else 0 for x in AD.split(',')]))
+        GQ=d.get('GQ','')
         # if GQ is '.' the must be missing
         if GQ == '.' and GT != './.': raise 'hell'
         # if fails QC set to missing
         if ((args.DP and int(DP) < args.DP) or (args.GQ and GQ!='.' and int(GQ) < args.GQ)): GT='./.'
-        PL=d['PL']
+        PL=d.get('PL','')
         s[h]=':'.join([GT,AD,DP,GQ,PL])
-    #split alternate alleles
-    alternative_alleles=s['ALT'].split(',')
     #if single alternate allele
     #then just print out as normal
     if len(alternative_alleles)<=1:
@@ -86,15 +88,21 @@ for line in sys.stdin:
             d=dict(zip(s1['FORMAT'].split(':'),s1[h].split(":")))
             #length of allele depth is 2 where first is always REF allele depth
             #and second can be either ALT
-            AD=d['AD'].split(',')
-            AD[1]=AD[idx+1]
-            AD=','.join(AD[:2])
+            if 'AD' in d and d['AD']!='':
+                AD=d['AD'].split(',')
+                AD[1]=AD[idx+1]
+                AD=','.join(AD[:2])
+            else:
+                AD='0'
             # matches REF -> 0
             # matches ALT -> 1
             # matches anything else -> .
             #sorted so that "." precedes number
             GT='/'.join(sorted([{s['REF']:'0',s['ALT']:'1'}.get(n2geno[g],'.') for g in d['GT'].split('/')]))
-            DP=str(sum([int(x) for x in AD.split(',')]))
+            if AD!='.':
+                DP=str(sum([int(x) for x in AD.split(',')]))
+            else:
+                DP=0
             s1[h]=':'.join( [GT, AD, DP] )
             s1['FORMAT']='GT:AD:DP'
         print_line(s1)
