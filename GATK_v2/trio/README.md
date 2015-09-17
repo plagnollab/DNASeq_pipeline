@@ -1,13 +1,17 @@
+Typically trios are two unaffected parents and one affected child.
+
 The following analyses can be conducted on trios.
+
 
 ```
 fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
-#BASEDIR=/goon2/scratch2/vyp-scratch2/RoseRichardson/1327-UCL-Fam2_Report/
-#ped=$BASEDIR/pedigree_details.ped
+BASEDIR=/goon2/scratch2/vyp-scratch2/RoseRichardson/1327-UCL-Fam2_Report/
+ped=$BASEDIR/pedigree_details.ped
 GATK="/share/apps/jdk1.7.0_45/jre/bin/java -Djava.io.tmpdir=/scratch0/ -Xmx4g -Xms4g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar -R $fasta -T"
 ```
 
 # Phasing
+Phasing allows to detect alleles which might have an accumulation of damaging variants and consequently may be no longer functional.
 
 ```
 ls -1 align/data/*sorted_unique.bam > bam.list
