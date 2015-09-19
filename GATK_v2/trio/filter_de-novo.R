@@ -5,7 +5,7 @@ exac.thresh <- 0.0001
 onekg.thresh <- 0.0001
 esp.thresh <- 0.0001
 uclex.thresh <- 0.0001
-depth.thresh <- 10
+depth.thresh <- 20
 
 ped <- read.table('pedigree_details.ped',col.names=c('fid','id','dadid','momid','gender','affection'))
 
