@@ -78,7 +78,7 @@ d <- d[which(rowSums(d[,c(depth.id,depth.dadid,depth.momid)]>depth.thresh)==3),]
 d <- d[which(d[,geno.id]!=0&d[,geno.dadid]==0&d[,geno.momid]==0),]
 
 # de novo hom
-#write.csv(d, file='denovo-het.csv', quote=FALSE, row.names=FALSE  )
+write.csv(d, file='denovo-het.csv', quote=FALSE, row.names=FALSE  )
 
 
 
