@@ -1,16 +1,35 @@
 # Filtering of variants based on annotation
 suppressPackageStartupMessages(library(xtable))
 
-exac.thresh <- 0.0001
-onekg.thresh <- 0.0001
-esp.thresh <- 0.0001
-uclex.thresh <- 0.0001
-depth.thresh <- 20
+suppressPackageStartupMessages(library(optparse))
+suppressPackageStartupMessages(library(tools))
+suppressPackageStartupMessages(library(xtable))
 
-ped <- read.table('pedigree_details.ped',col.names=c('fid','id','dadid','momid','gender','affection'))
+
+option_list <- list(
+    make_option(c('--chr'), default=NULL, help='chromosome'),
+    make_option(c('--ped'), default='pedigree_details.ped', help='pedigree_details.ped'),
+    make_option(c('--exac.thresh'), default=0.0001, help='pop freq threshold'),
+    make_option(c('--onekg.thresh'), default=0.0001, help='pop freq threshold'),
+    make_option(c('--esp.thresh'), default=0.0001, help='pop freq threshold'),
+    make_option(c('--uclex.thresh'), default=0.0001, type='numeric', help='pop freq threshold'),
+    make_option(c('--depth.thresh'), default=20, type='numeric', help='depth threshold')
+)
+
+option.parser <- OptionParser(option_list=option_list)
+opt <- parse_args(option.parser)
+
+#
+exac.thresh <- opt$exac.thresh
+onekg.thresh <- opt$onekg.thresh
+esp.thresh <- opt$esp.thresh
+uclex.thresh <- opt$uclex.thresh
+depth.thresh <- opt$depth.thresh
+
+ped <- read.table(opt$ped,col.names=c('fid','id','dadid','momid','gender','affection'))
 
 # combined file containing annotations, genotypes and genotype.depths
-d <- read.csv('VEP.csv')
+d <- read.csv(sprintf('VEP_%s.csv',opt$chr))
 rownames(d) <- d$VARIANT_ID
 
 d$chr <- unlist(lapply(strsplit(d$VARIANT_ID,'_'),`[[`,1))
@@ -79,10 +98,10 @@ d <- d[which(d[,geno.id]==2&d[,geno.dadid]!=2&d[,geno.momid]!=2),]
 
 # het in the parents: rare recessive hom
 i <- which(d[,geno.id]==2 & d[,geno.dadid]==1 & d[,geno.momid]==1)
-write.csv(d[i,], file='rare-recessive-hom.csv', quote=FALSE, row.names=FALSE  )
+write.csv(d[i,], file=sprintf('chr%s_rare-recessive-hom.csv',opt$chr), quote=FALSE, row.names=FALSE  )
 
 # de novo hom
-write.csv(d[-i,], file='denovo-hom.csv', quote=FALSE, row.names=FALSE  )
+write.csv(d[-i,], file=sprintf('chr%s_denovo-hom.csv',opt$chr), quote=FALSE, row.names=FALSE  )
 
 
 
