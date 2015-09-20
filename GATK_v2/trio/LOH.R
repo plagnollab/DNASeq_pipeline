@@ -1,4 +1,11 @@
 
+# Loss of heterozygosity (LOH) is a gross chromosomal event that results in loss of the entire gene and the surrounding chromosomal region.
+# Most of the chromosomes within somatic cells of individuals are paired, allowing for SNP locations to be potentially heterozygous.
+# However, one parental copy of a region can sometimes be lost, which results in the region having just one copy.
+# The single copy cannot be heterozygous at SNP locations and therefore the region shows loss of heterozygosity (LOH).
+# Loss of heterozygosity due to loss of one parental copy in a region is also called hemizygosity in that region.
+
+
 ped <- read.table('pedigree_details.ped',col.names=c('fid','id','dadid','momid','gender','affection'))
 
 # combined file containing annotations, genotypes and genotype.depths
