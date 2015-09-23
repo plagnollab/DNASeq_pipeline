@@ -15,7 +15,7 @@ projectID=RoseRichardson_Fam2
 extraID=RoseRichardson_Fam2
 ```
 
-# Align (do not modify)
+# Align
 Make the support file which points to the fastq files.
 ```
 bash $SOFTWARE/DNASeq_pipeline/WGS/makesupportfile.sh $BASEDIR/Fastq fastq.gz > ${BASEDIR}/support.txt
@@ -29,9 +29,17 @@ Submit the script:
 qsub ${projectID}/align/scripts/align.sh
 ```
 
-# Create the VCFs
+# Create the gVCFs
 
 ```
-bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference} --aligner-tparam 320 --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
+bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference}t --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
+```
+The default memory is 7.8G but if you need more memory you can specify it on the command line:
+```
+bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference}t --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID} --mem 10
 ```
 
+# CombineGVCFs for UCLEX
+```
+bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
+```
