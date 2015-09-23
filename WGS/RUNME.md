@@ -32,7 +32,7 @@ qsub ${projectID}/align/scripts/align.sh
 # Create the gVCFs
 
 ```
-bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference}t --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
+bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
 ```
 The default memory is 7.8G but if you need more memory you can specify it on the command line:
 ```
