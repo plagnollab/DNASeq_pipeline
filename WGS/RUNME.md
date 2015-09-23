@@ -4,7 +4,7 @@ This is an example of a RUNME.md that you can copy to the base directory from wh
 Only the following parameters need to be modified.  The rest should be standard.
 
 ```
-SOFTWARE=/goon2/scratch2/vyp-scratch2/Software
+SOFTWARE=/cluster/project8/vyp/Software/
 BASEDIR=/goon2/scratch2/vyp-scratch2/RoseRichardson/1327-UCL-Fam2_Report/
 cp $SOFTWARE/DNASeq_pipeline/WGS/RUNME.md .
 ```
