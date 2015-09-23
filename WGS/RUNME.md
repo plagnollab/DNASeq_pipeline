@@ -41,5 +41,5 @@ bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${
 
 # CombineGVCFs for UCLEX
 ```
-bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
+bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode CombineGVCFs --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
 ```
