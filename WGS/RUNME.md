@@ -36,10 +36,10 @@ bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${
 ```
 The default memory is 7.8G but if you need more memory you can specify it on the command line:
 ```
-bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference}t --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID} --vmem 10
+bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID} --vmem 10
 ```
 
 # CombineGVCFs for UCLEX
 ```
-bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode CombineGVCFs --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
+bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode CombineGVCFs --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID} --batchName $projectID
 ```
