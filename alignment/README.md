@@ -1,3 +1,5 @@
 
-Scripts to parse BAM files:
-* count mates which map to another chromosome indicative of insertions
+Scripts to parse BAM files in R and python.
+These script count mates which map to another chromosome which is often indicative of insertions.
+
+
