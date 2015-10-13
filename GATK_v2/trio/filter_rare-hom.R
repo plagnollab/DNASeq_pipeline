@@ -1,5 +1,5 @@
-# Filtering of variants based on annotation
-suppressPackageStartupMessages(library(xtable))
+# Filtering of hom variants in child and not het in parents based on annotation
+# Requires: VEP_*.csv file.
 
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(tools))
