@@ -3,10 +3,9 @@
 
 sampleExclusion=/cluster/project8/vyp/exome_sequencing_multisamples/mainset/support/exclusion_lists/control_exclusion.tab
 
+# Merge of VCFs
 
-if [[ "$mergeVCF" == "yes" ]]; then
-
-    echo "
+```
 head -300 ${output}_chr1 | awk '{ if (\$1 ~ /^#/) print}' > ${output}.vcf
 " >> $mainScript
 
@@ -19,18 +18,14 @@ head -300 ${output}_chr1 | awk '{ if (\$1 ~ /^#/) print}' > ${output}.vcf
 	fi
     done
 
-fi    
+fi
+```
 
-
-if [[ "$recal" == "yes" ]]; then
-
-    echo "
-
-if [ ! -e $tmpDir ]; then mkdir $tmpDir; fi
 
 
 # first SNPs
 
+```
 $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecalibrator -R $fasta --input ${output}.vcf --maxGaussians ${maxGaussians} --mode SNP \
              -resource:hapmap,VCF,known=false,training=true,truth=true,prior=15.0 ${bundle}/hapmap_3.3.b37.vcf  \
              -resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 ${bundle}/1000G_omni2.5.b37.vcf \
@@ -41,10 +36,13 @@ $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecali
              -recalFile ${output}_SNP_combrec \
              -tranchesFile ${output}_SNP_combtranch \
              -rscriptFile ${output}_recal_plots_snps.R
+```
 
+```
 ${Rscript} ${output}_recal_plots_snps.R
+```
 
-
+```
 # apply_recal
 $java -Xmx${memoSmall}g -jar ${GATK} -T ApplyRecalibration -R $fasta \
        -o ${output}_recal_SNP.vcf \
@@ -92,15 +90,14 @@ $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
        -V ${output}_raw_SNPs.vcf \
        -V ${output}_raw_indels_filtered.vcf \
        -o ${output}_recal.vcf
+```
 
-" >> $mainScript
-
-    else
 
 # Variant recalibration
 
 ## then indels
-	echo "
+
+```
 $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecalibrator -R $fasta --input ${output}_recal_SNP.vcf --mode INDEL \
            -resource:mills,known=true,training=true,truth=true,prior=12.0 ${bundle}/Mills_and_1000G_gold_standard.indels.b37.vcf \
            -an QD -an FS -an ReadPosRankSum -an InbreedingCoeff \
@@ -124,6 +121,7 @@ rm -rf $tmpDir
 " >> $mainScript
     fi
 fi
+```
 
 # Annovar
 
