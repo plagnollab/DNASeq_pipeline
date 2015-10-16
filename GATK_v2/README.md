@@ -65,21 +65,18 @@ $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecali
 ${Rscript} ${output}_recal_plots_snps.R
 ```
 
-```
 # apply_recal
+```
 $java -Xmx${memoSmall}g -jar ${GATK} -T ApplyRecalibration -R $fasta \
        -o ${output}_recal_SNP.vcf \
        --ts_filter_level 99.5 \
        --recal_file ${output}_SNP_combrec --tranches_file ${output}_SNP_combtranch --mode SNP \
        --input ${output}.vcf \
 " >> $mainScript
-
-    
-    if [[ "$indelHard" == "yes" ]]; then
-	
-	echo "
+```
 
 # extract the indels
+```
 $java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
      -T SelectVariants \
      -R $fasta \
@@ -87,8 +84,10 @@ $java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
      -selectType INDEL \
      -selectType MIXED \
      -o ${output}_raw_indels.vcf
+```
 
 # apply the filters for the indels
+```
 $java -jar ${GATK} \
     -T VariantFiltration \
     -R $fasta \
@@ -96,9 +95,10 @@ $java -jar ${GATK} \
     --filterExpression \"QD < 2.0 || FS > 200.0 || ReadPosRankSum < -20.0\" \
     --filterName \"FAIL\" \
     -o ${output}_raw_indels_filtered.vcf
-
+```
 
 # extract the SNPs
+```
 $java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
      -T SelectVariants \
      -R $fasta \
@@ -122,7 +122,7 @@ $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
 
 ```
 $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecalibrator -R $fasta --input ${output}_recal_SNP.vcf --mode INDEL \
-           -resource:mills,known=true,training=true,truth=true,prior=12.0 ${bundle}/Mills_and_1000G_gold_standard.indels.b37.vcf \
+           -resource:mills,known=true,training=true,truth=true,prior=12.0 ${bundle}/Mills_and_1000G_gold_standard.indels.b37.vcf
            -an QD -an FS -an ReadPosRankSum -an InbreedingCoeff \
            -tranche 100.0 -tranche 99.5  -tranche 99.0 -tranche 97.0 -tranche 96.0 -tranche 95.0 -tranche 94.0 -tranche 93.0 -tranche 92.0 -tranche 91.0 -tranche 90.0 \
            --minNumBadVariants ${numBadIndels} \
@@ -132,8 +132,10 @@ $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecali
            -rscriptFile ${output}_recal_plots_indels.R
 
 ${Rscript} ${output}_recal_plots_indels.R
+```
 
 #apply_recal
+```
 $java -Xmx${memoSmall}g -jar ${GATK} -T ApplyRecalibration -R $fasta \
          --input ${output}_recal_SNP.vcf --out ${output}_recal.vcf \
          --recal_file ${output}_INDEL_combrec --tranches_file ${output}_INDEL_combtranch --mode INDEL \
@@ -148,7 +150,7 @@ fi
 
 # Annovar
 
-
+```
 if [[ "$annovar" == "yes" ]]; then
 
     echo "
@@ -177,8 +179,6 @@ python /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/annovar_vcf_combi
 
 fi
 
-
-
 if [[ "$exomeprep" == "yes" ]]; then
 
     keyWords=data/controlKeywords.tab
@@ -187,38 +187,46 @@ if [[ "$exomeprep" == "yes" ]]; then
     if [ ! -e "${output}_split_by_chr" ]; then mkdir ${output}_by_chr; fi
     
     echo "
+```
 
 # Make matrix calls
-
+```
 perl /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/make_matrix_calls.pl ${output}_exome_table.csv ${output}
 
 $Rbin CMD BATCH --no-save --no-restore --root=${output} /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/split_data_by_chromosomes.R cluster/R/huge.out
+```
 
 # PCA analysis
 
 #$Rbin CMD BATCH --no-save --no-restore scripts/PCA/PCA_analysis.R cluster/R/PCA.out
 
-
-
+```
 if [[ "$finalCrunch" == "yes" ]]; then
 
     keyWords=data/controlKeywords.tab
     casekeyWords=data/caseKeywords.tab
-
-    echo "
+```
 
 # Crunch 
 
+```
 /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/crunch_controls.pl
+${crunchpl} ${output}_exome_table.csv $keyWords $casekeyWords ${output}_exome_crunched.csv data/sampleList_exome.tab none no 
+```
 
-${crunchpl} ${output}_exome_table.csv $keyWords $casekeyWords ${output}_exome_crunched.csv data/sampleList_exome.tab none no  ##include all samples
+##include all samples
 
 # Annovar VCF combine
-
+```
 python /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/annovar_vcf_combine_VP.py ${output}_recal_filtered.vcf ${output}_db.genome_summary.csv ${output}_genome_table.csv
+```
 
 # Crunch controls
 
+```
 /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/crunch_controls.pl
 
-${crunchpl} ${output}_genome_table.csv $keyWords $casekeyWords ${output}_genome_crunched.csv data/sampleList_genome.tab none no  ##include all samples
+${crunchpl} ${output}_genome_table.csv $keyWords $casekeyWords ${output}_genome_crunched.csv data/sampleList_genome.tab none no 
+```
+
+##include all samples
