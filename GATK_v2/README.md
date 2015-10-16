@@ -1,6 +1,7 @@
 
 # Overall pipeline
 
+All looking great
 
 ## combine gVCF files (formerly step1)
 
