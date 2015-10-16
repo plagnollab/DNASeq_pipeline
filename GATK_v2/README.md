@@ -1,4 +1,26 @@
 
+# Overall pipeline
+
+
+## combine gVCF files (formerly step1)
+
+combinegVCF.sh
+
+## Massive joint calling (formerly step2)
+
+msample_calling.sh
+
+## Extract cohort specific information
+
+crunch_data.R
+
+## Finalize the user friendly folders
+
+process_multiVCF.R
+
+
+
+
 # Samples exclusion
 
 sampleExclusion=/cluster/project8/vyp/exome_sequencing_multisamples/mainset/support/exclusion_lists/control_exclusion.tab
