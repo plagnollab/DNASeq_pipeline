@@ -1,3 +1,5 @@
+# Process the output of GATK PhaseByTransmission.
+# Rscript filter_de_novo.file.R --input.file <input> --output.file <output>
 
 getArgs <- function () {
   myargs.list <- strsplit(grep("=", gsub("--", "", commandArgs()),
