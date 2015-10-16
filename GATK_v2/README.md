@@ -140,21 +140,11 @@ $java -Xmx${memoSmall}g -jar ${GATK} -T ApplyRecalibration -R $fasta \
          --input ${output}_recal_SNP.vcf --out ${output}_recal.vcf \
          --recal_file ${output}_INDEL_combrec --tranches_file ${output}_INDEL_combtranch --mode INDEL \
          --ts_filter_level 95.0
-
-rm -rf $tmpDir
-
-" >> $mainScript
-    fi
-fi
 ```
 
 # Annovar
 
 ```
-if [[ "$annovar" == "yes" ]]; then
-
-    echo "
-
 cut -f1-8 ${output}_recal.vcf > ${output}_for_annovar.vcf
 
 /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/convert2annovar.pl --allallele -format vcf4 --includeinfo ${output}_for_annovar.vcf > ${output}_db
@@ -162,14 +152,7 @@ cut -f1-8 ${output}_recal.vcf > ${output}_for_annovar.vcf
 /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/summarize_annovar_VP.pl -ver1000g 1000g2012apr -verdbsnp 137 -veresp 6500si -alltranscript -buildver hg19 --genetype ensgene --remove ${output}_db /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/humandb_hg19/
 
 
-" >> $mainScript
-
-fi
-
-
 if [[ "$filter" == "yes" ]]; then
-
-    echo "
 
 perl ~/Software/pipeline/GATK_v2/custom_filtering.pl ${output}_recal.vcf ${output}_recal_filtered.vcf ${GQ}
 
@@ -198,7 +181,9 @@ $Rbin CMD BATCH --no-save --no-restore --root=${output} /cluster/project8/vyp/vi
 
 # PCA analysis
 
+```
 #$Rbin CMD BATCH --no-save --no-restore scripts/PCA/PCA_analysis.R cluster/R/PCA.out
+```
 
 ```
 if [[ "$finalCrunch" == "yes" ]]; then
