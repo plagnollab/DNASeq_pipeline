@@ -17,23 +17,27 @@ process_multiVCF.R
 split_data_by_chromosomes.R
 ```
 
-Files in pipeline:
+Files created by pipeline:
 ```
+ mainset_September2015_chr9.vcf.gz
+ mainset_September2015_chr9.vcf.gz.tbi
+ 
  mainset_September2015_chr9_db
  mainset_September2015_chr9_db.log
+ 
  mainset_September2015_chr9_filtered.vcf.idx
  mainset_September2015_chr9_indels_filtered.vcf.gz
  mainset_September2015_chr9_indels_filtered.vcf.gz.tbi
  mainset_September2015_chr9_indels.vcf.gz.tbi
+ 
  mainset_September2015_chr9_recal_plots_snps.R
  mainset_September2015_chr9_recal_plots_snps.R.pdf
+ 
  mainset_September2015_chr9_SNPs_combrec.recal
  mainset_September2015_chr9_SNPs_combrec.recal.idx
  mainset_September2015_chr9_SNPs_combtranch
  mainset_September2015_chr9_SNPs_filtered.vcf.gz.tbi
  mainset_September2015_chr9_SNPs.vcf.gz.tbi
- mainset_September2015_chr9.vcf.gz
- mainset_September2015_chr9.vcf.gz.tbi
 ```
 
 ## combine gVCF files (formerly step1)
