@@ -46,13 +46,16 @@ The following are all steps in ``` msample_calling.sh ```:
 
 ### GATK GenotypeGVCFs: Joint calling
 
+Input:
+```
+    if [[ "$format" == "v1" ]]; then gVCF=${path}/chr${chr}/${id}.gvcf.gz; fi
+    if [[ "$format" == "v2" ]]; then gVCF=${path}/${id}-chr${chr}.gvcf.gz; fi
+    if [[ "$format" == "v3" ]]; then gVCF=${path}/chr${chr}.gvcf.gz; fi
+```
+
 Output:
 ```
 ${output}_chr${chr}.vcf.gz
-```
-
-Input:
-```
 ```
 
 Code:
@@ -91,7 +94,7 @@ Output:
 ```
 -o ${output}_chr${chr}_indels.vcf.gz
 ```
-
+Code:
 ```
 $java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
      -T SelectVariants \
@@ -103,6 +106,7 @@ $java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
 ```
 
 #### GATK VariantFiltration: apply the filters for the indels
+Code:
 ```
 $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
     -T VariantFiltration \
@@ -120,7 +124,7 @@ Output:
 ```
 ${output}_chr${chr}_SNPs.vcf.gz
 ``` 
-
+Code:
 ```
 $java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
      -T SelectVariants \
@@ -141,7 +145,7 @@ Output:
 -tranchesFile ${output}_chr${chr}_SNPs_combtranch \
 -rscriptFile  ${output}_chr${chr}_recal_plots_snps.R
 ```
-
+Code:
 ```
 $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -R $fasta 
     -T VariantRecalibrator
@@ -169,15 +173,18 @@ Input:
 ${output}_chr${chr}_SNPs.vcf.gz
 ```
 Output:
-```${output}_chr${chr}_SNPs_filtered.vcf.gz```
+```
+${output}_chr${chr}_SNPs_filtered.vcf.gz
+```
 
 Code:
 ```
-$java -Xmx${memoSmall}g -jar ${GATK} -T ApplyRecalibration -R $fasta \
-       -o ${output}_chr${chr}_SNPs_filtered.vcf.gz \
-       --ts_filter_level 99.5 \
-       --recal_file ${output}_chr${chr}_SNPs_combrec.recal --tranches_file ${output}_chr${chr}_SNPs_combtranch --mode SNP \
-       --input ${output}_chr${chr}_SNPs.vcf.gz
+$java -Xmx${memoSmall}g -jar ${GATK} -R $fasta
+-T ApplyRecalibration 
+-o ${output}_chr${chr}_SNPs_filtered.vcf.gz \
+--ts_filter_level 99.5 \
+--recal_file ${output}_chr${chr}_SNPs_combrec.recal --tranches_file ${output}_chr${chr}_SNPs_combtranch --mode SNP \
+--input ${output}_chr${chr}_SNPs.vcf.gz
 ```
 
 
@@ -205,7 +212,7 @@ $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
        -o ${output}_chr${chr}_filtered.vcf
 ```
 
-Remove intemediate files:
+Remove intermediate files:
 ```
 rm ${output}_chr${chr}_indels.vcf.gz ${output}_chr${chr}_SNPs.vcf.gz ${output}_chr${chr}_SNPs_filtered.vcf.gz
 ```
