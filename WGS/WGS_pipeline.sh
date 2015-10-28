@@ -77,7 +77,7 @@ EOL
             #echo ${output}/${code}_sorted_unique.bam.bai already exists
             rm -f ${mainScript%.sh}_${code}.sh
         fi
-o    done < <(tail -n +2 $supportFrame)
+    done < <(tail -n +2 $supportFrame)
 }
 
 
@@ -658,7 +658,7 @@ fi
 
 ### Tools needed by this script
 # Two functions of GATK will be used HaplotypeCaller and GenotypeGVCFs 
-GATK=${Software}/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
+GATK=${Software}/GenomeAnalysisTK-3.4-46/GenomeAnalysisTK.jar
 #$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar ${GATK}
 HaplotypeCaller="$java -Djava.io.tmpdir=/scratch0/ -Xmx5g -Xms5g -jar $GATK -T HaplotypeCaller"
 CombineGVCFs="$java -Djava.io.tmpdir=/scratch0/ -Xmx4g -Xms4g -jar $GATK -T CombineGVCFs"
