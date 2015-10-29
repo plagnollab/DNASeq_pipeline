@@ -309,7 +309,7 @@ function mode_gvcf() {
                -L ${chrPrefix}${chrCleanCode} \
                --downsample_to_coverage 200 \
                --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
-               -o ${output}/${code}_chr${chrCleanCode}.gvcf.gz
+               -o ${output}/${code}_chr${chrCleanCode}.g.vcf.gz
               " > ${mainScript%.sh}_${code}_chr${chrCleanCode}.sh
             else
                 rm -f ${mainScript%.sh}_${code}_chr${chrCleanCode}.sh
@@ -371,13 +371,10 @@ function mode_gvcf_unsplit() {
            -R $fasta $targetArgument \
            -I ${input}/${code}_sorted_unique.bam  \
            --emitRefConfidence GVCF \
-           --variant_index_type LINEAR \
-           --variant_index_parameter 128000 \
            -stand_call_conf 30.0 \
            -stand_emit_conf 10.0 \
-           --downsample_to_coverage 250 \
            --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 60 \
-           -o ${output}/${code}.gvcf.gz
+           -o ${output}/${code}.g.vcf.gz
             " > ${mainScript%.sh}_${code}.sh
       else
           rm -f ${mainScript%.sh}_${code}.sh
