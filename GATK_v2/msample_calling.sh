@@ -15,7 +15,8 @@ java=/share/apps/jdk1.7.0_45/bin/java
 tmpDir=/scratch0/vyp
 target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/merged_exome_target_cleaned.bed
 
-GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
+GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.4-46/GenomeAnalysisTK.jar
+##GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
 
 baseFolder=/cluster/project8/vyp/vincent/Software/DNASeq_pipeline
 crunchpl=${baseFolder}/GATK_v2/crunch_controls.pl
