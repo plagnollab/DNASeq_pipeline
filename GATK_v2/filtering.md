@@ -1,5 +1,5 @@
 
-# Files
+# Filtered Annotation Files
 
 ```process_multiVCF.R``` generates filtered variants datasets from the UCLex calls and the variants annotated by ANNOVAR:
 
@@ -17,7 +17,7 @@
 * support
 * time_stamp.txt
 
-# Headers
+# Annotation Headers
 
 The headers for these files are explained below:
 
