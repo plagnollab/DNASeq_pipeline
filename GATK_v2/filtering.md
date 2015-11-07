@@ -65,7 +65,10 @@ ESP5400_ALL: MAF in Exome Sequencing Project dataset (5,400 exomes) for all popu
 1000g2012feb_ALL: MAF in 1000Genomes February 2012 release
 cg69: allele frequency in 69 human subjects sequenced by Complete Genomics
 dbSNP137: RS# from the dbSNP database
-AVSIFT
+```
+
+```
+AVSIFT: whole-exome SIFT scores for non-synonymous variants (obselete and should not be uesd any more)
 SIFT Pathogenicity score: closer to 0 is more damaging
 ```
 
