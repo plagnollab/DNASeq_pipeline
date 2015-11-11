@@ -7,18 +7,6 @@ import sys
 import tabix
 import csv
 
-usage_example = """
-"""
-
-parser = argparse.ArgumentParser(formatter_class = argparse.RawDescriptionHelpFormatter, epilog = usage_example) 
-#compulsory arguments
-parser.add_argument('--file', dest='file', help = "list of variants which we are interested in", required=False, default=None)
-args = parser.parse_args()
-
-f=args.file
-
-variants=['%s:%s-%s' % (l['Chr'],l['Start'],l['End'],) for l in csv.DictReader(file(f,'r'))]
-
 
 ##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes, for each ALT allele, in the same order as
 ##INFO=<ID=AC_AFR,Number=A,Type=Integer,Description="African/African American Allele Counts">
@@ -76,20 +64,48 @@ variants=['%s:%s-%s' % (l['Chr'],l['Start'],l['End'],) for l in csv.DictReader(f
 ##INFO=<ID=Hom_OTH,Number=A,Type=Integer,Description="Other Homozygous Counts">
 ##INFO=<ID=Hom_SAS,Number=A,Type=Integer,Description="South Asian Homozygous Counts">
 
-tb=tabix.open('/cluster/project8/IBDAJE/VEP_custom_annotations/GRCh37/ExAC/0.3/ExAC.r0.3.sites.vep.vcf.gz')
 
+usage_example = """
+"""
+parser = argparse.ArgumentParser(formatter_class = argparse.RawDescriptionHelpFormatter, epilog = usage_example) 
+#compulsory arguments
+parser.add_argument('--file', dest='file', help = "list of variants which we are interested in", required=False, default=None)
+args = parser.parse_args()
 
+f=args.file
+
+#tb=tabix.open('/cluster/project8/IBDAJE/VEP_custom_annotations/GRCh37/ExAC/0.3/ExAC.r0.3.sites.vep.vcf.gz')
+#tb=tabix.open('/cluster/project8/IBDAJE/VEP_custom_annotations/GRCh37/ExAC/0.3/ExAC.r0.3.sites.vep.vcf.gz')
+tb=tabix.open('/Users/pontikos/exac/exac_data/ExAC_HC.0.3.final.vep.vcf.gz')
+
+pli=dict()
+#file('/goon2/scratch2/vyp-scratch2/reference_datasets/ExAC/forweb_cleaned_exac_r03_march16_z_data_pLI.txt')
+for l in csv.DictReader(file('/Users/pontikos/exac/exac_data/forweb_cleaned_exac_r03_march16_z_data_pLI.txt','r'),delimiter='\t'):
+    pli[l['gene']]=l
+
+col0=["Samples","Func","ExonicFunc","HUGO","Description","non.ref.calls.cases","ncarriers.cases","missing.rate.cases","freq.controls","non.missing.controls","non.ref.calls.controls","non.missing.external.controls","freq.external.controls","AAChange","is.indel","QUAL","Gene","Conserved","SegDup","ESP6500si_ALL","X1000g2012apr_ALL","dbSNP137","AVSIFT","LJB_PhyloP","LJB_PhyloP_Pred","LJB_SIFT","LJB_SIFT_Pred","LJB_PolyPhen2","LJB_PolyPhen2_Pred","LJB_LRT","LJB_LRT_Pred","LJB_MutationTaster","LJB_MutationTaster_Pred","LJB_GERP..","cg69","Omim","Chr","Start","End","Ref","Obs","FILTER","signature","clean.signature","indel.length","ensemblID","ensemblID.bis","HUGO.no.splice.info","dup.region","somewhat.rare","rare","novel","exonic.splicing","splicing","core.splicing","lof","non.syn","remove.bad.transcripts","non.ref.calls.external.controls","freq.cases","non.missing.cases","potential.comp.het"]
 col1=['CHROM','POS','ID','REF','ALT','QUAL','FILTER']
+#ExAC columns
 col2=['AC', 'AC_AFR', 'AC_AMR', 'AC_Adj', 'AC_EAS', 'AC_FIN', 'AC_Het', 'AC_Hom', 'AC_NFE', 'AC_OTH', 'AC_SAS', 'AF', 'AN', 'AN_AFR', 'AN_AMR', 'AN_Adj', 'AN_EAS', 'AN_FIN', 'AN_NFE', 'AN_OTH', 'AN_SAS', 'DP', 'FS', 'GQ_MEAN', 'GQ_STDDEV', 'Het_AFR', 'Het_AMR', 'Het_EAS', 'Het_FIN', 'Het_NFE', 'Het_OTH', 'Het_SAS', 'Hom_AFR', 'Hom_AMR', 'Hom_EAS', 'Hom_FIN', 'Hom_NFE', 'Hom_OTH', 'Hom_SAS', 'InbreedingCoeff', 'VQSLOD', 'culprit']
-print(','.join(col1+col2))
+#ExAC pLI: prob of being loss intolerant
+print(','.join(col0+map(lambda x:'ExAC.'+x,col1)+map(lambda x:'ExAC.'+x, col2)+['pLI']))
+#print(','.join(col1+col2))
 
-for v in variants:
+for l in csv.DictReader(file(f,'r')):
+#for v in variants:
+    c0=','.join([l[x].replace(',','/') for x in col0])
+    v='%s:%s-%s' % (l['Chr'],l['Start'],l['End'],) 
     records=tb.querys(v)
-    for r in records:
-        c1=','.join(r[0:7])
-        #print( [ '%s,%s' % (), ','.join() for r in records]
-        d=dict( [x for x in [x.split('=') for x in r[7].split('|')[0].split(';')] if len(x)==2] )
-        c2=','.join([d[k] for k in col2])
-        print(c1,c2,sep=',')
+    r=[x for x in records]
+    if not r:
+        print(c0,','.join(['']*len(col1)),','.join(['']*len(col2)))
+        continue
+    r=r[0]
+    c1=','.join(map(lambda x: x.replace(',','/') ,r[0:7] ))
+    #print( [ '%s,%s' % (), ','.join() for r in records]
+    d=dict( [x for x in [x.split('=') for x in r[7].split('|')[0].split(';')] if len(x)==2] )
+    c2=','.join([d[k].replace(',','/') for k in col2])
+    pLI=pli.get(((l['HUGO'].split('/')[0]).split('('))[0],{'pLI':''})['pLI']
+    print(c0,c1,c2,pLI,sep=',')
 
 
