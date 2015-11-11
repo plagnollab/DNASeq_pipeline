@@ -310,7 +310,7 @@ function mode_gvcf() {
                -L ${chrPrefix}${chrCleanCode} \
                --downsample_to_coverage 200 \
                --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
-               -o ${output}/${code}_chr${chrCleanCode}.gvcf.gz
+               -o ${output}/${code}_chr${chrCleanCode}.g.vcf.gz
               " > ${mainScript%.sh}_${code}_chr${chrCleanCode}.sh
             else
                 rm -f ${mainScript%.sh}_${code}_chr${chrCleanCode}.sh
@@ -372,13 +372,10 @@ function mode_gvcf_unsplit() {
            -R $fasta $targetArgument \
            -I ${input}/${code}_sorted_unique.bam  \
            --emitRefConfidence GVCF \
-           --variant_index_type LINEAR \
-           --variant_index_parameter 128000 \
            -stand_call_conf 30.0 \
            -stand_emit_conf 10.0 \
-           --downsample_to_coverage 250 \
            --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 60 \
-           -o ${output}/${code}.gvcf.gz
+           -o ${output}/${code}.g.vcf.gz
             " > ${mainScript%.sh}_${code}.sh
       else
           rm -f ${mainScript%.sh}_${code}.sh
@@ -662,7 +659,7 @@ fi
 
 ### Tools needed by this script
 # Two functions of GATK will be used HaplotypeCaller and GenotypeGVCFs 
-GATK=${Software}/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
+GATK=${Software}/GenomeAnalysisTK-3.4-46/GenomeAnalysisTK.jar
 #$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar ${GATK}
 HaplotypeCaller="$java -Djava.io.tmpdir=/scratch0/ -Xmx5g -Xms5g -jar $GATK -T HaplotypeCaller"
 CombineGVCFs="$java -Djava.io.tmpdir=/scratch0/ -Xmx4g -Xms4g -jar $GATK -T CombineGVCFs"
@@ -672,7 +669,7 @@ novosort=${Software}/novocraft3/novosort
 #novosort=/cluster/project8/vyp/pontikos/Software/novocraft/novosort
 samblaster=${Software}/samblaster/samblaster
 ##samtools
-samtools=${Software}/samtools-1.1/samtools
+samtools=${Software}/samtools-1.2/samtools
 ##bedtools
 coverageBed=${Software}/bedtools-2.17.0/bin/coverageBed
 ## Picard
