@@ -80,7 +80,7 @@ tb=tabix.open('/cluster/project8/IBDAJE/VEP_custom_annotations/GRCh37/ExAC/0.3/E
 
 
 col1=['CHROM','POS','ID','REF','ALT','QUAL','FILTER']
-col2=['AC', 'AC_AFR', 'AC_AMR', 'AC_Adj', 'AC_EAS', 'AC_FIN', 'AC_Het', 'AC_Hom', 'AC_NFE', 'AC_OTH', 'AC_SAS', 'AF', 'AN', 'AN_AFR', 'AN_AMR', 'AN_Adj', 'AN_EAS', 'AN_FIN', 'AN_NFE', 'AN_OTH', 'AN_SAS', 'BaseQRankSum', 'ClippingRankSum', 'DP', 'FS', 'GQ_MEAN', 'GQ_STDDEV', 'Het_AFR', 'Het_AMR', 'Het_EAS', 'Het_FIN', 'Het_NFE', 'Het_OTH', 'Het_SAS', 'Hom_AFR', 'Hom_AMR', 'Hom_EAS', 'Hom_FIN', 'Hom_NFE', 'Hom_OTH', 'Hom_SAS', 'InbreedingCoeff', 'MQ', 'MQ0', 'MQRankSum', 'NCC', 'QD', 'VQSLOD', 'culprit']
+col2=['AC', 'AC_AFR', 'AC_AMR', 'AC_Adj', 'AC_EAS', 'AC_FIN', 'AC_Het', 'AC_Hom', 'AC_NFE', 'AC_OTH', 'AC_SAS', 'AF', 'AN', 'AN_AFR', 'AN_AMR', 'AN_Adj', 'AN_EAS', 'AN_FIN', 'AN_NFE', 'AN_OTH', 'AN_SAS', 'DP', 'FS', 'GQ_MEAN', 'GQ_STDDEV', 'Het_AFR', 'Het_AMR', 'Het_EAS', 'Het_FIN', 'Het_NFE', 'Het_OTH', 'Het_SAS', 'Hom_AFR', 'Hom_AMR', 'Hom_EAS', 'Hom_FIN', 'Hom_NFE', 'Hom_OTH', 'Hom_SAS', 'InbreedingCoeff', 'VQSLOD', 'culprit']
 print(','.join(col1+col2))
 
 for v in variants:
