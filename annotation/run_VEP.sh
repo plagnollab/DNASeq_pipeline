@@ -72,6 +72,7 @@ fi
 ####CONFIGURE SOFTWARE SHORTCUTS AND PATHS
 ensembl=/cluster/project8/vyp/AdamLevine/software/ensembl/
 VEP=${ensembl}/src/ensembl-tools/scripts/variant_effect_predictor/variant_effect_predictor.pl
+#VEP=/cluster/project8/vyp/Software/ensembl-tools-release-82/scripts/variant_effect_predictor/variant_effect_predictor.pl
 dir_cache=${ensembl}/cache/
 perl=/share/apps/perl-5.14.2/bin/perl
 PERL5LIB=${PERL5LIB}:${ensembl}/src/bioperl-1.6.1
