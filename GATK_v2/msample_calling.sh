@@ -15,7 +15,8 @@ java=/share/apps/jdk1.7.0_45/bin/java
 tmpDir=/scratch0/vyp
 target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/merged_exome_target_cleaned.bed
 
-GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
+GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.4-46/GenomeAnalysisTK.jar
+##GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
 
 baseFolder=/cluster/project8/vyp/vincent/Software/DNASeq_pipeline
 crunchpl=${baseFolder}/GATK_v2/crunch_controls.pl
@@ -149,6 +150,7 @@ $java -Xmx${memoSmall}g -jar $GATK \\
 	    while read path id format; do
 		if [[ "$format" == "v1" ]]; then gVCF=${path}/chr${chr}/${id}.gvcf.gz; fi
 		if [[ "$format" == "v2" ]]; then gVCF=${path}/${id}-chr${chr}.gvcf.gz; fi
+		if [[ "$format" == "v3" ]]; then gVCF=${path}/chr${chr}.gvcf.gz; fi
 
 		echo "Including $gVCF"
 		
@@ -272,15 +274,15 @@ if [[ "$annovar" == "yes" ]]; then
 	    echo "
 if [ -e ${output}_snpStats/chr${chr}.done ]; then rm ${output}_snpStats/chr${chr}.done; fi  ## this is basically a log file, to make sure the job got finished
 
-#cut -f1-8 ${output}_chr${chr}_filtered.vcf > ${output}_chr${chr}_for_annovar.vcf
+cut -f1-8 ${output}_chr${chr}_filtered.vcf > ${output}_chr${chr}_for_annovar.vcf
 
-#/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/convert2annovar.pl --allallele -format vcf4 --includeinfo ${output}_chr${chr}_for_annovar.vcf > ${output}_chr${chr}_db
+/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/convert2annovar.pl --allallele -format vcf4 --includeinfo ${output}_chr${chr}_for_annovar.vcf > ${output}_chr${chr}_db
 
-#/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/summarize_annovar_VP.pl -ver1000g 1000g2012apr -verdbsnp 137 -veresp 6500si -alltranscript -buildver hg19 --genetype ensgene --remove ${output}_chr${chr}_db /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/humandb_hg19/
+/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/summarize_annovar_VP.pl -ver1000g 1000g2012apr -verdbsnp 137 -veresp 6500si -alltranscript -buildver hg19 --genetype ensgene --remove ${output}_chr${chr}_db /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/humandb_hg19/
 
-#perl ${baseFolder}/GATK_v2/custom_filtering.pl ${output}_chr${chr}_filtered.vcf ${output}_chr${chr}_recal_filtered2.vcf ${GQ}
+perl ${baseFolder}/GATK_v2/custom_filtering.pl ${output}_chr${chr}_filtered.vcf ${output}_chr${chr}_recal_filtered2.vcf ${GQ}
 
-#python ${baseFolder}/GATK_v2/annovar_vcf_combine_VP.py ${output}_chr${chr}_recal_filtered2.vcf ${output}_chr${chr}_db.exome_summary.csv ${output}_chr${chr}_exome_table.csv
+python ${baseFolder}/GATK_v2/annovar_vcf_combine_VP.py ${output}_chr${chr}_recal_filtered2.vcf ${output}_chr${chr}_db.exome_summary.csv ${output}_chr${chr}_exome_table.csv
 
 perl ${baseFolder}/msample_calling/make_matrix_calls.pl ${output}_chr${chr}_exome_table.csv ${output} $chr
 

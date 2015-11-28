@@ -11,7 +11,8 @@ target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/me
 computerChoice=none
 
 combinedFolder=/scratch2/vyp-scratch2/vincent/GATK/HC/combinedVCFs ##default value
-GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
+#GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
+GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.4-46/GenomeAnalysisTK.jar
 #GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-nightly-2014-08-24-g81e689c/GenomeAnalysisTK.jar
 
 
@@ -58,7 +59,7 @@ BAMlist=${iFolder}/BAMlist.list
 script=cluster/submission/comb_${folderCode}.sh
 
 VCFlist=${iFolder}/VCFlist.list
-find ${iFolder}/ -name \*vcf.gz.tbi | sed -e 's/.tbi$//g' > $VCFlist
+find ${iFolder}/ -name \*gvcf.gz -o -name \*g.vcf.gz | sed -e 's/.tbi$//g' > $VCFlist
 
 nVCFs=$(cat $VCFlist | wc -l)
 echo "Number of VCF files: $nVCFs"
@@ -93,9 +94,9 @@ $java -Xmx7g -jar $GATK \\
    -T CombineGVCFs \\" > $script
 	
 	    awk '{if ( (NR > '$startline') && (NR <= '$maxline')) print}' $VCFlist | while read VCF; do
-		VCFcode=`basename $VCF .gvcf.gz`
-		ogVCF=${iFolder}/${VCFcode}.gvcf.gz
-		echo "   --variant ${ogVCF} \\" >> $script
+		##VCFcode=`basename $VCF .gvcf.gz`
+		##ogVCF=${iFolder}/${VCFcode}.gvcf.gz
+		echo "   --variant ${VCF} \\" >> $script
 	    done
 	    
 	    echo "   -o ${combinedFolder}/chr${chr}/${folderCode}_${jobID}.gvcf.gz " >> $script

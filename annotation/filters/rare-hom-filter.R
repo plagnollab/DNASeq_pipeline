@@ -1,25 +1,46 @@
+#!/usr/bin/env Rscript
+
+# Filtering of variants based on annotation
+suppressPackageStartupMessages(library(optparse))
+suppressPackageStartupMessages(library(tools))
+suppressPackageStartupMessages(library(xtable))
+
+
+option_list <- list(
+    make_option(c('--sample'), default=NULL, help='sample'),
+    make_option(c('--exac.thresh'), default=0.0001, help='pop freq threshold'),
+    make_option(c('--onekg.thresh'), default=0.0001, help='pop freq threshold'),
+    make_option(c('--esp.thresh'), default=0.0001, help='pop freq threshold'),
+    make_option(c('--ajcontrols.thresh'), default=NULL, type='numeric', help='pop freq threshold'),
+    make_option(c('--uclex.thresh'), default=0.0001, type='numeric', help='pop freq threshold'),
+    make_option(c('--depth.thresh'), default=10, type='numeric', help='depth threshold')
+)
+
+option.parser <- OptionParser(option_list=option_list)
+opt <- parse_args(option.parser)
+
+sample <- opt$sample
 
 variants <- data.frame()
-for (chr in 1:21) {
+for (chr in 1:22) {
     f <- sprintf('VEP_%s-genotypes.csv',chr)
     geno <- read.csv(f)
     variants <- rbind( variants, geno )
 }
 
-print( dim(variants) )
 
 ann.variants <- data.frame()
-for (chr in 1:21) {
+for (chr in 1:22) {
     f <- sprintf('VEP_%s-annotations.csv',chr)
-    ann <- read.csv(f)
+    (ann <- read.csv(f))
     rownames(ann) <- ann$VARIANT_ID
     ann.variants <- rbind(ann.variants, ann)
 }
 
-print( dim(variants <- cbind(ann.variants[variants$VARIANT_ID,],variants)) )
+variants <- cbind(ann.variants[variants$VARIANT_ID,],variants[,-1])
 
 depth.variants <- data.frame()
-for (chr in 1:21) {
+for (chr in 1:22) {
     f <- sprintf('VEP_%s-genotypes_depth.csv',chr)
     depth <- read.csv(f)
     colnames(depth) <- paste(colnames(depth),'depth',sep='.')
@@ -27,7 +48,7 @@ for (chr in 1:21) {
     depth.variants <- rbind(depth.variants, depth)
 }
 
-print( dim(variants <- cbind(variants,depth.variants[variants$VARIANT_ID,])) )
+variants <- cbind(variants,depth.variants[variants$VARIANT_ID,][,-1])
 
 variants <- variants[,unique(colnames(variants))]
 
@@ -37,28 +58,105 @@ variants <- variants[,-which(colnames(variants) %in% c('DISTANCE','CADD_RAW','CA
 
 variants <- variants[order(variants$CADD,decreasing=TRUE),]
 
-variants <- variants[which(variants$EXAC_Adj<.001),]
+d <- variants
 
-#no missingness
-variants <- variants[which(variants$MISS==0),]
+# filter variants with Mendelian Error
+if ('ME' %in% colnames(d)) {
+    d <- d[which(!d[,'ME']),]
+}
 
-samples <- read.csv('samples.txt',header=FALSE)[,1] 
-samples <- gsub('-','.',samples)
+#
+af.filter <- function(xx,xx.thresh) {
+    xx.filter <- apply(xx, 1, function(x) {
+        pop.af <- x[1]
+        pop.description <- x[2]
+        xx.filter <- ( d[,pop.af] < xx.thresh | is.na(d[,pop.af]) )
+        return(xx.filter)
+    })
+    colnames(xx.filter) <- xx$pop
+    i <- rowSums(xx.filter) 
+    d <- d[which(is.na(i) | i==ncol(xx.filter)),]
+    return(d)
+}
 
-#less than half of the samples are wt
-variants <- variants[which(variants$WT < (length(samples)/2)),]
+#AJcontrols
+if (!is.null(opt$ajcontrols.thresh)) {
+    ajcontrols.thresh <- as.numeric(opt$ajcontrols.thresh)
+    ajcontrols <- data.frame(
+    pop=c('AJcontrols'),
+    description=c('ajcontrols')
+    )
+    d <- af.filter(ajcontrols,ajcontrols.thresh)
+}
 
-print(dim(variants))
+#BroadAJcontrols
+if (!is.null(opt$ajcontrols.thresh)) {
+    ajcontrols.thresh <- as.numeric(opt$ajcontrols.thresh)
+    ajcontrols <- data.frame(
+    pop=c('BroadAJcontrols'),
+    description=c('broadajcontrols')
+    )
+    d <- af.filter(ajcontrols,ajcontrols.thresh)
+}
 
-message('rare hom')
-write.csv( variants[which(rowSums(variants[,samples]==2)==length(samples)),], file='', quote=FALSE, row.names=FALSE  )
+#UCLEX
+if (!is.null(opt$uclex.thresh)) {
+    uclex.thresh <- opt$uclex.thresh
+    uclex <- data.frame(
+    pop=c('UCLEX'),
+    description=c('uclex')
+    )
+    d <- af.filter(uclex,uclex.thresh)
+}
 
-message('rare het')
-write.csv( variants[which(variants$HET==length(samples)),], file='', quote=FALSE, row.names=FALSE  )
- 
 
-message('top 100 CADD score')
-write.csv( variants, file='', quote=FALSE, row.names=FALSE )
+#EXAC
+if (!is.null(opt$exac.thresh)) {
+    exac.thresh <- opt$exac.thresh
+    exac <- data.frame(
+    pop=c('EXAC_AFR', 'EXAC_AMR', 'EXAC_Adj', 'EXAC_EAS', 'EXAC_FIN', 'EXAC_NFE', 'EXAC_OTH', 'EXAC_SAS'),
+    description=c('african', 'american', 'adj', 'east asian', 'finnish', 'nfe', 'others', 'sas')
+    )
+    d <- af.filter(exac,exac.thresh)
+}
+
+
+#ONEKG
+if (!is.null(opt$onekg.thresh)) {
+    onekg.thresh <- opt$onekg.thresh
+    onekg <- data.frame(
+    pop=c('ONEKG_EUR','ONEKG_AFR','ONEKG_AMR','ONEKG_ASN'),
+    description=c('european', 'african', 'american', 'asian')
+    )
+    d <- af.filter(onekg,onekg.thresh)
+}
+
+
+#ESP
+if (!is.null(opt$esp.thresh)) {
+    esp.thresh <- opt$esp.thresh
+    esp <- data.frame(
+    pop=c('ESP_EA','ESP_AA'),
+    description=c('european-african', 'african-american')
+    )
+    d <- af.filter(esp,esp.thresh)
+}
+
+
+# all variant should have depth greater than depth.thresh
+i <- grep('.depth',colnames(d))
+d <- d[which(rowSums(d[,i]>opt$depth.thresh)==length(i)),]
+
+# not seen in any of the other individuals in the batch
+i <- setdiff(colnames(geno),c(sample,'VARIANT_ID')
+d <- d[which(rowSums(d[,i]==2)==0),]
+
+
+variants <- d
+
+
+write.csv( variants[which(variants[,sample]==2),], file='', quote=FALSE, row.names=FALSE  )
+
 
 
 
