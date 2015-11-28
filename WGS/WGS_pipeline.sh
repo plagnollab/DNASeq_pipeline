@@ -137,6 +137,12 @@ function mode_depth() {
     nhours=${nhours-4}
     ncores=${ncores-2}
     vmem=${vmem-4}
+   SGE_PARAMETERS="
+#$ -l scr=1G
+#$ -pe smp ${ncores}
+#$ -l tmem=4G,h_vmem=4G
+#$ -l h_rt=24:0:0
+"
     #$ -R y 
     mkdir -p $outputdir/data $outputdir/scripts $outputdir/err $outputdir/out
     while read code f1 f2
@@ -149,8 +155,9 @@ function mode_depth() {
     if [ ! -s $depth ] || [ "$force" == "yes" ]
     then
 cat >${mainScript%.sh}_${code}.sh<<EOL
-samtools depth ${bam} | tr '\t' ',' > ${depth}
-for chr in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y
+samtools depth ${bam}  -r 22 | tr '\t' ',' > ${depth}
+#for chr in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y
+for chr in 22
 do
     grep "^\$chr," ${depth} > ${depth%_depth.txt}_\${chr}_depth.txt
 done
