@@ -153,6 +153,14 @@ function ImmunoBase() {
     done
 }
 
+###
+function SZ_Curtis() {
+    shortname=SZ_Curtis
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/SZ_Curtis/chr${chr}.vcf.gz,${shortname},vcf,exact"
+}
+
+
+
 if [[ "$custom" != "" ]]
 then
     for x in `echo $custom | tr ',' ' '`
