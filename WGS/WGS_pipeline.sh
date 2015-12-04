@@ -310,7 +310,7 @@ function mode_gvcf() {
                -R $fasta \
                -I ${input}/${code}_sorted_unique.bam  \
                --emitRefConfidence GVCF \
-               ---rf NotPrimaryAlignment \ 
+               -rf NotPrimaryAlignment \ 
                -stand_call_conf 30.0 \
                -stand_emit_conf 10.0 \
                -L ${chrPrefix}${chrCleanCode} \
@@ -378,7 +378,7 @@ function mode_gvcf_unsplit() {
            -R $fasta $targetArgument \
            -I ${input}/${code}_sorted_unique.bam  \
            --emitRefConfidence GVCF \
-           ---rf NotPrimaryAlignment \
+           -rf NotPrimaryAlignment \
            -stand_call_conf 30.0 \
            -stand_emit_conf 10.0 \
            --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 60 \
