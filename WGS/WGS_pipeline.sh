@@ -137,6 +137,12 @@ function mode_depth() {
     nhours=${nhours-4}
     ncores=${ncores-2}
     vmem=${vmem-4}
+   SGE_PARAMETERS="
+#$ -l scr=1G
+#$ -pe smp ${ncores}
+#$ -l tmem=4G,h_vmem=4G
+#$ -l h_rt=24:0:0
+"
     #$ -R y 
     mkdir -p $outputdir/data $outputdir/scripts $outputdir/err $outputdir/out
     while read code f1 f2
@@ -149,8 +155,9 @@ function mode_depth() {
     if [ ! -s $depth ] || [ "$force" == "yes" ]
     then
 cat >${mainScript%.sh}_${code}.sh<<EOL
-samtools depth ${bam} | tr '\t' ',' > ${depth}
-for chr in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y
+samtools depth ${bam}  -r 22 | tr '\t' ',' > ${depth}
+#for chr in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y
+for chr in 22
 do
     grep "^\$chr," ${depth} > ${depth%_depth.txt}_\${chr}_depth.txt
 done
@@ -253,9 +260,10 @@ function mode_gvcf() {
     output=${outputdir}/data
     mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
     mainScript=${outputdir}/scripts/gvcf.sh
+    vmem=${vmem-7.8}G
     SGE_PARAMETERS="
 #$ -l scr=1G
-#$ -l tmem=7.8G,h_vmem=7.8G
+#$ -l tmem=${vmem},h_vmem=${vmem}
 #$ -l h_rt=5:0:0
 "
     #script files get regenerated on every run
@@ -393,8 +401,9 @@ function mode_gvcf_unsplit() {
 ### 
 function mode_CombineGVCFs() {
     input=${projectID}/gvcf/data/
-    batchFile=${batchFile-${supportFile}}
-    batchName=${batchName-`basename ${supportFile%%.*}`}
+    batchFile=${batchFile-${supportFrame}}
+    #batchName=${batchName-`basename ${supportFrame%%.*}`}
+    batchName=${batchName-CombineGVCFs}
     outputdir=${projectID}/${batchName}/
     mainScript=${outputdir}/scripts/CombineGVCFs.sh
     mkdir -p $outputdir/data $outputdir/err $outputdir/out $outputdir/scripts
@@ -569,6 +578,8 @@ cleanChrLen=$(( cleanChrLen-1 ))
 bedFile=NA
 coding_only=no
 
+extraID=
+
 ##
 until [ -z "$1" ]
 do
@@ -739,7 +750,7 @@ then
     done < <(tail -n +2 $supportFile)
     
 else
-    supportFrame=$supportFile
+    supportFrame=$supportFrame
 fi
 
 ############################### creates folders required for qsub and writing logs

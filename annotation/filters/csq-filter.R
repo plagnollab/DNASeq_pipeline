@@ -29,8 +29,8 @@ err.cat(length(samples <- grep('geno\\.',colnames(d), value=TRUE)))
 # if there is a stop or indel then CADD score is NA
 if (!is.null(opt$cadd.thresh)) {
     cadd.thresh <- opt$cadd.thresh
-    message(sprintf('CADD score > %d or NA',cadd.thresh))
-    err.cat(table( cadd.filter <- is.na(d$CADD) | (d$CADD > cadd.thresh) ))
+    message(sprintf('CADD score > %d',cadd.thresh))
+    err.cat(table( cadd.filter <- (d$CADD > cadd.thresh) ))
     #d <- d[cadd.filter,]
 }
 
