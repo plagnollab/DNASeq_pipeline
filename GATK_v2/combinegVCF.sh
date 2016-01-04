@@ -11,9 +11,7 @@ target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/me
 computerChoice=none
 
 combinedFolder=/scratch2/vyp-scratch2/vincent/GATK/HC/combinedVCFs ##default value
-#GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
-GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.4-46/GenomeAnalysisTK.jar
-#GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-nightly-2014-08-24-g81e689c/GenomeAnalysisTK.jar
+GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar
 
 
 output=/scratch2/vyp-scratch2/vincent/GATK/mainset_${currentUCLex}/mainset_${currentUCLex}
