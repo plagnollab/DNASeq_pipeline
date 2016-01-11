@@ -1,4 +1,8 @@
 #! /bin/env python
+
+### From VEP extracts and outputs separate annotation genotype,
+
+
 from __future__ import print_function
 import sys
 import re

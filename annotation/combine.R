@@ -23,6 +23,7 @@ if (!is.null(chr)) {
     print(dim(geno.depth <- geno.depth[,-which('VARIANT_ID'==names(geno.depth))]))
     names(geno.depth) <- paste('depth',names(geno.depth),sep='.')
     d <- cbind(ann,geno,geno.depth)
+    write.csv(d, quote=FALSE, row.names=FALSE, file=sprintf('VEP_%s.csv',chr))
 } else {
     # works on all chromosomes to create one giant file
     # first combine all chromosomes into one file for annotations, genotypes and genotypes_depth
@@ -45,8 +46,8 @@ if (!is.null(chr)) {
     print(dim(geno.depth <- geno.depth[,-which('VARIANT_ID'==colnames(geno.depth))]))
     colnames(geno.depth) <- paste('depth',colnames(geno.depth),sep='.')
     d <- cbind(ann,geno,geno.depth)
+    write.csv(d, quote=FALSE, row.names=FALSE, file='VEP.csv')
 }
 
-write.csv(d, quote=FALSE, row.names=FALSE, file='VEP.csv')
 
 
