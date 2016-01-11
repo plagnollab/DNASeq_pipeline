@@ -367,9 +367,9 @@ function mode_gvcf_unsplit() {
     #and a script each is generated
     while read code f1 f2
     do
-      if [ ! -s ${output}/${code}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
+      if [ ! -s ${output}/${code}.g.vcf.gz.tbi ] || [ "$force" == "yes" ]
       then
-          echo ${output}/${code}.gvcf.gz.tbi does not exist
+          echo ${output}/${code}.g.vcf.gz.tbi does not exist
           #if file is empty stop
           [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
