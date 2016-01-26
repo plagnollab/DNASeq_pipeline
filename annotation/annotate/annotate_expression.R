@@ -9,7 +9,7 @@ err.cat(dim( d <- read.csv(file('stdin'),check.names=FALSE) ))
 # so no risk of partial matching
 
 message('*** BARCODE COMMENT ***')
-barcode <- read.table('/cluster/project8/IBDAJE/barcode.txt', header=TRUE)
+barcode <- read.table('/cluster/project8/IBDAJE/VEP_custom_annotations/barcode.txt', header=TRUE)
 barcode$Gene <- barcode$ENSG
 d$barcode.comment <- ''
 for (j in 1:nrow(barcode)) {
@@ -20,7 +20,7 @@ for (j in 1:nrow(barcode)) {
 
 
 message('*** XAVIER TISSUES  ***')
-xavier <- read.csv('/goon2/scratch2/vyp-scratch2/reference_datasets/GeneEnrichmentProfiler/gene_tissues_ensg.csv')
+xavier <- read.csv( '/cluster/project8/IBDAJE/VEP_custom_annotations/gene_tissues_ensg.csv', header=TRUE )
 d$xavier.tissues <- ''
 for (j in 1:nrow(xavier)) {
     b <- xavier[j,]
@@ -38,6 +38,4 @@ for (j in 1:nrow(ibd.gene.list)) {
 }
 
 write.csv( d , quote=FALSE, file='', row.names=FALSE)
-
-
 

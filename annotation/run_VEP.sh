@@ -30,6 +30,15 @@ function usage() {
 coding_only=no
 custom=
 
+
+SCRATCH2="/cluster/scratch3/vyp-scratch2/"
+if [ ! -e $SCRATCH2 ]
+then
+    SCRATCH2="/scratch2/vyp-scratch2/"
+fi
+echo SCRATCH2: $SCRATCH2
+
+
 ##
 until [ -z "$1" ]
 do
@@ -91,9 +100,9 @@ export PERL5LIB
 export PATH=$PATH:/cluster/project8/vyp/vincent/Software/tabix-0.2.5/
 condel_config=${ensembl}/Plugins/config/Condel/config
 
-#fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
-#fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
-#file:///scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+#fasta=$SCRATCH2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
+#fasta=$SCRATCH2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+#file://$SCRATCH2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
 cat $input | grep '^##reference=' | cut -f2 -d'='
 
 #annotations_dir=/cluster/project8/vyp/AdamLevine/annotations
@@ -176,10 +185,13 @@ then
     done
 fi
 
-# old cluster
-human_reference=/cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/
-# new cluster
-human_reference=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/
+human_reference="$SCRATCH2/reference_datasets/human_reference_sequence/"
+if [ ! -e $human_reference ]
+then
+    human_reference="$SCRATCH2/reference_datasets/human_reference_sequence/"
+else
+    human_reference="$SCRATCH2/reference_datasets/human_reference_sequence/"
+fi
 
 if [[ "$reference" == "hg38_noAlt" ]]
 then
@@ -264,12 +276,10 @@ fields=""
  
 #output='--pick'
 output='--vcf'
-#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin LoF,human_ancestor_fa:/scratch2/vyp-scratch2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
-#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:/scratch2/vyp-scratch2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
-#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin GO --plugin ExAC,${annotations_dir}/ExAC/0.3/chr${chr}.vcf.gz"
-#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:/scratch2/vyp-scratch2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
-plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin GO"
-
+#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin LoF,human_ancestor_fa:$SCRATCH2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
+#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:$SCRATCH2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
+#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:$SCRATCH2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
+plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin GO --plugin ExAC,${annotations_dir}/ExAC/0.3/chr${chr}.vcf.gz"
 
 #$perl $VEP $port --verbose --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --fork 2 $maf $fields $custom_annotation $plugins $coding_only --offline
 perl $VEP $port --verbose --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $input --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --fork 2 $maf $fields $custom_annotation $plugins $coding_only --offline

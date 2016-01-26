@@ -21,19 +21,26 @@ err.cat(samples <- gsub('geno\\.','',grep('geno',colnames(d),value=TRUE)))
 
 #Function to subset individuals and do calculations
 #group: list of individuals of interest, group.name: subfamily name
-calculate <- function(group, group.name){
+calculate <- function(individuals, group.name){
     #With geno. prefix
     #geno.group <- paste("geno",group,sep=".")
-    geno.group <- group
+    geno.group <- individuals
     #Genotype columns
-    group.d.cols <- which(gsub('geno\\.','',colnames(d)) %in% geno.group)
+    #group.d.cols <- which(gsub('geno\\.','',colnames(d)) %in% geno.group)
+    err.cat(group.d.cols <- intersect(paste('geno',individuals,sep='.'),colnames(d)))
+    if (!length(group.d.cols)) {
+        group.wt <- group.het <- group.hom <- group.miss <- group.af <- group.mf <- rep(NA,nrow(d))
+        group.out <- as.data.frame(cbind(group.wt,group.het,group.hom,group.miss,group.af,group.mf))
+        names(group.out) <- paste(group.name,c("WT","HET","HOM","MISS","AF","MF"),sep="_")
+        return(group.out)
+    }
     #Genotypes
-    group.d.geno <- d[,group.d.cols]
+    group.d.geno <- as.matrix(d[,group.d.cols],nrow=nrow(d),ncol=ncol(d))
     #Number of WT, HET, HOM, MISS
-    group.wt <- apply(X=group.d.geno,1,function(X){length(which(X==0))})
-    group.het <- apply(X=group.d.geno,1,function(X){length(which(X==1))})
-    group.hom <- apply(X=group.d.geno,1,function(X){length(which(X==2))})
-    group.miss <- apply(X=group.d.geno,1,function(X){length(which(is.na(X)))})
+    group.wt <- apply(group.d.geno,1,function(X){length(which(X==0))})
+    group.het <- apply(group.d.geno,1,function(X){length(which(X==1))})
+    group.hom <- apply(group.d.geno,1,function(X){length(which(X==2))})
+    group.miss <- apply(group.d.geno,1,function(X){length(which(is.na(X)))})
     #Allele frequency
     group.af <- (group.het+group.hom*2)/(2*(group.wt+group.het+group.hom))
     #Mutant frequency (percentage either HET or WT over total)
@@ -49,12 +56,14 @@ calculate <- function(group, group.name){
 #Names of individuals of interest
 for (subfamily in subfamilies) {
     err.cat(subfamily)
-    group.id <- as.character(ped$ped[which(ped$Subfamily==subfamily&ped$Affection==1)])
+    err.cat(individuals <- intersect(as.character(ped$ID[which(ped$Subfamily==subfamily&ped$Affection==1)]),samples))
     err.cat(name <- sprintf("%s%s_controls",unique(ped$FamilyAlias),subfamily))
-    d[,name] <- calculate(group.id,name)
-    group.id <- as.character(ped$ped[which(ped$Subfamily==subfamily&ped$Affection==2)])
+    controls <- calculate(individuals,name)
+    d[,names(controls)] <- controls
+    err.cat(individuals <- intersect(as.character(ped$ID[which(ped$Subfamily==subfamily&ped$Affection==2)]),samples))
     err.cat(name <- sprintf("%s%s_cases",unique(ped$FamilyAlias),subfamily))
-    d[,name] <- calculate(group.id,name)
+    cases <- calculate(individuals,name)
+    d[,names(cases)] <- cases
 }
 
 write.csv(d, file='', quote=FALSE, row.names=FALSE)
