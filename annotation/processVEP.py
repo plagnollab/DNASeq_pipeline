@@ -99,7 +99,7 @@ for l in infile:
             return 'NA'
         else:
             print( VARIANT_ID, geno, sep=',', file=sys.stderr)
-            print( l, file=sys.stderr)
+            #print( l, file=sys.stderr)
             raise 'hell'
     if args.genotypes:
         GENOTYPES=[genotype(s.get(h,'NA'))for h in SAMPLES]
