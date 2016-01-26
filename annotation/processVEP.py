@@ -19,7 +19,9 @@ CADD=['CADD']
 GO=['GO']
 # allele freq (AF) in various populations
 #these are in the CSQ field
-MAF=['GMAF','AFR_MAF','AMR_MAF','ASN_MAF','EUR_MAF','AA_MAF','EA_MAF']
+#MAF=['GMAF','AFR_MAF','AMR_MAF','ASN_MAF','EUR_MAF','AA_MAF','EA_MAF']
+# no ASN_MAF
+MAF=['GMAF','AFR_MAF','AMR_MAF','EUR_MAF','AA_MAF','EA_MAF']
 # these are custom
 ESP=['ESP_EA', 'ESP_AA']
 ONEKG=['1KG_EUR', '1KG_AFR', '1KG_AMR', '1KG_ASN']
