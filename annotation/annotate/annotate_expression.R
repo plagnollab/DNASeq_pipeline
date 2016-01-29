@@ -9,7 +9,7 @@ err.cat(dim( d <- read.csv(file('stdin'),check.names=FALSE) ))
 # so no risk of partial matching
 
 message('*** BARCODE COMMENT ***')
-barcode <- read.table('/cluster/project8/IBDAJE/barcode.txt', header=TRUE)
+barcode <- read.table('/cluster/project8/IBDAJE/VEP_custom_annotations/barcode.txt', header=TRUE)
 barcode$Gene <- barcode$ENSG
 d$barcode.comment <- ''
 for (j in 1:nrow(barcode)) {
