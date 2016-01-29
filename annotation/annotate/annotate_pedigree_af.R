@@ -2,16 +2,17 @@
 
 err.cat <- function(x)  cat(x, '\n', file=stderr())
 
+suppressMessages(suppressWarnings(suppressPackageStartupMessages(library(optparse, quietly=TRUE, verbose=FALSE, warn.conflicts=FALSE))))
+suppressMessages(suppressWarnings(suppressPackageStartupMessages(library(data.table, quietly=TRUE, verbose=FALSE, warn.conflicts=FALSE))))
+source('/cluster/project8/IBDAJE/scripts/Families/ped/ped-functions.R')
+pedigree <- read.pedigree('pedigree_details.csv')
+
+
 ### 
-err.cat(dim( d <- read.csv(file('stdin')) ))
+err.cat(dim( d <- as.data.frame(fread('cat /dev/stdin')) ))
 #
 samples <- gsub('geno\\.','',grep('geno',colnames(d),value=TRUE))
 #
-pedigree <- 'DNA_pedigree_details.csv'
-
-# pedigree
-message('dim of pedigree')
-err.cat(nrow(pedigree <- read.csv(pedigree)))
 
 sample.affection <- pedigree[ which( pedigree$uclex.sample %in% samples ), c('uclex.sample','Affection')]
 # cases
@@ -26,7 +27,7 @@ message('number of controls')
 err.cat(length(controls))
 
 #group: list of individuals of interest, group.name: subfamily name
-calculate <- function(group, group.name){ 
+calculate <- function(group, group.name) { 
     #With geno. prefix
     geno.group <- paste("geno",group,sep=".")
     #Genotype columns
@@ -46,7 +47,6 @@ calculate <- function(group, group.name){
     group.out <- as.data.frame(cbind(group.wt,group.het,group.hom,group.miss,group.af,group.mf))
     names(group.out) = paste(group.name,c("WT","HET","HOM","MISS","AF","MF"),sep="_")
     return(group.out)
-
 }
 
 
