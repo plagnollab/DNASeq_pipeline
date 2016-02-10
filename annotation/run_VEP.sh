@@ -30,6 +30,22 @@ function usage() {
 coding_only=no
 custom=
 
+
+SCRATCH2="/cluster/scratch3/vyp-scratch2/"
+if [ ! -e $SCRATCH2 ]
+then
+    SCRATCH2="/scratch2/vyp-scratch2/"
+fi
+echo SCRATCH2: $SCRATCH2
+
+
+perl="/share/apps/perl-5.14.2/bin/perl"
+if [ ! -e $perl ]
+then
+    perl="/share/apps/perl/bin/perl"
+fi
+
+
 ##
 until [ -z "$1" ]
 do
@@ -74,7 +90,6 @@ ensembl=/cluster/project8/vyp/AdamLevine/software/ensembl/
 #VEP=${ensembl}/src/ensembl-tools/scripts/variant_effect_predictor/variant_effect_predictor.pl
 VEP=/cluster/project8/vyp/Software/ensembl-tools-release-82/scripts/variant_effect_predictor/variant_effect_predictor.pl
 dir_cache=${ensembl}/cache/
-perl=/share/apps/perl-5.14.2/bin/perl
 PERL5LIB=${PERL5LIB}:${ensembl}/src/bioperl-1.6.1
 PERL5LIB=${PERL5LIB}:${ensembl}/src/ensembl/modules
 PERL5LIB=${PERL5LIB}:${ensembl}/src/ensembl-compara/modules
@@ -85,10 +100,11 @@ export PERL5LIB
 export PATH=$PATH:/cluster/project8/vyp/vincent/Software/tabix-0.2.5/
 condel_config=${ensembl}/Plugins/config/Condel/config
 
-#fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
-#fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
-#file:///scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+#fasta=$SCRATCH2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
+#fasta=$SCRATCH2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+#file://$SCRATCH2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
 cat $input | grep '^##reference=' | cut -f2 -d'='
+
 
 #annotations_dir=/cluster/project8/vyp/AdamLevine/annotations
 annotations_dir=/cluster/project8/IBDAJE/VEP_custom_annotations/${reference}
@@ -123,41 +139,41 @@ done
 
 #### 
 function UCLEX() {
-    shortname=UCLEX
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/UCLex/chr${chr}.vcf.gz,${shortname},vcf,exact"
+shortname=UCLEX
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/UCLex/chr${chr}.vcf.gz,${shortname},vcf,exact"
 }
 
 ###
 function AJcontrols() {
-    shortname=AJcontrols
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
+shortname=AJcontrols
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
 }
 
 ###
 function AJcases() {
-    shortname=AJcases
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcases/chr${chr}.vcf.gz,${shortname},vcf,exact"
+shortname=AJcases
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcases/chr${chr}.vcf.gz,${shortname},vcf,exact"
 }
 
 ###
 function BroadAJcontrols() {
-    shortname=BroadAJcontrols
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/BroadAJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
+shortname=BroadAJcontrols
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/BroadAJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
 }
 
 ###
 function ImmunoBase() {
-    for disease in CRO IBD UC
-    do
-        shortname=ImmunoBase_${disease}
-        custom_annotation="${custom_annotation} --custom ${annotations_dir}/ImmunoBase/ImmunoBase_${disease}.bed.gz,${shortname},bed,overlap"
-    done
+for disease in CRO IBD UC
+do
+    shortname=ImmunoBase_${disease}
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/ImmunoBase/ImmunoBase_${disease}.bed.gz,${shortname},bed,overlap"
+done
 }
 
 ###
 function SZ_Curtis() {
-    shortname=SZ_Curtis
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/SZ_Curtis/chr${chr}.vcf.gz,${shortname},vcf,exact"
+shortname=SZ_Curtis
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/SZ_Curtis/chr${chr}.vcf.gz,${shortname},vcf,exact"
 }
 
 
@@ -170,7 +186,13 @@ then
     done
 fi
 
-human_reference=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/
+human_reference="$SCRATCH2/reference_datasets/human_reference_sequence/"
+if [ ! -e $human_reference ]
+then
+    human_reference="$SCRATCH2/reference_datasets/human_reference_sequence/"
+else
+    human_reference="$SCRATCH2/reference_datasets/human_reference_sequence/"
+fi
 
 if [[ "$reference" == "hg38_noAlt" ]]
 then
@@ -255,12 +277,12 @@ fields=""
  
 #output='--pick'
 output='--vcf'
-#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin LoF,human_ancestor_fa:/scratch2/vyp-scratch2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
-#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:/scratch2/vyp-scratch2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
-#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin GO --plugin ExAC,${annotations_dir}/ExAC/0.3/chr${chr}.vcf.gz"
-plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:/scratch2/vyp-scratch2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
+#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin LoF,human_ancestor_fa:$SCRATCH2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
+#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:$SCRATCH2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
+#plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:$SCRATCH2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
+plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin GO --plugin ExAC,${annotations_dir}/ExAC/0.3/chr${chr}.vcf.gz"
 
 #$perl $VEP $port --verbose --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --fork 2 $maf $fields $custom_annotation $plugins $coding_only --offline
-$perl $VEP $port --verbose --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $input --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --fork 2 $maf $fields $custom_annotation $plugins $coding_only --offline
-#$perl $VEP $port --verbose --ASSEMBLY $assembly --fasta $fasta --input_file $vcfin --cache --dir_cache $dir_cache --format vcf --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --offline
+/share/apps/perl/bin/perl $VEP $port --verbose --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $input --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --fork 2 $maf $fields $custom_annotation $plugins $coding_only --offline
+#$perl $VEP $port --verbose --ASSEMBLY $assembly --fasta $fasta --input_file $vcfin -cache --dir_cache $dir_cache --format vcf --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --offline
 

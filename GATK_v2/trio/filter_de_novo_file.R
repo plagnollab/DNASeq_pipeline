@@ -1,24 +1,20 @@
 # Process the output of GATK PhaseByTransmission.
 # Rscript filter_de_novo.file.R --input.file <input> --output.file <output>
 
-getArgs <- function () {
-  myargs.list <- strsplit(grep("=", gsub("--", "", commandArgs()),
-                               value = TRUE), "=")
-  myargs <- lapply(myargs.list, function(x) x[2])
-  names(myargs) <- lapply(myargs.list, function(x) x[1])
-  return(myargs)
-}
+suppressPackageStartupMessages(library(optparse))
+suppressPackageStartupMessages(library(xtable))
+
+option_list <- list(
+    make_option(c('--input.file'), default='processed/trio1_56_57_58/trio1_56_57_58_noMendel.tab', help=''),
+    make_option(c('--output.file'), default='processed/trio1_56_57_58/trio1_56_57_58_noMendel_clean.tab', help='')
+)
+
+option.parser <- OptionParser(option_list=option_list)
+opt <- parse_args(option.parser)
 
 
-input.file <- 'processed/trio1_56_57_58/trio1_56_57_58_noMendel.tab'
-output.file <- 'processed/trio1_56_57_58/trio1_56_57_58_noMendel_clean.tab'
-
-
-myArgs <- getArgs()
-
-if ('input.file' %in% names(myArgs)) input.file <- myArgs[[ 'input.file' ]]
-if ('output.file' %in% names(myArgs)) output.file <- myArgs[[ 'output.file' ]]
-
+input.file <- opt$input.file
+output.file <- opt$output.file
 
 
 data <- read.table(input.file, sep = '\t', header = TRUE, stringsAsFactors = FALSE)
@@ -47,3 +43,5 @@ data <- subset(data, MOTHER.ratio < 0.05 & FATHER.ratio < 0.05 & CHILD.ratio > 0
 write.table( x = data, file = output.file, sep = '\t', row.names = FALSE, quote = FALSE, col.names = TRUE)
 write.table( x = data[, c('CHROM', 'POS') ], file = paste(output.file, 'positions', sep = '.'), sep = '\t', row.names = FALSE, quote = FALSE, col.names = FALSE)
 message('Output in ', output.file)
+
+

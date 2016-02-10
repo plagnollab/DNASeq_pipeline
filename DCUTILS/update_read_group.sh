@@ -1,14 +1,14 @@
 #!/bin/bash
+
 set -u
 set -x
 
 java17=/share/apps/jdk1.7.0_45/jre/bin/java
-
 inFile=J6_sorted_unique.bam
 outFile=J6_sorted_unique-out.bam
 software=/cluster/project8/vyp/vincent/Software
 AddOrReplaceReadGroups=${software}/picard-tools-1.100/AddOrReplaceReadGroups.jar
-tempFolder=/scratch2/vyp-scratch2/vincent/temp/novoalign
+tempFolder=${SCRATCH2}/vincent/temp/novoalign
 code=Hardcastle_Czech_J6
 
 # INPUT (String)  Input file (bam or sam or a GA4GH url). Required.
@@ -27,6 +27,9 @@ code=Hardcastle_Czech_J6
 # RGPG (String)   Read Group program group Default value: null.
 # RGPM (String)   Read Group platform model Default value: null.
 
-java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $AddOrReplaceReadGroups I=$inFile O=$outFile LB=$code PL=illumina PU=run SM=$code RGID=$code VALIDATION_STRINGENCY=LENIENT 
+echo java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar $AddOrReplaceReadGroups I=$inFile O=$outFile RGLB=$code RGPL=illumina RGPU=run RGSM=$code RGID=$code
+
+
+#VALIDATION_STRINGENCY=LENIENT 
 
 

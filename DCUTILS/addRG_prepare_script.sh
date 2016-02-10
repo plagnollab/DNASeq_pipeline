@@ -75,6 +75,7 @@ echo firstLineToBeIgnored > $mainTable
     done
     #end of while loop
 
+
 njobs=`cat $mainTable | wc -l`
 echo "
 #!/bin/bash
@@ -101,6 +102,6 @@ date
 " > $mainScript
 
 
-    echo "Main submission scripts and tables"
-    wc -l $mainScript $mainTable
+"Main submission scripts and tables"
+wc -l $mainScript $mainTable
 

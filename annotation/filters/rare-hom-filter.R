@@ -148,7 +148,7 @@ i <- grep('.depth',colnames(d))
 d <- d[which(rowSums(d[,i]>opt$depth.thresh)==length(i)),]
 
 # not seen in any of the other individuals in the batch
-i <- setdiff(colnames(geno),c(sample,'VARIANT_ID')
+i <- setdiff(colnames(geno),c(sample,'VARIANT_ID'))
 d <- d[which(rowSums(d[,i]==2)==0),]
 
 

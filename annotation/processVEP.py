@@ -1,4 +1,8 @@
 #! /bin/env python
+
+### From VEP extracts and outputs separate annotation genotype,
+
+
 from __future__ import print_function
 import sys
 import re
@@ -15,7 +19,9 @@ CADD=['CADD']
 GO=['GO']
 # allele freq (AF) in various populations
 #these are in the CSQ field
-MAF=['GMAF','AFR_MAF','AMR_MAF','ASN_MAF','EUR_MAF','AA_MAF','EA_MAF']
+#MAF=['GMAF','AFR_MAF','AMR_MAF','ASN_MAF','EUR_MAF','AA_MAF','EA_MAF']
+# no ASN_MAF
+MAF=['GMAF','AFR_MAF','AMR_MAF','EUR_MAF','AA_MAF','EA_MAF']
 # these are custom
 ESP=['ESP_EA', 'ESP_AA']
 ONEKG=['1KG_EUR', '1KG_AFR', '1KG_AMR', '1KG_ASN']
@@ -96,7 +102,7 @@ for l in infile:
             return 'NA'
         else:
             print( VARIANT_ID, geno, sep=',', file=sys.stderr)
-            print( l, file=sys.stderr)
+            #print( l, file=sys.stderr)
             raise 'hell'
     if args.genotypes:
         GENOTYPES=[genotype(s.get(h,'NA'))for h in SAMPLES]

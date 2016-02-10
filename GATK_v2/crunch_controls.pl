@@ -152,9 +152,9 @@ if ($csv->parse($_)) {
 
 
 	if ($i > 29) {
-	    if (! exists $cfield{ $i }) {print OUTS $samples[ $i ]."\tno";} else {print OUTS $samples[ $i ]."\tyes";}  ##control flag
-	    if (! exists $extfield{ $i }) {print OUTS "\tno"; } else {print OUTS "\tyes";} 	    ###external control flag
-	    if (! exists $cafield{ $i }) {print OUTS "\tno\n";} else {print OUTS "\tyes\n";}  ###case flag
+        if (! exists $cfield{ $i }) {print OUTS $samples[ $i ]."\tno";} else {print OUTS $samples[ $i ]."\tyes";}  ##control flag
+        if (! exists $extfield{ $i }) {print OUTS "\tno"; } else {print OUTS "\tyes";} 	    ###external control flag
+        if (! exists $cafield{ $i }) {print OUTS "\tno\n";} else {print OUTS "\tyes\n";}  ###case flag
 	}
     }
 

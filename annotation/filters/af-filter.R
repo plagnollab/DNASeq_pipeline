@@ -27,9 +27,11 @@ af.filter <- function(xx,xx.thresh) {
     xx.filter <- apply(xx, 1, function(x) {
         pop.af <- x[1]
         pop.description <- x[2]
-        message(sprintf('%s: rare (less than %.2f pct or more than %.2f pct) in %s',pop.af,xx.thresh*100,100-xx.thresh*100,pop.description))
+        #message(sprintf('%s: rare (less than %.2f pct or more than %.2f pct) in %s',pop.af,xx.thresh*100,100-xx.thresh*100,pop.description))
+        #err.cat(table(xx.filter <- (d[,pop.af] < xx.thresh & (d$HOM>=1|d$HET>=1)) | (d[,pop.af] > (1-xx.thresh) & (d$WT>=1 | d$HET >= 1)), useNA='always' ))
         # do not keep flipped variants
-        err.cat(table(xx.filter <- (d[,pop.af] < xx.thresh & (d$HOM>=1|d$HET>=1)) | (d[,pop.af] > (1-xx.thresh) & (d$WT>=1 | d$HET >= 1)) | (d$WT > d$HOM), useNA='always' ))
+        message(sprintf('%s: rare (less than %.2f pct) in %s',pop.af,xx.thresh*100,pop.description))
+        err.cat(table(xx.filter <- (d[,pop.af] < xx.thresh & (d$HOM>=1|d$HET>=1)), useNA='always'))
         return(xx.filter)
     })
     colnames(xx.filter) <- xx$pop
