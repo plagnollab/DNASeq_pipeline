@@ -19,6 +19,23 @@ function error() { >&2 echo -e "\033[31m$*\033[0m"; }
 function stop() { error "$*"; exit 1; }
 try() { "$@" || stop "cannot $*"; }
 
+if [ ! -e /scratch2/vyp-scratch2/ ]
+then
+        echo new cluster
+        SCRATCH2="/cluster/scratch3/vyp-scratch2/"
+        export PATH="/share/apps/R/bin:$PATH"
+        alias java=/share/apps/jdk/jre/bin/java
+else
+        echo old cluster
+        SCRATCH2="/scratch2/vyp-scratch2/"
+        #export PATH="$HOME/R-3.1.2/bin:$PATH"
+        alias java=/share/apps/jdk1.7.0_45/jre/bin/java
+fi
+
+export UCLEX="$SCRATCH2/vincent/GATK/mainset_January2015"
+#
+echo SCRATCH2: $SCRATCH2
+
 
 ####################### Alignment using Novoalign  ###########################################################################
 # The alignment creates the SAM and BAM files for GATK variant calling
@@ -659,9 +676,9 @@ if [[ "$computer" == "CS" ]]
 then
     Software=/cluster/project8/vyp/vincent/Software
     java=/share/apps/jdk1.7.0_45/jre/bin/java
-    bundle=/scratch2/vyp-scratch2/GATK_bundle
+    bundle=$SCRATCH2/GATK_bundle
     target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/merged_exome_target_cleaned.bed
-    tempFolder=/scratch2/vyp-scratch2/vincent/temp/novoalign
+    tempFolder=$SCRATCH2/vincent/temp/novoalign
 fi
 
 ### Tools needed by this script
@@ -703,17 +720,17 @@ fasta=none
 novoalignRef=none
 if [[ "$reference" == "hg38_noAlt" ]]
 then
-    fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
-    novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.k15.s2.novoindex
+    fasta=$SCRATCH2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+    novoalignRef=$SCRATCH2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.k15.s2.novoindex
     chrPrefix='chr'
 elif [[ "$reference" == "1kg" ]]
 then
-    fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
-    novoalignRef=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta.k15.s2.novoindex
+    fasta=$SCRATCH2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
+    novoalignRef=$SCRATCH2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta.k15.s2.novoindex
     chrPrefix=''
 elif [[ "$reference" == "hg19" ]]
 then
-    fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/hg19_UCSC.fa
+    fasta=$SCRATCH2/reference_datasets/human_reference_sequence/hg19_UCSC.fa
     novoalignRef=none
     chrPrefix='chr'
 else
@@ -747,8 +764,7 @@ then
     do
         if [ ! -e $f1 ]; then stop "$f1 does not exists"; fi
         if [ ! -e $f2 ]; then stop "$f2 does not exists"; fi
-    done < <(tail -n +2 $supportFile)
-    
+    done < <(tail -n +2 $supportFrame)
 else
     supportFrame=$supportFrame
 fi
