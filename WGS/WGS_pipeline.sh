@@ -24,12 +24,12 @@ then
         echo new cluster
         SCRATCH2="/cluster/scratch3/vyp-scratch2/"
         export PATH="/share/apps/R/bin:$PATH"
-        alias java=/share/apps/jdk/jre/bin/java
+        export java=/share/apps/jdk/jre/bin/java
 else
         echo old cluster
         SCRATCH2="/scratch2/vyp-scratch2/"
         #export PATH="$HOME/R-3.1.2/bin:$PATH"
-        alias java=/share/apps/jdk1.7.0_45/jre/bin/java
+        export java=/share/apps/jdk1.7.0_45/jre/bin/java
 fi
 
 export UCLEX="$SCRATCH2/vincent/GATK/mainset_January2015"
@@ -323,18 +323,17 @@ function mode_gvcf() {
               [ ! -s ${input}/${code}_sorted_unique.bam ] && error "${input}/${code}_sorted_unique.bam does not exist" 
               #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
               echo "
-              $HaplotypeCaller \
-               -R $fasta \
-               -I ${input}/${code}_sorted_unique.bam  \
-               --emitRefConfidence GVCF \
-               -rf NotPrimaryAlignment \ 
-               -stand_call_conf 30.0 \
-               -stand_emit_conf 10.0 \
-               -L ${chrPrefix}${chrCleanCode} \
-               --downsample_to_coverage 200 \
-               --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
-               -o ${output}/${code}_chr${chrCleanCode}.g.vcf.gz
-              " > ${mainScript%.sh}_${code}_chr${chrCleanCode}.sh
+$HaplotypeCaller \
+-R $fasta \
+-I ${input}/${code}_sorted_unique.bam  \
+--emitRefConfidence GVCF \
+-rf NotPrimaryAlignment \ 
+-stand_call_conf 30.0 \
+-stand_emit_conf 10.0 \
+-L ${chrPrefix}${chrCleanCode} \
+--GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
+-o ${output}/${code}_chr${chrCleanCode}.g.vcf.gz
+" > ${mainScript%.sh}_${code}_chr${chrCleanCode}.sh
             else
                 rm -f ${mainScript%.sh}_${code}_chr${chrCleanCode}.sh
             fi
@@ -603,8 +602,8 @@ do
     # use a case statement to test vars. we always test $1 and shift at the end of the for block.
     case $1 in
     --extraID )
-        shift
-        extraID="$1_";;
+        shift;;
+        #extraID="$1_";;
      --tempFolder )   ##specify a temp directory for the java picard code
         shift
         tempFolder=$1;;
@@ -675,7 +674,6 @@ computer=CS
 if [[ "$computer" == "CS" ]]
 then
     Software=/cluster/project8/vyp/vincent/Software
-    java=/share/apps/jdk1.7.0_45/jre/bin/java
     bundle=$SCRATCH2/GATK_bundle
     target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/merged_exome_target_cleaned.bed
     tempFolder=$SCRATCH2/vincent/temp/novoalign
