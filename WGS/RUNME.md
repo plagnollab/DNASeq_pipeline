@@ -1,3 +1,8 @@
+# Description of pipeline
+
+Paired-end reads in fastq format are aligned using NovoAlign to build 37.
+GVCFs are then generated using the GATK HaplotypeCaller, and the calls are later refined and calibrated by jointly calling against a larger cohort using GenotypeVCFs. 
+
 # Parameters (to be modified)
 
 This is an example of a RUNME.md that you can copy to the base directory from where you will be running the pipeline.
