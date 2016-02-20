@@ -5,8 +5,10 @@ function error() { >&2 echo -e "\033[31m$*\033[0m"; }
 function stop() { error "$*"; exit 1; }
 try() { "$@" || stop "cannot $*"; }
 
-fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
-bundle=/scratch2/vyp-scratch2/reference_datasets/GATK_bundle
+scratchFolder=/cluster/scratch3/vyp-scratch2
+
+fasta=${scratchFolder}/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
+bundle=${scratchFolder}/reference_datasets/GATK_bundle
 
 Rscript=/cluster/project8/vyp/vincent/Software/R-3.1.2/bin/Rscript
 Rbin=/cluster/project8/vyp/vincent/Software/R-3.1.2/bin/R
@@ -34,7 +36,7 @@ numBad=1000
 #numBadIndels=1000
 GQ=20
 
-#output=/scratch2/vyp-scratch2/vincent/GATK/cardioset_${currentUCLex}/cardioset_${currentUCLex}
+#output=${scratchFolder}/vincent/GATK/cardioset_${currentUCLex}/cardioset_${currentUCLex}
 
 until [ -z "$1" ]; do
     # use a case statement to test vars. we always test $1 and shift at the end of the for block.
@@ -81,7 +83,7 @@ done
 
 
 ############## Now options are all set
-output=/scratch2/vyp-scratch2/vincent/GATK/mainset_${currentUCLex}/mainset_${currentUCLex}
+output=${scratchFolder}/vincent/GATK/mainset_${currentUCLex}/mainset_${currentUCLex}
 
 ### Check format of support file.
 ##should accept tab or space as delimiters
