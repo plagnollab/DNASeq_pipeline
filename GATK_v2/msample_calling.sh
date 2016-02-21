@@ -13,7 +13,8 @@ bundle=${scratchFolder}/reference_datasets/GATK_bundle
 Rscript=/cluster/project8/vyp/vincent/Software/R-3.1.2/bin/Rscript
 Rbin=/cluster/project8/vyp/vincent/Software/R-3.1.2/bin/R
 
-java=/share/apps/jdk1.7.0_45/bin/java
+#java=/share/apps/jdk1.7.0_45/bin/java
+java=/share/apps/jdk/jre/bin/java
 tmpDir=/scratch0/vyp
 target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/merged_exome_target_cleaned.bed
 
