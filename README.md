@@ -9,6 +9,8 @@ Consists of:
 * [WES](WES) Whole Exome Sequencing
 * [DCUTILS] (DCUTILS) utilities written by @davenomiddlenamecurtis
 
+Currently [WGS](WGS) and [WES](WES) are the same thing.
+The joint calling and building of UCLex is done in [GATK_v2](GATK_v2).
 
 
 [![Stories in Ready](https://badge.waffle.io/pontikos/pipelines.png?label=ready&title=Ready)](http://waffle.io/pontikos/pipelines)
