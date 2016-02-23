@@ -1,5 +1,10 @@
 
-# Overall pipeline
+# Overall UCLex pipeline
+
+The current working directory is here:
+```
+/cluster/project8/vyp/exome_sequencing_multisamples/mainset
+```
 
 
 Scripts in pipeline:
