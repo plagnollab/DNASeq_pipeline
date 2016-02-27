@@ -4,7 +4,7 @@ err.cat <- function(x)  cat(x, '\n', file=stderr())
 
 suppressMessages(suppressWarnings(suppressPackageStartupMessages(library(optparse, quietly=TRUE, verbose=FALSE, warn.conflicts=FALSE))))
 suppressMessages(suppressWarnings(suppressPackageStartupMessages(library(data.table, quietly=TRUE, verbose=FALSE, warn.conflicts=FALSE))))
-source('/cluster/project8/IBDAJE/scripts/Families/ped/ped-functions.R')
+library(kinship2)
 
 ped <- read.pedigree('pedigree_details.csv')
 
