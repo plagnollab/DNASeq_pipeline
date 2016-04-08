@@ -1,3 +1,8 @@
+# Description of pipeline
+
+Paired-end reads in fastq format are aligned using NovoAlign to build 37.
+GVCFs are then generated using the GATK HaplotypeCaller, and the calls are later refined and calibrated by jointly calling against a larger cohort using GenotypeVCFs. 
+
 # Parameters (to be modified)
 
 This is an example of a RUNME.md that you can copy to the base directory from where you will be running the pipeline.
@@ -32,14 +37,14 @@ qsub ${projectID}/align/scripts/align.sh
 # Create the gVCFs
 
 ```
-bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID}
+bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID}
 ```
 The default memory is 7.8G but if you need more memory you can specify it on the command line:
 ```
-bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID} --vmem 10
+bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode gvcf --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID} --vmem 10
 ```
 
 # CombineGVCFs for UCLEX
 ```
-bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode CombineGVCFs --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID} --extraID ${extraID} --batchName $projectID
+bash $SOFTWARE/DNASeq_pipeline/WGS/WGS_pipeline.sh --mode CombineGVCFs --supportFrame ${BASEDIR}/support.txt --reference ${reference} --inputFormat STDFQ --projectID ${projectID} --batchName $projectID
 ```

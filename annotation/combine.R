@@ -16,14 +16,18 @@ chr <- opt$chr
 
 if (!is.null(chr)) {
     # combine annotation, genotypes and genotypes_depth per chromosome
-    ann <- as.data.frame(fread(sprintf('VEP_%s-annotations.csv',chr),header=TRUE))
-    geno <- as.data.frame(fread(sprintf('VEP_%s-genotypes.csv',chr),header=TRUE))
-    print(dim(geno <- geno[,-which('VARIANT_ID'==names(geno))]))
+    print('annotations')
+    print(dim(ann <- as.data.frame(fread(sprintf('VEP_%s-annotations.csv',chr),header=TRUE))))
+    print('genotypes')
+    print(dim(geno <- as.data.frame(fread(sprintf('VEP_%s-genotypes.csv',chr),header=TRUE))))
+    #print(dim(geno <- geno[,-which('VARIANT_ID'==names(geno))]))
     names(geno) <- paste('geno',names(geno),sep='.')
-    geno.depth <- as.data.frame(fread(sprintf('VEP_%s-genotypes_depth.csv',chr),header=TRUE))
-    print(dim(geno.depth <- geno.depth[,-which('VARIANT_ID'==names(geno.depth))]))
+    print('genotypes depth')
+    print(dim(geno.depth <- as.data.frame(fread(sprintf('VEP_%s-genotypes_depth.csv',chr),header=TRUE))))
+    #print(dim(geno.depth <- geno.depth[,-which('VARIANT_ID'==names(geno.depth))]))
     names(geno.depth) <- paste('depth',names(geno.depth),sep='.')
-    d <- cbind(ann,geno,geno.depth)
+    # ignore the first column which is variant id
+    d <- cbind(ann,geno[,-1],geno.depth[,-1])
     write.csv(d, quote=FALSE, row.names=FALSE, file=sprintf('VEP_%s.csv',chr))
 } else {
     # works on all chromosomes to create one giant file

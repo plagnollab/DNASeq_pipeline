@@ -6,7 +6,8 @@ nExPergVCF=122 ##Shamima
 #nExPergVCF=100 ##Levine_Aug2014
 #nExPergVCF=100 ##IoO
 
-java=/share/apps/jdk1.7.0_45/bin/java
+#java=/share/apps/jdk1.7.0_45/bin/java
+java=/share/apps/jdk/jre/bin/java
 target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/merged_exome_target_cleaned.bed
 computerChoice=none
 

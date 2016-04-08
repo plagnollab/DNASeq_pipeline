@@ -5,6 +5,27 @@ err.cat <- function(x)  cat(x, '\n', file=stderr())
 suppressMessages(suppressWarnings(suppressPackageStartupMessages(library(optparse, quietly=TRUE, verbose=FALSE, warn.conflicts=FALSE))))
 suppressMessages(suppressWarnings(suppressPackageStartupMessages(library(data.table, quietly=TRUE, verbose=FALSE, warn.conflicts=FALSE))))
 library(kinship2)
+#source('/cluster/project8/IBDAJE/scripts/Families/ped/ped-functions.R')
+pedigree <- read.pedigree('pedigree_details.csv')
+
+
+### 
+err.cat(dim( d <- as.data.frame(fread('cat /dev/stdin')) ))
+#
+samples <- gsub('geno\\.','',grep('geno',colnames(d),value=TRUE))
+#
+
+sample.affection <- pedigree[ which( pedigree$uclex.sample %in% samples ), c('uclex.sample','Affection')]
+# cases
+message('cases')
+err.cat(cases <- sample.affection[which(sample.affection$Affection==2),'uclex.sample'])
+message('number of cases')
+err.cat(length(cases))
+# controls
+message('controls')
+err.cat(controls <- sample.affection[which(sample.affection$Affection==1),'uclex.sample'])
+message('number of controls')
+err.cat(length(controls))
 
 ped <- read.pedigree('pedigree_details.csv')
 
@@ -49,7 +70,6 @@ calculate <- function(individuals, group.name){
     group.out <- as.data.frame(cbind(group.wt,group.het,group.hom,group.miss,group.af,group.mf))
     names(group.out) <- paste(group.name,c("WT","HET","HOM","MISS","AF","MF"),sep="_")
     return(group.out)
-
 }
 
 ##Group A0 only

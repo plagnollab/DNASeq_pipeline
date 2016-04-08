@@ -21,6 +21,8 @@ args=parser.parse_args()
 
 
 def print_line(s):
+    if s['ID']=='.':
+        s['ID']='-'.join([s['CHROM'],s['POS'],s['REF'][:4],s['ALT'][:4]])
     print( *([s[h] for h in STD_HEADERS+SAMPLE_HEADERS]), sep='\t' )
 
 print('##fileformat=VCFv4.1')
@@ -59,7 +61,7 @@ for line in sys.stdin:
     #In fact AD can be '.' even when geno is 0/0 if using HaplotypeCaller with multiple BAMs.
     for h in SAMPLE_HEADERS:
         d=dict(zip(s['FORMAT'].split(':'),s[h].split(':')))
-        GT=d['GT']
+        GT=d['GT'].replace('|','/')
         AD=d.get('AD',','.join(['0']*(len(alternative_alleles)+1)))
         DP=d.get('DP','0')
         DP=str(sum([int(x) if x!='.' else 0 for x in AD.split(',')]))
@@ -88,7 +90,7 @@ for line in sys.stdin:
             d=dict(zip(s1['FORMAT'].split(':'),s1[h].split(":")))
             #length of allele depth is 2 where first is always REF allele depth
             #and second can be either ALT
-            if 'AD' in d and d['AD']!='':
+            if 'AD' in d and d['AD']!='' and d['AD']!='.':
                 AD=d['AD'].split(',')
                 AD[1]=AD[idx+1]
                 AD=','.join(AD[:2])

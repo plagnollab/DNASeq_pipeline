@@ -11,6 +11,7 @@ fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g
 
 exec=no
 Rbin=/share/apps/R-3.0.2/bin/R
+Rscript=/share/apps/R-3.0.2/bin/Rscript
 script=default
 #argument needed: code, ped file, oFolder
 ##returns 4 different files per trio
@@ -96,7 +97,8 @@ echo \"Run GATK to compute positions that seem Mendel incompatible\"
 $java -Xmx2g -jar $GATK -R $fasta -T PhaseByTransmission --DeNovoPrior 0.0005 -V ${output}.vcf -ped $pedFile -o ${output}_phased.vcf --MendelianViolationsFile ${output}_noMendel.tab
 
 echo \"Filter the GATK output file to extract the proper de novo variants\"    
-$Rbin CMD BATCH --no-save --no-restore --input.file=${output}_noMendel.tab --output.file=${output}_deNovo.tab ${Rfilter} ${output}.Rlog 
+# $Rbin CMD BATCH --no-save --no-restore --input.file=${output}_noMendel.tab --output.file=${output}_deNovo.tab ${Rfilter} ${output}.Rlog 
+$Rscript ${Rfilter} --input.file ${output}_noMendel.tab --output.file ${output}_deNovo.tab > ${output}.Rlog 
 
 echo \"Now extract from the main VCF the positions of interest\" 
 $vcftools --positions ${output}_deNovo.tab.positions --vcf ${output}.vcf --out ${output}_deNovo --recode

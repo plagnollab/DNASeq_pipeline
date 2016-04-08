@@ -91,9 +91,10 @@ for l in infile:
     def genotype(g):
         d=dict(zip(s['FORMAT'].split(':'),g.split(':')))
         geno=d['GT']
+        geno=geno.replace('|','/')
         if geno=='0/0' or geno=='./0' or geno=='0/.': 
             return 0
-        elif geno=='0/1' or geno=='./1' or geno=='1/.': 
+        elif geno=='1/0' or geno=='0/1' or geno=='./1' or geno=='1/.': 
             return 1
         elif geno=='1/1': 
             return 2
@@ -101,7 +102,7 @@ for l in infile:
             return 'NA'
         else:
             print( VARIANT_ID, geno, sep=',', file=sys.stderr)
-            print( l, file=sys.stderr)
+            #print( l, file=sys.stderr)
             raise 'hell'
     if args.genotypes:
         GENOTYPES=[genotype(s.get(h,'NA'))for h in SAMPLES]

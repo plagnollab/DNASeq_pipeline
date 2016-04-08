@@ -1,22 +1,24 @@
 #!/usr/bin/env Rscript
 err.cat <- function(x)  cat(x, '\n', file=stderr())
 
-### Series of filters suggested by Adam.
-message('*** AF FILTERING ***')
-d <- read.csv(file('stdin'))
-
-# Filtering of variants based on annotation
+suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(tools))
 suppressPackageStartupMessages(library(xtable))
 
+
+### Series of filters suggested by Adam.
+# Filtering of variants based on annotation
+message('*** AF FILTERING ***')
+d <- as.data.frame(fread('file:///dev/stdin'))
 
 option_list <- list(
     make_option(c('--exac.thresh'), default=0.01, help='pop freq threshold'),
     make_option(c('--onekg.thresh'), default=0.05, help='pop freq threshold'),
     make_option(c('--esp.thresh'), default=0.05, help='pop freq threshold'),
     make_option(c('--ajcontrols.thresh'), default=NULL, type='numeric', help='pop freq threshold'),
-    make_option(c('--uclex.thresh'), default=NULL, type='numeric', help='pop freq threshold')
+    make_option(c('--uclex.thresh'), default=NULL, type='numeric', help='pop freq threshold'),
+    make_option(c('--out'), help='out file')
 )
 
 option.parser <- OptionParser(option_list=option_list)
@@ -27,9 +29,11 @@ af.filter <- function(xx,xx.thresh) {
     xx.filter <- apply(xx, 1, function(x) {
         pop.af <- x[1]
         pop.description <- x[2]
-        message(sprintf('%s: rare (less than %.2f pct or more than %.2f pct) in %s',pop.af,xx.thresh*100,100-xx.thresh*100,pop.description))
+        #message(sprintf('%s: rare (less than %.2f pct or more than %.2f pct) in %s',pop.af,xx.thresh*100,100-xx.thresh*100,pop.description))
+        #err.cat(table(xx.filter <- (d[,pop.af] < xx.thresh & (d$HOM>=1|d$HET>=1)) | (d[,pop.af] > (1-xx.thresh) & (d$WT>=1 | d$HET >= 1)), useNA='always' ))
         # do not keep flipped variants
-        err.cat(table(xx.filter <- (d[,pop.af] < xx.thresh & (d$HOM>=1|d$HET>=1)) | (d[,pop.af] > (1-xx.thresh) & (d$WT>=1 | d$HET >= 1)) | (d$WT > d$HOM), useNA='always' ))
+        message(sprintf('%s: rare (less than %.2f pct) in %s',pop.af,xx.thresh*100,pop.description))
+        err.cat(table(xx.filter <- (d[,pop.af] < xx.thresh & (d$HOM>=1|d$HET>=1)), useNA='always'))
         return(xx.filter)
     })
     colnames(xx.filter) <- xx$pop
@@ -109,6 +113,6 @@ if (!is.null(opt$esp.thresh)) {
 
 #c('GMAF','AFR_MAF','AMR_MAF','ASN_MAF','EUR_MAF','AA_MAF','EA_MAF')
 
-write.csv(d, file='', quote=FALSE, row.names=FALSE)
+write.csv(d, file=opt$out, quote=FALSE, row.names=FALSE)
 
 

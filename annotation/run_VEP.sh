@@ -39,6 +39,13 @@ fi
 echo SCRATCH2: $SCRATCH2
 
 
+perl="/share/apps/perl-5.14.2/bin/perl"
+if [ ! -e $perl ]
+then
+    perl="/share/apps/perl/bin/perl"
+fi
+
+
 ##
 until [ -z "$1" ]
 do
@@ -98,6 +105,7 @@ condel_config=${ensembl}/Plugins/config/Condel/config
 #file://$SCRATCH2/reference_datasets/human_reference_sequence/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
 cat $input | grep '^##reference=' | cut -f2 -d'='
 
+
 #annotations_dir=/cluster/project8/vyp/AdamLevine/annotations
 annotations_dir=/cluster/project8/IBDAJE/VEP_custom_annotations/${reference}
 
@@ -131,41 +139,41 @@ done
 
 #### 
 function UCLEX() {
-    shortname=UCLEX
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/UCLex/chr${chr}.vcf.gz,${shortname},vcf,exact"
+shortname=UCLEX
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/UCLex/chr${chr}.vcf.gz,${shortname},vcf,exact"
 }
 
 ###
 function AJcontrols() {
-    shortname=AJcontrols
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
+shortname=AJcontrols
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
 }
 
 ###
 function AJcases() {
-    shortname=AJcases
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcases/chr${chr}.vcf.gz,${shortname},vcf,exact"
+shortname=AJcases
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/AJcases/chr${chr}.vcf.gz,${shortname},vcf,exact"
 }
 
 ###
 function BroadAJcontrols() {
-    shortname=BroadAJcontrols
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/BroadAJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
+shortname=BroadAJcontrols
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/BroadAJcontrols/chr${chr}.vcf.gz,${shortname},vcf,exact"
 }
 
 ###
 function ImmunoBase() {
-    for disease in CRO IBD UC
-    do
-        shortname=ImmunoBase_${disease}
-        custom_annotation="${custom_annotation} --custom ${annotations_dir}/ImmunoBase/ImmunoBase_${disease}.bed.gz,${shortname},bed,overlap"
-    done
+for disease in CRO IBD UC
+do
+    shortname=ImmunoBase_${disease}
+    custom_annotation="${custom_annotation} --custom ${annotations_dir}/ImmunoBase/ImmunoBase_${disease}.bed.gz,${shortname},bed,overlap"
+done
 }
 
 ###
 function SZ_Curtis() {
-    shortname=SZ_Curtis
-    custom_annotation="${custom_annotation} --custom ${annotations_dir}/SZ_Curtis/chr${chr}.vcf.gz,${shortname},vcf,exact"
+shortname=SZ_Curtis
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/SZ_Curtis/chr${chr}.vcf.gz,${shortname},vcf,exact"
 }
 
 
