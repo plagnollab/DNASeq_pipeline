@@ -370,7 +370,7 @@ function mode_gvcf_unsplit() {
 
     SGE_PARAMETERS="
 #$ -l scr=1G
-#$ -l tmem=7.8G,h_vmem=7.8G
+#$ -l tmem=9.8G,h_vmem=9.8G
 #$ -l h_rt=72:0:0
 "
     # GATK_HaplotypeCaller requires a sequence dictionary
@@ -695,7 +695,7 @@ fi
 ##GATK=${Software}/GenomeAnalysisTK-3.4-46/GenomeAnalysisTK.jar
 GATK=${Software}/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar
 #$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar ${GATK}
-HaplotypeCaller="$java -Djava.io.tmpdir=/scratch0/ -Xmx5g -Xms5g -jar $GATK -T HaplotypeCaller"
+HaplotypeCaller="$java -Djava.io.tmpdir=/scratch0/ -Xmx6g -Xms6g -jar $GATK -T HaplotypeCaller"
 CombineGVCFs="$java -Djava.io.tmpdir=/scratch0/ -Xmx4g -Xms4g -jar $GATK -T CombineGVCFs"
 novoalign=${Software}/novocraft3/novoalign
 novosort=${Software}/novocraft3/novosort
