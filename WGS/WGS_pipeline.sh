@@ -56,9 +56,9 @@ function mode_align() {
 
     mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
     SGE_PARAMETERS="
-#$ -l scr=1G
+#$ -l scr=10G
 #$ -pe smp ${ncores}
-#$ -l tmem=3G,h_vmem=3G
+#$ -l tmem=3.9G,h_vmem=3.9G
 #$ -l h_rt=24:0:0
 "
     for file in $novoalignRef
@@ -92,10 +92,9 @@ cat >${mainScript%.sh}_${code}.sh<<EOL
 
 mkdir -p ${toutput}
 
-
 $novoalign -c ${ncores} -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' --rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam} -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${toutput}/${code}_disc.sam  | ${samtools} view -Sb - > ${toutput}/${code}.bam
 
-${samtools} view -Sb ${toutput}/${code}_disc.sam | $novosort - -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_disc_sorted.bam
+${samtools} view -Sb ${toutput}/${code}_disc.sam | $novosort - -t ${toutput} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_disc_sorted.bam
 
 $novosort -t ${toutput} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_sorted_unique.bam ${toutput}/${code}.bam
 
