@@ -613,8 +613,8 @@ do
     # use a case statement to test vars. we always test $1 and shift at the end of the for block.
     case $1 in
     --extraID )
-        shift;;
-        #extraID="$1_";;
+        shift
+        extraID="$1_";;
      --tempFolder )   ##specify a temp directory for the java picard code
         shift
         tempFolder=$1;;
