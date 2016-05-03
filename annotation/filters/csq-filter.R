@@ -1,26 +1,27 @@
 #!/usr/bin/env Rscript
 err.cat <- function(x)  cat(x, '\n', file=stderr())
 
-### 
-message('*** CADD FILTERING ***')
-d <- read.csv(file('stdin'))
-
 # Filtering of variants based on annotation 
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(tools))
 suppressPackageStartupMessages(library(xtable))
+suppressPackageStartupMessages(library(data.table))
+
+### 
+message('*** CADD FILTERING ***')
+d <- as.data.frame(fread('file:///dev/stdin'))
 
 
 option_list <- list(
     make_option(c('--cadd.thresh'), default=20, help='CADD score threshold'),
     make_option(c('--csq.filter'), default='start|stop|splice|frameshift|stop_gained', help='csq field'),
     make_option(c('--carol.filter'), default='Deleterious', help='CAROL'),
-    make_option(c('--condel.filter'), default='deleterious', help='CAROL')
+    make_option(c('--condel.filter'), default='deleterious', help='CAROL'),
+    make_option(c('--out'), help='outfile')
 )
 
 option.parser <- OptionParser(option_list=option_list)
 opt <- parse_args(option.parser)
-
 
 message('samples')
 err.cat(length(samples <- grep('geno\\.',colnames(d), value=TRUE)))
@@ -68,5 +69,5 @@ f2 <- ( grepl('missense_variant',d$Consequence) & (carol.filter|condel.filter|ca
 
 d <- d[ f1 | f2, ]
 
-write.csv( d[order(d$CADD,decreasing=TRUE),] , quote=FALSE, file='', row.names=FALSE)
+write.csv( d[order(d$CADD,decreasing=TRUE),] , quote=FALSE, file=opt$out, row.names=FALSE)
 

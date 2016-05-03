@@ -52,11 +52,13 @@ function mode_align() {
     #
     #tparam=${tparam:-250}
     output=${outputdir}/data
+
+
     mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
     SGE_PARAMETERS="
-#$ -l scr=1G
+#$ -l scr=10G
 #$ -pe smp ${ncores}
-#$ -l tmem=3G,h_vmem=3G
+#$ -l tmem=3.9G,h_vmem=3.9G
 #$ -l h_rt=24:0:0
 "
     for file in $novoalignRef
@@ -82,13 +84,22 @@ function mode_align() {
             # delete contents of temp dir [vplagnol/pipelines/issues/11]
             rm -f ${tempFolder}/${code}/*
             mkdir -p ${tempFolder}/${code} 
+	    toutput=/scratch0/${code}
+
 cat >${mainScript%.sh}_${code}.sh<<EOL
 # disc is for discordant reads, which can be used for CNV calling purposes
 # unique_sorted.bam is the file that should be used!
-$novoalign -c ${ncores} -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' --rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam} -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${output}/${code}_disc.sam  | ${samtools} view -Sb - > ${output}/${code}.bam
-${samtools} view -Sb ${output}/${code}_disc.sam | $novosort - -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_disc_sorted.bam
-$novosort -t ${tempFolder}/${code} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_sorted_unique.bam ${output}/${code}.bam
-rm ${output}/${code}_disc.sam ${output}/${code}.bam
+
+mkdir -p ${toutput}
+
+$novoalign -c ${ncores} -o SAM $'@RG\tID:${extraID}${code}\tSM:${extraID}${code}\tLB:${extraID}$code\tPL:ILLUMINA' --rOQ --hdrhd 3 -H -k -a -o Soft -t ${tparam} -F ${inputFormat} -f ${f1} ${f2}  -d ${novoalignRef} | ${samblaster} -e -d ${toutput}/${code}_disc.sam  | ${samtools} view -Sb - > ${toutput}/${code}.bam
+
+${samtools} view -Sb ${toutput}/${code}_disc.sam | $novosort - -t ${toutput} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_disc_sorted.bam
+
+$novosort -t ${toutput} -c ${ncores} -m ${memory2}G -i -o ${output}/${code}_sorted_unique.bam ${toutput}/${code}.bam
+
+rm -rf ${toutput}
+
 EOL
         else
             #echo ${output}/${code}_sorted_unique.bam.bai already exists
@@ -350,7 +361,7 @@ function mode_gvcf_unsplit() {
 
     SGE_PARAMETERS="
 #$ -l scr=1G
-#$ -l tmem=7.8G,h_vmem=7.8G
+#$ -l tmem=9.8G,h_vmem=9.8G
 #$ -l h_rt=72:0:0
 "
     # GATK_HaplotypeCaller requires a sequence dictionary
@@ -598,8 +609,8 @@ do
     # use a case statement to test vars. we always test $1 and shift at the end of the for block.
     case $1 in
     --extraID )
-        shift;;
-        #extraID="$1_";;
+        shift
+        extraID="$1_";;
      --tempFolder )   ##specify a temp directory for the java picard code
         shift
         tempFolder=$1;;
@@ -680,7 +691,7 @@ fi
 ##GATK=${Software}/GenomeAnalysisTK-3.4-46/GenomeAnalysisTK.jar
 GATK=${Software}/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar
 #$java -Djava.io.tmpdir=${tempFolder} -Xmx4g -jar ${GATK}
-HaplotypeCaller="$java -Djava.io.tmpdir=/scratch0/ -Xmx5g -Xms5g -jar $GATK -T HaplotypeCaller"
+HaplotypeCaller="$java -Djava.io.tmpdir=/scratch0/ -Xmx6g -Xms6g -jar $GATK -T HaplotypeCaller"
 CombineGVCFs="$java -Djava.io.tmpdir=/scratch0/ -Xmx4g -Xms4g -jar $GATK -T CombineGVCFs"
 novoalign=${Software}/novocraft3/novoalign
 novosort=${Software}/novocraft3/novosort

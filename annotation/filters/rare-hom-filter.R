@@ -13,7 +13,8 @@ option_list <- list(
     make_option(c('--esp.thresh'), default=0.0001, help='pop freq threshold'),
     make_option(c('--ajcontrols.thresh'), default=NULL, type='numeric', help='pop freq threshold'),
     make_option(c('--uclex.thresh'), default=0.0001, type='numeric', help='pop freq threshold'),
-    make_option(c('--depth.thresh'), default=10, type='numeric', help='depth threshold')
+    make_option(c('--depth.thresh'), default=10, type='numeric', help='depth threshold'),
+    make_option(c('--out'), help='outfile'),
 )
 
 option.parser <- OptionParser(option_list=option_list)
@@ -155,7 +156,7 @@ d <- d[which(rowSums(d[,i]==2)==0),]
 variants <- d
 
 
-write.csv( variants[which(variants[,sample]==2),], file='', quote=FALSE, row.names=FALSE  )
+write.csv( variants[which(variants[,sample]==2),], file=opt$out, quote=FALSE, row.names=FALSE  )
 
 
 

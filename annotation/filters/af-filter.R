@@ -1,22 +1,24 @@
 #!/usr/bin/env Rscript
 err.cat <- function(x)  cat(x, '\n', file=stderr())
 
-### Series of filters suggested by Adam.
-message('*** AF FILTERING ***')
-d <- read.csv(file('stdin'))
-
-# Filtering of variants based on annotation
+suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(tools))
 suppressPackageStartupMessages(library(xtable))
 
+
+### Series of filters suggested by Adam.
+# Filtering of variants based on annotation
+message('*** AF FILTERING ***')
+d <- as.data.frame(fread('file:///dev/stdin'))
 
 option_list <- list(
     make_option(c('--exac.thresh'), default=0.01, help='pop freq threshold'),
     make_option(c('--onekg.thresh'), default=0.05, help='pop freq threshold'),
     make_option(c('--esp.thresh'), default=0.05, help='pop freq threshold'),
     make_option(c('--ajcontrols.thresh'), default=NULL, type='numeric', help='pop freq threshold'),
-    make_option(c('--uclex.thresh'), default=NULL, type='numeric', help='pop freq threshold')
+    make_option(c('--uclex.thresh'), default=NULL, type='numeric', help='pop freq threshold'),
+    make_option(c('--out'), help='out file')
 )
 
 option.parser <- OptionParser(option_list=option_list)
@@ -111,6 +113,6 @@ if (!is.null(opt$esp.thresh)) {
 
 #c('GMAF','AFR_MAF','AMR_MAF','ASN_MAF','EUR_MAF','AA_MAF','EA_MAF')
 
-write.csv(d, file='', quote=FALSE, row.names=FALSE)
+write.csv(d, file=opt$out, quote=FALSE, row.names=FALSE)
 
 

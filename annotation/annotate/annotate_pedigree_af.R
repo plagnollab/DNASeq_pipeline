@@ -4,8 +4,8 @@ err.cat <- function(x)  cat(x, '\n', file=stderr())
 
 suppressMessages(suppressWarnings(suppressPackageStartupMessages(library(optparse, quietly=TRUE, verbose=FALSE, warn.conflicts=FALSE))))
 suppressMessages(suppressWarnings(suppressPackageStartupMessages(library(data.table, quietly=TRUE, verbose=FALSE, warn.conflicts=FALSE))))
-source('/cluster/project8/IBDAJE/scripts/Families/ped/ped-functions.R')
-<<<<<<< HEAD
+library(kinship2)
+#source('/cluster/project8/IBDAJE/scripts/Families/ped/ped-functions.R')
 pedigree <- read.pedigree('pedigree_details.csv')
 
 
@@ -26,8 +26,6 @@ message('controls')
 err.cat(controls <- sample.affection[which(sample.affection$Affection==1),'uclex.sample'])
 message('number of controls')
 err.cat(length(controls))
-=======
->>>>>>> 58f398419784360e4006d17f9daad1bcbf82b80d
 
 ped <- read.pedigree('pedigree_details.csv')
 
@@ -44,11 +42,7 @@ err.cat(samples <- gsub('geno\\.','',grep('geno',colnames(d),value=TRUE)))
 
 #Function to subset individuals and do calculations
 #group: list of individuals of interest, group.name: subfamily name
-<<<<<<< HEAD
-calculate <- function(group, group.name) { 
-=======
 calculate <- function(individuals, group.name){
->>>>>>> 58f398419784360e4006d17f9daad1bcbf82b80d
     #With geno. prefix
     #geno.group <- paste("geno",group,sep=".")
     geno.group <- individuals

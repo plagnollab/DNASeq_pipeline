@@ -88,7 +88,7 @@ fi
 ####CONFIGURE SOFTWARE SHORTCUTS AND PATHS
 ensembl=/cluster/project8/vyp/AdamLevine/software/ensembl/
 #VEP=${ensembl}/src/ensembl-tools/scripts/variant_effect_predictor/variant_effect_predictor.pl
-VEP=/cluster/project8/vyp/Software/ensembl-tools-release-82/scripts/variant_effect_predictor/variant_effect_predictor.pl
+VEP="/cluster/project8/vyp/Software/ensembl-tools-release-82/scripts/variant_effect_predictor/variant_effect_predictor.pl"
 dir_cache=${ensembl}/cache/
 PERL5LIB=${PERL5LIB}:${ensembl}/src/bioperl-1.6.1
 PERL5LIB=${PERL5LIB}:${ensembl}/src/ensembl/modules
@@ -277,6 +277,8 @@ fields=""
  
 #output='--pick'
 output='--vcf'
+#output='--json'
+
 #plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin LoF,human_ancestor_fa:$SCRATCH2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
 #plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:$SCRATCH2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
 #plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:$SCRATCH2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
