@@ -1,5 +1,5 @@
-fasta=/scratch2/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
-bundle=/scratch2/vyp-scratch2/reference_datasets/GATK_bundle
+fasta=/cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
+bundle=/cluster/scratch3/vyp-scratch2/reference_datasets/GATK_bundle
 
 #nExPergVCF=105 ##for GOS
 nExPergVCF=122 ##Shamima
@@ -11,12 +11,12 @@ java=/share/apps/jdk/jre/bin/java
 target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/merged_exome_target_cleaned.bed
 computerChoice=none
 
-combinedFolder=/scratch2/vyp-scratch2/vincent/GATK/HC/combinedVCFs ##default value
+combinedFolder=/cluster/scratch3/vyp-scratch2/vincent/GATK/HC/combinedVCFs ##default value
 GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar
 
 
-output=/scratch2/vyp-scratch2/vincent/GATK/mainset_${currentUCLex}/mainset_${currentUCLex}
-#output=/scratch2/vyp-scratch2/vincent/GATK/cardioset_${currentUCLex}/cardioset_${currentUCLex}
+output=/cluster/scratch3/vyp-scratch2/vincent/GATK/mainset_${currentUCLex}/mainset_${currentUCLex}
+#output=/cluster/scratch3/vyp-scratch2/vincent/GATK/cardioset_${currentUCLex}/cardioset_${currentUCLex}
 
 until [ -z "$1" ]; do
     # use a case statement to test vars. we always test $1 and shift at the end of the for block.
@@ -87,7 +87,7 @@ while [[ "$startline" -lt "$nVCFs" ]]; do
 	    script=cluster/submission/com_${jobID}_chr${chr}_${folderCode}.sh
 	    
 	    echo "
-$java -Xmx7g -jar $GATK \\
+$java -Xmx6g -jar $GATK \\
    -R $fasta \\
    -L $chr \\
    -T CombineGVCFs \\" > $script
@@ -115,7 +115,7 @@ echo "
 #$ -o cluster/out
 #$ -e cluster/error
 #$ -S /bin/bash
-#$ -l h_vmem=9G,tmem=9G
+#$ -l h_vmem=10G,tmem=10G
 #$ -l h_rt=30:0:0
 #$ -R y
 #$ -pe smp 1
