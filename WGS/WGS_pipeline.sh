@@ -699,7 +699,7 @@ novosort=${Software}/novocraft3/novosort
 #novosort=/cluster/project8/vyp/pontikos/Software/novocraft/novosort
 samblaster=${Software}/samblaster/samblaster
 ##samtools
-samtools=${Software}/samtools-1.2/samtools
+samtools=${Software}/samtools-1.3.1/samtools
 ##bedtools
 coverageBed=${Software}/bedtools-2.17.0/bin/coverageBed
 ## Picard

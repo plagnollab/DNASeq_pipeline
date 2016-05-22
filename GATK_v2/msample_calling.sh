@@ -10,7 +10,7 @@ scratchFolder=/cluster/scratch3/vyp-scratch2
 fasta=${scratchFolder}/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
 bundle=${scratchFolder}/reference_datasets/GATK_bundle
 
-Rscript=/cluster/project8/vyp/vincent/Software/R-3.1.2/bin/Rscript
+Rscript=/share/apps/R-3.2.2/bin/Rscript
 Rbin=/share/apps/R-3.2.2/bin/R
 
 #java=/share/apps/jdk1.7.0_45/bin/java
@@ -142,7 +142,7 @@ if [[ "$genotype" == "yes" ]]; then
 	if [ ! -e ${output}_chr${chr}.vcf.gz.tbi ]; then 
 
 	    echo "
-$java -Xmx${memoSmall}g -jar $GATK \\
+$java -Djava.io.tmpdir=/scratch0/ -Xmx${memoSmall}g -jar $GATK \\
    -R $fasta \\
    -T GenotypeGVCFs \\
    -L $chr -L $target --interval_set_rule INTERSECTION --interval_padding 100  \\
@@ -271,7 +271,7 @@ if [[ "$annovar" == "yes" ]]; then
 	
 	script=cluster/submission/subscript_chr${chr}.sh
 	
-	if [[ ! -e ${output}_snpStats/chr${chr}.done || "$force" == "yes" ]]; then  ## this is not quite right, needs fixing because it does not account for the last step
+	if [[ ! -e ${output}_snpStats/chr${chr}.done || ! -e ${output}_chr${chr}_exome_table.csv || "$force" == "yes" ]]; then  ## this is not quite right, needs fixing because it does not account for the last step
 	    
 	    echo "
 if [ -e ${output}_snpStats/chr${chr}.done ]; then rm ${output}_snpStats/chr${chr}.done; fi  ## this is basically a log file, to make sure the job got finished
