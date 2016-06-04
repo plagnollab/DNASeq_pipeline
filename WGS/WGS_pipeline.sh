@@ -32,7 +32,6 @@ else
         export java=/share/apps/jdk1.7.0_45/jre/bin/java
 fi
 
-export UCLEX="$SCRATCH2/vincent/GATK/mainset_January2015"
 #
 echo SCRATCH2: $SCRATCH2
 
@@ -52,14 +51,12 @@ function mode_align() {
     #
     #tparam=${tparam:-250}
     output=${outputdir}/data
-
-
     mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
     SGE_PARAMETERS="
 #$ -l scr=10G
 #$ -pe smp ${ncores}
-#$ -l tmem=3.9G,h_vmem=3.9G
-#$ -l h_rt=24:0:0
+#$ -l tmem=4G,h_vmem=4G
+#$ -l h_rt=240:0:0
 "
     for file in $novoalignRef
     do
@@ -326,9 +323,9 @@ function mode_gvcf() {
             #it contains chr<number>
             #should check which scenario where are in
             ##if the index is not there, we assume that we have to do the whole job
-            if [ ! -s ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
+            if [ ! -s ${output}/${code}_chr${chrCleanCode}.g.vcf.gz.tbi ] || [ "$force" == "yes" ]
             then
-              echo ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi does not exist
+              echo ${output}/${code}_chr${chrCleanCode}.g.vcf.gz.tbi does not exist
               #if file is empty stop
               #[ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
               [ ! -s ${input}/${code}_sorted_unique.bam ] && error "${input}/${code}_sorted_unique.bam does not exist" 
