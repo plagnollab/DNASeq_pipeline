@@ -1,3 +1,8 @@
+Location of UCLex output:
+```
+/SAN/vyplab/UCLex/
+```
+
 
 Current working directory:
 ```
