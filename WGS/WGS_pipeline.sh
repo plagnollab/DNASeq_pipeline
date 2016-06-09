@@ -32,7 +32,6 @@ else
         export java=/share/apps/jdk1.7.0_45/jre/bin/java
 fi
 
-export UCLEX="$SCRATCH2/vincent/GATK/mainset_January2015"
 #
 echo SCRATCH2: $SCRATCH2
 
@@ -52,14 +51,12 @@ function mode_align() {
     #
     #tparam=${tparam:-250}
     output=${outputdir}/data
-
-
     mkdir -p $outputdir/data $outputdir/out $outputdir/err $outputdir/scripts
     SGE_PARAMETERS="
 #$ -l scr=10G
 #$ -pe smp ${ncores}
-#$ -l tmem=3.9G,h_vmem=3.9G
-#$ -l h_rt=24:0:0
+#$ -l tmem=4G,h_vmem=4G
+#$ -l h_rt=240:0:0
 "
     for file in $novoalignRef
     do
@@ -326,24 +323,15 @@ function mode_gvcf() {
             #it contains chr<number>
             #should check which scenario where are in
             ##if the index is not there, we assume that we have to do the whole job
-            if [ ! -s ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi ] || [ "$force" == "yes" ]
+            if [ ! -s ${output}/${code}_chr${chrCleanCode}.g.vcf.gz.tbi ] || [ "$force" == "yes" ]
             then
-              echo ${output}/${code}_chr${chrCleanCode}.gvcf.gz.tbi does not exist
+              echo ${output}/${code}_chr${chrCleanCode}.g.vcf.gz.tbi does not exist
               #if file is empty stop
               #[ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
               [ ! -s ${input}/${code}_sorted_unique.bam ] && error "${input}/${code}_sorted_unique.bam does not exist" 
               #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
               echo "
-$HaplotypeCaller \
--R $fasta \
--I ${input}/${code}_sorted_unique.bam  \
---emitRefConfidence GVCF \
--rf NotPrimaryAlignment \ 
--stand_call_conf 30.0 \
--stand_emit_conf 10.0 \
--L ${chrPrefix}${chrCleanCode} \
---GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 \
--o ${output}/${code}_chr${chrCleanCode}.g.vcf.gz
+$HaplotypeCaller -R $fasta -I ${input}/${code}_sorted_unique.bam  --emitRefConfidence GVCF -rf NotPrimaryAlignment -stand_call_conf 30.0 -stand_emit_conf 10.0 -L ${chrPrefix}${chrCleanCode} --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 50 -o ${output}/${code}_chr${chrCleanCode}.g.vcf.gz
 " > ${mainScript%.sh}_${code}_chr${chrCleanCode}.sh
             else
                 rm -f ${mainScript%.sh}_${code}_chr${chrCleanCode}.sh
@@ -401,16 +389,16 @@ function mode_gvcf_unsplit() {
           [ ! -s ${input}/${code}_sorted_unique.bam ] && stop "${input}/${code}_sorted_unique.bam does not exist" 
            #Call SNPs and indels simultaneously via local re-assembly of haplotypes in an active region.
           echo "
-          $HaplotypeCaller \
-           -R $fasta $targetArgument \
-           -I ${input}/${code}_sorted_unique.bam  \
-           --emitRefConfidence GVCF \
-           -rf NotPrimaryAlignment \
-           -stand_call_conf 30.0 \
-           -stand_emit_conf 10.0 \
-           --GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 60 \
-           -o ${output}/${code}.g.vcf.gz
-            " > ${mainScript%.sh}_${code}.sh
+$HaplotypeCaller \
+-R $fasta $targetArgument \
+-I ${input}/${code}_sorted_unique.bam  \
+--emitRefConfidence GVCF \
+-rf NotPrimaryAlignment \
+-stand_call_conf 30.0 \
+-stand_emit_conf 10.0 \
+--GVCFGQBands 10 --GVCFGQBands 20 --GVCFGQBands 60 \
+-o ${output}/${code}.g.vcf.gz
+" > ${mainScript%.sh}_${code}.sh
       else
           rm -f ${mainScript%.sh}_${code}.sh
       fi
@@ -436,7 +424,7 @@ function mode_CombineGVCFs() {
     mkdir -p $outputdir/data $outputdir/err $outputdir/out $outputdir/scripts
     SGE_PARAMETERS="
 #$ -l scr=1G
-#$ -l tmem=7.8G,h_vmem=7.8G
+#$ -l tmem=10G,h_vmem=10G
 #$ -l h_rt=12:0:0
 "
     rm -f ${outputdir}/scripts/*.sh
@@ -449,15 +437,20 @@ function mode_CombineGVCFs() {
        if [ ! -s $output ]
        then
            #add checks to see if file exists before adding to VARIANTS
-           VARIANTS=`cat $batchFile | cut -f1 | grep -v code | xargs -I x echo "--variant ${input}/x_chr${chrCleanCode}.gvcf.gz" | tr '\n' ' '`
+           INPUT_FILES=`cat $batchFile | cut -f1 -d ' ' | grep -v code | xargs -I '{}' echo "${input}/{}_chr${chrCleanCode}.g.vcf.gz" | tr '\n' ' '`
+           VARIANTS=""
+           for f in $INPUT_FILES
+           do
+               if [ ! -s $f ]
+               then
+                   stop "$f does not exist"
+               else
+                   VARIANTS="--variant ${f} ${VARIANTS}"
+               fi
+           done
            echo "
-           $java -Djava.io.tmpdir=/scratch0/ -Xmx7g -Xms7g -jar $GATK \
-           -T CombineGVCFs \
-           -R $fasta \
-           -L ${chrPrefix}${chrCleanCode} \
-           -o ${output} \
-           $VARIANTS
-           " > ${script}
+$java -Djava.io.tmpdir=/scratch0/ -Xmx8g -Xms8g -jar $GATK -T CombineGVCFs -R $fasta -L ${chrPrefix}${chrCleanCode} -o ${output} $VARIANTS
+" > ${script}
        else
            rm -f ${script}
        fi
