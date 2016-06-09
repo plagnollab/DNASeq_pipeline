@@ -5,10 +5,11 @@ function error() { >&2 echo -e "\033[31m$*\033[0m"; }
 function stop() { error "$*"; exit 1; }
 try() { "$@" || stop "cannot $*"; }
 
-scratchFolder=/cluster/scratch3/vyp-scratch2
+scratchFolder=/SAN/vyplab/UCLex
+referenceFolder=/cluster/scratch3/vyp-scratch2
 
-fasta=${scratchFolder}/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
-bundle=${scratchFolder}/reference_datasets/GATK_bundle
+fasta=${referenceFolder}/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
+bundle=${referenceFolder}/reference_datasets/GATK_bundle
 
 Rscript=/share/apps/R-3.2.2/bin/Rscript
 Rbin=/share/apps/R-3.2.2/bin/R
@@ -84,7 +85,7 @@ done
 
 
 ############## Now options are all set
-output=${scratchFolder}/vincent/GATK/mainset_${currentUCLex}/mainset_${currentUCLex}
+output=${scratchFolder}/mainset_${currentUCLex}/mainset_${currentUCLex}
 
 ### Check format of support file.
 ##should accept tab or space as delimiters
@@ -96,7 +97,7 @@ if [[ "$mustBePath" != "path" ]]; then stop "The first column of the file $gVCFl
 if [[ "$mustBeId" != "id" ]]; then stop "The second column of the file $gVCFlist must have the name id $mustBeId"; fi
 
 memoSmall=5
-memo=7.9
+memo=9.9
 
 
 if [[ "$convertToR" == "yes" || "$annovar" == "yes" ]]; then memo=21.9; fi
