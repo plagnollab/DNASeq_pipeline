@@ -91,4 +91,40 @@ calls GenotypeGVCFs:
    -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr1.vcf.gz
 ```
 
+```
+#### extract the indels
+/share/apps/jdk/jre/bin/java  -Djava.io.tmpdir=/scratch0/GATK_chr22 -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar      -T SelectVariants      -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta      -V /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22.vcf.gz      -selectType INDEL      -selectType MIXED      -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels.vcf.gz
+```
+
+```
+#### apply the filters for the indels
+/share/apps/jdk/jre/bin/java -Djava.io.tmpdir=/scratch0/GATK_chr22 -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar     -T VariantFiltration     -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta     -V /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels.vcf.gz     --filterExpression "QD < 2.0 || FS > 50.0 || ReadPosRankSum < -20.0"     --filterName "FAIL"     -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels_filtered.vcf.gz
+```
+
+```
+#### extract the SNPs
+/share/apps/jdk/jre/bin/java  -Djava.io.tmpdir=/scratch0/GATK_chr22 -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar      -T SelectVariants      -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta      -V /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22.vcf.gz      -selectType SNP      -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs.vcf.gz
+```
+
+```
+####### first SNPs
+/share/apps/jdk/jre/bin/java -Djava.io.tmpdir=/scratch0/GATK_chr22 -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar -T VariantRecalibrator -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta -L 22 --input /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs.vcf.gz --maxGaussians 6 --mode SNP              -resource:hapmap,VCF,known=false,training=true,truth=true,prior=15.0 /cluster/scratch3/vyp-scratch2/reference_datasets/GATK_bundle/hapmap_3.3.b37.vcf               -resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 /cluster/scratch3/vyp-scratch2/reference_datasets/GATK_bundle/1000G_omni2.5.b37.vcf              -resource:dbsnp,VCF,known=true,training=false,truth=false,prior=8.0 /cluster/scratch3/vyp-scratch2/reference_datasets/GATK_bundle/dbsnp_137.b37.vcf              -an QD -an FS -an ReadPosRankSum -an InbreedingCoeff              -tranche 100.0 -tranche 99.9 -tranche 99.8 -tranche 99.6 -tranche 99.5 -tranche 99.4 -tranche 99.3 -tranche 99.0 -tranche 98.0 -tranche 97.0 -tranche 90.0              --minNumBadVariants 1000              -recalFile /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_combrec.recal              -tranchesFile /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_combtranch              -rscriptFile  /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_recal_plots_snps.R
+
+/share/apps/R-3.2.2/bin/Rscript /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_recal_plots_snps.R
+```
+
+```
+#apply_recal
+/share/apps/jdk/jre/bin/java -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar -T ApplyRecalibration -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta        -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_filtered.vcf.gz        --ts_filter_level 99.5        --recal_file /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_combrec.recal --tranches_file /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_combtranch --mode SNP        --input /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs.vcf.gz
+```
+
+```
+#### Now we merge SNPs and indels
+/share/apps/jdk/jre/bin/java -Djava.io.tmpdir=/scratch0/GATK_chr22 -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar        -T CombineVariants --assumeIdenticalSamples        -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta        --variant:SNPs /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_filtered.vcf.gz        --variant:indels /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels_filtered.vcf.gz        -genotypeMergeOptions PRIORITIZE         -priority SNPs,indels        -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_filtered.vcf
+```
+
+```
+rm -rf /scratch0/GATK_chr22
+rm /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels.vcf.gz /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs.vcf.gz /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_filtered.vcf.gz
+```
 
