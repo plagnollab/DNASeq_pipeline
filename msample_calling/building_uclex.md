@@ -91,13 +91,13 @@ calls GenotypeGVCFs:
    -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr1.vcf.gz
 ```
 
+extract the indels
 ```
-#### extract the indels
 /share/apps/jdk/jre/bin/java  -Djava.io.tmpdir=/scratch0/GATK_chr22 -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar      -T SelectVariants      -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta      -V /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22.vcf.gz      -selectType INDEL      -selectType MIXED      -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels.vcf.gz
 ```
 
+apply the filters for the indels
 ```
-#### apply the filters for the indels
 /share/apps/jdk/jre/bin/java -Djava.io.tmpdir=/scratch0/GATK_chr22 -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar     -T VariantFiltration     -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta     -V /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels.vcf.gz     --filterExpression "QD < 2.0 || FS > 50.0 || ReadPosRankSum < -20.0"     --filterName "FAIL"     -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels_filtered.vcf.gz
 ```
 
