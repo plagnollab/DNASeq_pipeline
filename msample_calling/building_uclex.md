@@ -133,3 +133,27 @@ rm -rf /scratch0/GATK_chr22
 rm /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels.vcf.gz /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs.vcf.gz /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_filtered.vcf.gz
 ```
 
+```
+if [ -e /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_snpStats/chr21.done ]; then rm /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_snpStats/chr21.done; fi  ## this is basically a log file, to make sure the job got finished
+```
+Only keep the first 8 columns: CHR, POS, ID, REF, ALT, INFO, FILTER...
+```
+cut -f1-8 /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_filtered.vcf > /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_for_annovar.vcf
+```
+
+Run Annovar:
+```
+/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/convert2annovar.pl --allallele -format vcf4 --includeinfo /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_for_annovar.vcf > /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_db
+
+/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/summarize_annovar_VP.pl -ver1000g 1000g2012apr -verdbsnp 137 -veresp 6500si -alltranscript -buildver hg19 --genetype ensgene --remove /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_db /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/humandb_hg19/
+```
+
+```
+perl /cluster/project8/vyp/vincent/Software/DNASeq_pipeline/GATK_v2/custom_filtering.pl /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_filtered.vcf /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_recal_filtered2.vcf 20
+
+python /cluster/project8/vyp/vincent/Software/DNASeq_pipeline/GATK_v2/annovar_vcf_combine_VP.py /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_recal_filtered2.vcf /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_db.exome_summary.csv /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_exome_table.csv
+
+perl /cluster/project8/vyp/vincent/Software/DNASeq_pipeline/msample_calling/make_matrix_calls.pl /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_exome_table.csv /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016 21
+
+touch /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_snpStats/chr21.done  ##here we mark that the scripts finished
+```
