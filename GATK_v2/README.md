@@ -363,8 +363,14 @@ R CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} ${baseFo
 
 What's a crunch?
 
+```
+perl ${baseFolder}/GATK_v2/crunch_controls.pl ${output}_chr${chr}_exome_table.csv $keyWords $casekeyWords ${output}_chr${chr}_exome_crunched.csv data/sampleList_exome.tab none no  ##include all samples
+```
+
 Input:
 ```
+keyWords=data/controlKeywords.tab
+casekeyWords=data/caseKeywords.tab
 ${output}_chr${chr}_exome_table.csv 
 ```
 Output:
