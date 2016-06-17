@@ -10,8 +10,11 @@ referenceFolder=/cluster/scratch3/vyp-scratch2
 fasta=${referenceFolder}/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
 bundle=${referenceFolder}/reference_datasets/GATK_bundle
 
-Rscript=/share/apps/R-3.2.2/bin/Rscript
-Rbin=/share/apps/R-3.2.2/bin/R
+#Rscript=/share/apps/R-3.3.0/bin/Rscript
+#Rbin=/share/apps/R-3.3.0/bin/R
+
+Rbin=/cluster/project8/vyp/vincent/Software/R-3.3.0/bin/R
+Rscript=/cluster/project8/vyp/vincent/Software/R-3.3.0/bin/Rscript
 
 #java=/share/apps/jdk1.7.0_45/bin/java
 java=/share/apps/jdk/jre/bin/java
