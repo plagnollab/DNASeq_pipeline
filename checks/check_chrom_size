@@ -1,0 +1,48 @@
+
+# chrom sizes in hg19
+
+declare -A sizes
+sizes["chr1"]=249250621
+sizes["chr2"]=243199373
+sizes["chr3"]=198022430
+sizes["chr4"]=191154276
+sizes["chr5"]=180915260
+sizes["chr6"]=171115067
+sizes["chr7"]=159138663
+sizes["chrX"]=155270560
+sizes["chr8"]=146364022
+sizes["chr9"]=141213431
+sizes["chr10"]=135534747
+sizes["chr11"]=135006516
+sizes["chr12"]=133851895
+sizes["chr13"]=115169878
+sizes["chr14"]=107349540
+sizes["chr15"]=102531392
+sizes["chr16"]=90354753
+sizes["chr17"]=81195210
+sizes["chr18"]=78077248
+sizes["chr20"]=63025520
+sizes["chrY"]=59373566
+sizes["chr19"]=59128983
+sizes["chr22"]=51304566
+sizes["chr21"]=48129895
+
+# get 10M from the end
+
+for chr in `seq 1 22` X
+do 
+    x=`echo *chr${chr}.*vcf.gz.tbi`
+    if [ -s $x ]
+    then
+        pos=`expr ${sizes["chr${chr}"]} - 10000000`
+        last_pos=`tabix ${x%.tbi} ${chr}:${pos} | awk '{print $2}' | tail -n1`
+        if [[ ${last_pos} == "" ]]
+        then
+            echo ${x%.tbi} may be truncated
+        else
+            echo ${x%.tbi}, last_pos: ${last_pos}, chrom_size: ${sizes["chr${chr}"]}, remaining: `expr ${sizes["chr${chr}"]} - ${last_pos}`
+        fi
+    else
+        echo $x does not exist
+    fi
+done
