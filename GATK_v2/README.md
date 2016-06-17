@@ -361,6 +361,8 @@ R CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} ${baseFo
 
 # crunch_controls.pl: finalCrunch
 
+What's a crunch?
+
 Input:
 ```
 ${output}_chr${chr}_exome_table.csv 
