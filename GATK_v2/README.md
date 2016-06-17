@@ -23,13 +23,21 @@ split_data_by_chromosomes.R
 ```
 
 Files created by pipeline:
+
+Created by GenotypeGVCFs:
 ```
  mainset_September2015_chr9.vcf.gz
  mainset_September2015_chr9.vcf.gz.tbi
+ ```
  
+ Created by Annovar:
+ ```
  mainset_September2015_chr9_db
  mainset_September2015_chr9_db.log
+ ```
  
+ GATK filter and VSQR:
+ ```
  mainset_September2015_chr9_filtered.vcf.idx
  mainset_September2015_chr9_indels_filtered.vcf.gz
  mainset_September2015_chr9_indels_filtered.vcf.gz.tbi
@@ -45,11 +53,11 @@ Files created by pipeline:
  mainset_September2015_chr9_SNPs.vcf.gz.tbi
 ```
 
-## combine gVCF files (formerly step1)
+## Step 1: combine gVCF files
 
 combinegVCF.sh
 
-## msample_calling.sh: Massive joint calling (formerly step2)
+## Step 2: msample_calling.sh: Massive joint calling GenotypeGVCFs
 
 The following are all steps in ``` msample_calling.sh ```:
 
@@ -226,8 +234,12 @@ Remove intermediate files:
 rm ${output}_chr${chr}_indels.vcf.gz ${output}_chr${chr}_SNPs.vcf.gz ${output}_chr${chr}_SNPs_filtered.vcf.gz
 ```
 
+## Custom filtering
 
-## Annotation
+Perl script to print out as missing, dodgy looking variants.
+```
+perl ${baseFolder}/GATK_v2/custom_filtering.pl ${output}_chr${chr}_filtered.vcf ${output}_chr${chr}_recal_filtered2.vcf ${GQ}
+```
 
 Input:
 ```
@@ -235,9 +247,47 @@ ${output}_chr${chr}_filtered.vcf
 ```
 Output:
 ```
-${output}_chr${chr}_recal_filtered2.vcf 
+${output}_chr${chr}_recal_filtered2.vcf
+```
+If good is false will print as missing:
+```
+ if ($geno eq "0\/0") {
+````````if ($GQ <= $locth) {$good = 0;}
+````    } else {
+````````my @PLs = split(',', $PL);
+````````my $PL0 = $PLs[ 0 ];
+````````if ($PL0 <= $locth) {$good = 0;}
+````    }
+
+````    #if ($geno eq "1\/1") {$locth = 9;}  ## for ALT/ALT calls, a 15 QUAL will do in any case
+````    #if ($geno eq "2\/2") {$locth = 9;}  ## for ALT/ALT calls, a 15 QUAL will do in any case
+````    #if ($geno eq "3\/3") {$locth = 9;}  ## for ALT/ALT calls, a 15 QUAL will do in any case
+
+````    if ($ezSNP) {  ##if nice clean di-allelic SNP we add an extra filter
+````````if ($geno eq "0\/1") {
+````````    my @counts = split(',', $AD);
+````````    my $total = $counts[0] + $counts[1];
+````````    if ($counts[1] > $counts[0] + 1) {$locth = 9;}  ##if the alternate count is higher then we can be relax, because the alternative is probably
+
+````````    if ($total >= 10) {
+````````````my $ratio = $counts[1]/$total;
+````````````my $limit = 0.18;
+````````````if ($ratio <= $limit) {$good = 0;}
+````````    }
+````````}
+}
+```
+
+## Annotation with Annovar
+
+```
+${output}_chr${chr}_recal_filtered2.vcf
+```
+
+```
 ${output}_chr${chr}_exome_table.csv 
 ```
+
 Code:
 ```
 cut -f1-8 ${output}_chr${chr}_filtered.vcf > ${output}_chr${chr}_for_annovar.vcf
@@ -311,8 +361,16 @@ R CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} ${baseFo
 
 # crunch_controls.pl: finalCrunch
 
+What's a crunch?
+
+```
+perl ${baseFolder}/GATK_v2/crunch_controls.pl ${output}_chr${chr}_exome_table.csv $keyWords $casekeyWords ${output}_chr${chr}_exome_crunched.csv data/sampleList_exome.tab none no  ##include all samples
+```
+
 Input:
 ```
+keyWords=data/controlKeywords.tab
+casekeyWords=data/caseKeywords.tab
 ${output}_chr${chr}_exome_table.csv 
 ```
 Output:
