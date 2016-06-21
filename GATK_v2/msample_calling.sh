@@ -1,4 +1,3 @@
-#! /bin/bash
 
 # prints to stderr in red
 function error() { >&2 echo -e "\033[31m$*\033[0m"; }
@@ -11,8 +10,11 @@ referenceFolder=/cluster/scratch3/vyp-scratch2
 fasta=${referenceFolder}/reference_datasets/human_reference_sequence/human_g1k_v37.fasta
 bundle=${referenceFolder}/reference_datasets/GATK_bundle
 
-Rscript=/share/apps/R-3.2.2/bin/Rscript
-Rbin=/share/apps/R-3.2.2/bin/R
+#Rscript=/share/apps/R-3.3.0/bin/Rscript
+#Rbin=/share/apps/R-3.3.0/bin/R
+
+Rbin=/cluster/project8/vyp/vincent/Software/R-3.3.0/bin/R
+Rscript=/cluster/project8/vyp/vincent/Software/R-3.3.0/bin/Rscript
 
 #java=/share/apps/jdk1.7.0_45/bin/java
 java=/share/apps/jdk/jre/bin/java
@@ -47,9 +49,9 @@ until [ -z "$1" ]; do
 	    shift
 	    force=$1;;
 	--target )
-            shift
-            target=$1;;
-        --tmpDir )
+       shift
+       target=$1;;
+    --tmpDir )
 	    shift
 	    tmpDir=$1;;
 	--genotype )
@@ -96,23 +98,22 @@ mustBeId=`head -n1 $gVCFlist | cut -f2 -d' ' | cut -f2`
 if [[ "$mustBePath" != "path" ]]; then stop "The first column of the file $gVCFlist must have the name path $mustBePath"; fi
 if [[ "$mustBeId" != "id" ]]; then stop "The second column of the file $gVCFlist must have the name id $mustBeId"; fi
 
-memoSmall=5
-memo=9.9
-
+memoSmall=10
+memo=15
 
 if [[ "$convertToR" == "yes" || "$annovar" == "yes" ]]; then memo=21.9; fi
 
-
-
 mainScript=cluster/submission/calling.sh
 ## individual scripts of the form cluster/submission/subscript_chr${chr}.sh
+
+mkdir -p cluster/submission/
 
 echo "
 #$ -o cluster/out
 #$ -e cluster/error
 #$ -S /bin/bash
 #$ -l h_vmem=${memo}G,tmem=${memo}G
-#$ -l h_rt=96:0:0
+#$ -l h_rt=240:0:0
 #$ -R y
 #$ -pe smp 1
 #$ -cwd 
@@ -134,10 +135,12 @@ for chr in `seq 1 22` X; do
 done
 
 ##################################################
-if [[ "$genotype" == "yes" ]]; then
+if [[ "$genotype" == "yes" ]]
+then
     echo "Running the genotype module"
-    
-    for chr in `seq 1 22` X; do
+    mkdir -p cluster/submission/
+    for chr in `seq 1 22` X
+    do
 	script=cluster/submission/subscript_chr${chr}.sh
 	
 	if [ ! -e ${output}_chr${chr}.vcf.gz.tbi ]; then 
@@ -147,13 +150,15 @@ $java -Djava.io.tmpdir=/scratch0/ -Xmx${memoSmall}g -jar $GATK \\
    -R $fasta \\
    -T GenotypeGVCFs \\
    -L $chr -L $target --interval_set_rule INTERSECTION --interval_padding 100  \\
-   --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore --annotation MappingQualityRankSumTest --annotation ReadPosRankSumTest --annotation FisherStrand \\
+   --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore \\
+   --annotation MappingQualityRankSumTest --annotation ReadPosRankSumTest --annotation FisherStrand \\
    --dbsnp ${bundle}/dbsnp_137.b37.vcf \\" >> cluster/submission/subscript_chr${chr}.sh
 	    
 	    while read path id format; do
 		if [[ "$format" == "v1" ]]; then gVCF=${path}/chr${chr}/${id}.gvcf.gz; fi
 		if [[ "$format" == "v2" ]]; then gVCF=${path}/${id}-chr${chr}.gvcf.gz; fi
 		if [[ "$format" == "v3" ]]; then gVCF=${path}/chr${chr}.gvcf.gz; fi
+		if [[ "$format" == "v4" ]]; then gVCF=${path}/chr${chr}/${id}; fi
 
 		echo "Including $gVCF"
 		
@@ -345,7 +350,8 @@ fi
 
 
 ##############################
-for chr in `seq 1 22` X; do
+for chr in `seq 1 22` X
+do
     ls -ltrh cluster/submission/subscript_chr${chr}.sh
 done
 wc -l $mainScript
