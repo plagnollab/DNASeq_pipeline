@@ -1,19 +1,20 @@
-Location of UCLex output:
+
+# Location of UCLex output
 ```
 /SAN/vyplab/UCLex/
 ```
 
-
-Current working directory:
+# Current working directory
 ```
 /cluster/project8/vyp/exome_sequencing_multisamples/mainset
 ```
 
-Joint calling:
+# Main joint calling script
 ```
 /cluster/project8/vyp/exome_sequencing_multisamples/mainset/cluster/submission/calling.sh
 ```
-calls GenotypeGVCFs:
+
+# Calls GenotypeGVCFs
 ```
 /share/apps/jdk/jre/bin/java -Djava.io.tmpdir=/scratch0/ -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar \
    -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta \
@@ -91,22 +92,22 @@ calls GenotypeGVCFs:
    -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr1.vcf.gz
 ```
 
-extract the indels
+# Extract the indels
 ```
 /share/apps/jdk/jre/bin/java  -Djava.io.tmpdir=/scratch0/GATK_chr22 -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar      -T SelectVariants      -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta      -V /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22.vcf.gz      -selectType INDEL      -selectType MIXED      -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels.vcf.gz
 ```
 
-apply the filters for the indels
+# Apply the filters for the indels
 ```
 /share/apps/jdk/jre/bin/java -Djava.io.tmpdir=/scratch0/GATK_chr22 -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar     -T VariantFiltration     -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta     -V /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels.vcf.gz     --filterExpression "QD < 2.0 || FS > 50.0 || ReadPosRankSum < -20.0"     --filterName "FAIL"     -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels_filtered.vcf.gz
 ```
 
-Extract the SNPs
+# Extract the SNPs
 ```
 /share/apps/jdk/jre/bin/java  -Djava.io.tmpdir=/scratch0/GATK_chr22 -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar      -T SelectVariants      -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta      -V /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22.vcf.gz      -selectType SNP      -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs.vcf.gz
 ```
 
-variant recalibrator of SNPs
+# Variant recalibrator of SNPs
 ```
 /share/apps/jdk/jre/bin/java -Djava.io.tmpdir=/scratch0/GATK_chr22 -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar -T VariantRecalibrator -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta -L 22
 --input /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs.vcf.gz
@@ -116,7 +117,7 @@ variant recalibrator of SNPs
 /share/apps/R-3.2.2/bin/Rscript /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_recal_plots_snps.R
 ```
 
-Apply recalibration:
+# Applying recalibration
 ```
 /share/apps/jdk/jre/bin/java -Xmx5g -jar /cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar -T ApplyRecalibration -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta        -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_filtered.vcf.gz        --ts_filter_level 99.5        --recal_file /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_combrec.recal --tranches_file /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_combtranch --mode SNP        --input /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs.vcf.gz
 ```
@@ -127,7 +128,7 @@ Now we merge SNPs and indels:
 -T CombineVariants --assumeIdenticalSamples        -R /cluster/scratch3/vyp-scratch2/reference_datasets/human_reference_sequence/human_g1k_v37.fasta        --variant:SNPs /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_filtered.vcf.gz        --variant:indels /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels_filtered.vcf.gz        -genotypeMergeOptions PRIORITIZE         -priority SNPs,indels        -o /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_filtered.vcf
 ```
 
-Remove temp files.
+# Removing temp files
 ```
 rm -rf /scratch0/GATK_chr22
 rm /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_indels.vcf.gz /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs.vcf.gz /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr22_SNPs_filtered.vcf.gz
@@ -141,7 +142,8 @@ Only keep the first 8 columns: CHR, POS, ID, REF, ALT, INFO, FILTER...
 cut -f1-8 /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_filtered.vcf > /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_for_annovar.vcf
 ```
 
-Run Annovar:
+# Running Annovar
+
 ```
 /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/convert2annovar.pl --allallele -format vcf4 --includeinfo /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_for_annovar.vcf > /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_db
 
@@ -156,4 +158,44 @@ python /cluster/project8/vyp/vincent/Software/DNASeq_pipeline/GATK_v2/annovar_vc
 perl /cluster/project8/vyp/vincent/Software/DNASeq_pipeline/msample_calling/make_matrix_calls.pl /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_chr21_exome_table.csv /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016 21
 
 touch /SAN/vyplab/UCLex/mainset_June2016/mainset_June2016_snpStats/chr21.done  ##here we mark that the scripts finished
+```
+
+# Building the variant lists
+
+```
+cat /cluster/project8/vyp/exome_sequencing_multisamples/IRDC/cluster/submission/IRDC.sh
+
+#!/bin/bash
+#$ -S /bin/bash
+#$ -o cluster/out
+#$ -e cluster/error
+#$ -cwd
+#$ -pe smp 1
+#$ -l tmem=12.9G,h_vmem=12.9G
+#$ -l h_rt=20:0:0
+#$ -V
+#$ -R y
+
+/cluster/project8/vyp/vincent/Software/R-3.3.0/bin/R CMD BATCH --no-save --no-restore --root=/SAN/vyplab/UCLex/mainset_June2016/mainset_June2016 --minDepth=7 --Prion.setup=FALSE /cluster/project8/vyp/vincent/Software/DNASeq_pipeline/GATK_v2/crunch_data.R cluster/R/crunch.out
+
+/cluster/project8/vyp/vincent/Software/R-3.3.0/bin/R CMD BATCH --no-save --no-restore scripts/merge_GATK.R cluster/R/GATK.out
+```
+
+```
+cat /cluster/project8/vyp/exome_sequencing_multisamples/Vulliamy/cluster/submission/Vulliamy.sh
+
+#!/bin/bash
+#$ -S /bin/bash
+#$ -o cluster/out
+#$ -e cluster/error
+#$ -cwd
+#$ -pe smp 1
+#$ -l tmem=12.9G,h_vmem=12.9G
+#$ -l h_rt=20:0:0
+#$ -V
+#$ -R y
+
+/cluster/project8/vyp/vincent/Software/R-3.3.0/bin/R CMD BATCH --no-save --no-restore --root=/SAN/vyplab/UCLex/mainset_June2016/mainset_June2016 --minDepth=7 --Prion.setup=FALSE /cluster/project8/vyp/vincent/Software/DNASeq_pipeline/GATK_v2/crunch_data.R cluster/R/crunch.out
+
+/cluster/project8/vyp/vincent/Software/R-3.3.0/bin/R CMD BATCH --no-save --no-restore scripts/merge_GATK.R cluster/R/GATK.out
 ```
