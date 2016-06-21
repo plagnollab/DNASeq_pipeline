@@ -9,7 +9,7 @@ err.cat(dim( d <- read.csv(file('stdin'),check.names=FALSE) ))
 # so no risk of partial matching
 
 message('*** BARCODE COMMENT ***')
-barcode <- read.table('/cluster/project8/IBDAJE/VEP_custom_annotations/barcode.txt', header=TRUE)
+barcode <- read.table('/cluster/project9/IBDAJE/VEP_custom_annotations/barcode.txt', header=TRUE)
 barcode$Gene <- barcode$ENSG
 d$barcode.comment <- ''
 for (j in 1:nrow(barcode)) {
@@ -20,7 +20,7 @@ for (j in 1:nrow(barcode)) {
 
 
 message('*** XAVIER TISSUES  ***')
-xavier <- read.csv( '/cluster/project8/IBDAJE/VEP_custom_annotations/gene_tissues_ensg.csv', header=TRUE )
+xavier <- read.csv( '/cluster/project9/IBDAJE/VEP_custom_annotations/gene_tissues_ensg.csv', header=TRUE )
 d$xavier.tissues <- ''
 for (j in 1:nrow(xavier)) {
     b <- xavier[j,]
@@ -30,7 +30,7 @@ for (j in 1:nrow(xavier)) {
 
 
 message('*** IBD_GENE_LIST ***')
-ibd.gene.list <- read.csv('/cluster/project8/IBDAJE/variants/IBD_GENE_LIST.csv',header=FALSE)
+ibd.gene.list <- read.csv('/cluster/project9/IBDAJE/variants/IBD_GENE_LIST.csv',header=FALSE)
 d$ibd.gene.list <- FALSE
 for (j in 1:nrow(ibd.gene.list)) {
     gene <- ibd.gene.list[j,1]
