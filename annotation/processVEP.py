@@ -54,8 +54,8 @@ def _float(n):
 ANNOTATION_HEADER=['VARIANT_ID']+['ID']+CSQ+CADD+GO+MAF+EXAC+CUSTOM_ANNOTATION+CUSTOM_ALLELE_FREQ+[x.replace('1KG','ONEKG') for x in ONEKG]+ESP
 if args.genotypes: ANNOTATION_HEADER+=['AF','WT','HET','HOM','MISS']
 annotation_file=open('-'.join([basename,'annotations.csv']), 'w+')
-genotype_file=open('-'.join([basename,'genotypes.csv']), 'w+')
-depth_file=open('-'.join([basename,'genotypes_depth.csv']), 'w+')
+if args.genotypes: genotype_file=open('-'.join([basename,'genotypes.csv']), 'w+')
+if args.depth: depth_file=open('-'.join([basename,'genotypes_depth.csv']), 'w+')
 for l in infile:
     #get the format of the VEP consequence (CSQ) field
     #the names of the VEP CSQ fields are "|" delimited

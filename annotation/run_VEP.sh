@@ -107,7 +107,7 @@ cat $input | grep '^##reference=' | cut -f2 -d'='
 
 
 #annotations_dir=/cluster/project8/vyp/AdamLevine/annotations
-annotations_dir=/cluster/project8/IBDAJE/VEP_custom_annotations/${reference}
+annotations_dir=/cluster/project9/IBDAJE/VEP_custom_annotations/${reference}
 
 # Custom annotations
 ####CADD http://cadd.gs.washington.edu/home
@@ -174,6 +174,12 @@ done
 function SZ_Curtis() {
 shortname=SZ_Curtis
 custom_annotation="${custom_annotation} --custom ${annotations_dir}/SZ_Curtis/chr${chr}.vcf.gz,${shortname},vcf,exact"
+}
+
+###
+function Kaviar() {
+shortname=Kaviar
+custom_annotation="${custom_annotation} --custom ${annotations_dir}/Kaviar/Kaviar-160204-Public/chr${chr}.vcf.gz,${shortname},vcf,exact"
 }
 
 
@@ -279,12 +285,19 @@ fields=""
 output='--vcf'
 #output='--json'
 
+if [[ "$assembly" == "GRCh38" ]]
+then
+    cache_version='--cache_version 81'
+else
+    cache_version='--cache_version 82'
+fi
+
 #plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin LoF,human_ancestor_fa:$SCRATCH2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
 #plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:$SCRATCH2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
 #plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin LoF,human_ancestor_fa:$SCRATCH2/reference_datasets/loftee/human_ancestor.fa.rz,filter_position:0.05"
 plugins="--plugin Condel,${condel_config},b --plugin Carol --plugin CADD,${annotations_dir}/CADD/chr${chr}.vcf.gz --plugin GO --plugin ExAC,${annotations_dir}/ExAC/0.3/chr${chr}.vcf.gz"
 
 #$perl $VEP $port --verbose --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $vcfin --format vcf --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --fork 2 $maf $fields $custom_annotation $plugins $coding_only --offline
-/share/apps/perl/bin/perl $VEP $port --verbose --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $input --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --fork 2 $maf $fields $custom_annotation $plugins $coding_only --offline
+/share/apps/perl/bin/perl $VEP $port --verbose --ASSEMBLY $assembly --fasta $fasta --cache --dir_cache $dir_cache --input_file $input --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --fork 2 $maf $fields $custom_annotation $plugins $coding_only --offline $cache_version
 #$perl $VEP $port --verbose --ASSEMBLY $assembly --fasta $fasta --input_file $vcfin -cache --dir_cache $dir_cache --format vcf --sift b --polyphen b --symbol  --canonical --check_existing --check_alleles  --no_progress --output_file $vcfout  --force_overwrite $output --offline
 
