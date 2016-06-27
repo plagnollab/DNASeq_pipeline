@@ -4,22 +4,13 @@
 ###TODO: create equivalent files with read depth information
 
 library(snpStats)
-source('process_multiVCF.R')
-options(stringsAsFactors = FALSE)
-
-getArgs <- function() {
-  myargs.list <- strsplit(grep("=",gsub("--","",commandArgs()),value=TRUE),"=")
-  myargs <- lapply(myargs.list,function(x) x[2] )
-  names(myargs) <- lapply(myargs.list,function(x) x[1])
-  return (myargs)
-}
+library(SKAT)
+library(VPlib)
 
 
 case.control.analysis <- function(choice.cases = NULL, output = 'processed/support/case_control', known.genes = c(), SKAT = FALSE, fix.names = NULL, annotations.file = '/cluster/project8/vyp/vincent/Software/RNASeq_pipeline/bundle/human/biomart/biomart_extra_annotations_human.tab') {
   message('Now running the case control script') 
   options(stringsAsFactors = FALSE) 
-  library(snpStats)
-  if (SKAT) library(SKAT) 
   final.frame <- NULL
   first <- TRUE 
   output.file <- paste(output, '_gene_based_summary.csv', sep = '')
@@ -185,8 +176,8 @@ case.control.analysis <- function(choice.cases = NULL, output = 'processed/suppo
 
 
 
-
-annotate.standard.annovar.output <- function(data,   ##this function does NOT include the control data to define the rare/somewhat.rare flags
+##this function does NOT include the control data to define the rare/somewhat.rare flags
+annotate.standard.annovar.output <- function(data,
                                              threshold.rare = 0.002,
                                              threshold.somewhat.rare = 0.005,
                                              bad.genes = c(),
@@ -273,9 +264,6 @@ process.multiVCF <- function(calls,
                              choice.transcripts = NULL, ##data frame, need columns "EnsemblID" and "Transcript"
                              extra.gene.annotations.file = NULL,
                              PCA.pop.structure = '/cluster/project8/vyp/exome_sequencing_multisamples/mainset/mainset_January2014/mainset_January2014_PCA.RData') {
-  library(snpStats)
-  require(VPlib)
-  require(snpStats)
   ######### first thing first, we fix the names if there are names to fix
   if (!is.null(fix.names)) {
     #browser()
@@ -377,41 +365,22 @@ for (folder in c(oFolder, chrX.folder, all.variants.folder, hom.variants.folder,
       
     }
   }
-
-  
-
 ################# build the matrix of calls
-
 ####### get the sample names
   excess.message <- paste('More than', nb.IDs.to.show)
   cases.names <- dimnames(calls)[[1]]
   calls.num <- as(calls, 'numeric')
-
-  annotations$Samples <- sapply(1:ncol(calls),
+annotations$Samples <- sapply(1:ncol(calls),
                          FUN = function(x) { if (annotations$ncarriers.cases[x] > nb.IDs.to.show) {return(excess.message)}
                          else  {paste(cases.names[ which(calls.num[,x] > 0) ], collapse = ';')}},
-                         simplify = TRUE)
-
-
+                         simplify = TRUE) 
 ############## Now the case control step
   if (case.control) {
     if (sum(explained.cases) > 0) {  #### If some cases are explained we run this thing twice
-      res <- case.control.analysis(choice.cases =  subset(correct.ids, !explained.cases),
-                                   fix.names = fix.names,
-                                   output = paste(supportFolder, '/case_control_non_explained_cases', sep = ''),
-                                   known.genes = known.genes, SKAT = case.control.SKAT )
+      res <- case.control.analysis(choice.cases =  subset(correct.ids, !explained.cases), fix.names = fix.names, output = paste(supportFolder, '/case_control_non_explained_cases', sep = ''), known.genes = known.genes, SKAT = case.control.SKAT )
     }
-        
-    res1 <- case.control.analysis(choice.cases = correct.ids,
-                                  fix.names = fix.names,
-                                  output = paste(supportFolder, '/case_control_all_cases', sep = ''),
-                                  known.genes = known.genes, SKAT = case.control.SKAT )
-
-
+    res1 <- case.control.analysis(choice.cases = correct.ids, fix.names = fix.names, output = paste(supportFolder, '/case_control_all_cases', sep = ''), known.genes = known.genes, SKAT = case.control.SKAT )
   }
-
-
-  
 ################# Now start the proper filtering
   annotations$potential.comp.het <- FALSE
   annotations$n.cases.conf.homs <- 0
@@ -427,38 +396,27 @@ for (folder in c(oFolder, chrX.folder, all.variants.folder, hom.variants.folder,
                               n.func.rare.hom.calls = NA,
                               n.lof.rare.calls = NA,
                               n.lof.rare.hom.calls = NA)
-
-  
   for (sample in 1:length(correct.ids)) {
-  #for (sample in 1:1) {
     id <- correct.ids[ sample ]
     message('Sample ', id)
-
     depth.loc <- as(depth[, id ], 'numeric')
     calls.loc <- calls.num[id, ]
     annotations$n.cases.conf.homs <- annotations$n.cases.conf.homs + ((depth.loc >= depth.threshold.conf.homs) &  calls.loc == 2 & !is.na(calls.loc) )
-    
     annotations[, id] <- paste( ifelse ( !is.na(calls.loc), c('0|0', '0|1', '1|1')[ calls.loc +1 ], "NA"), depth.loc, sep = ':')
-
     ###### from this point we restrict to poly in that specific case
     selected <- calls.loc > 0 & !is.na(calls.loc)
     annotations.loc <- annotations[ selected, ]
     calls.loc <- calls.loc[ selected ]
     depth.loc <- depth.loc[ selected ]
     good.hom <- (depth.loc >= depth.threshold.conf.homs) & (calls.loc == 2) & !is.na(calls.loc)
-
-    
-    
-    summary.frame$n.func.rare.calls[ sample ] <- sum(annotations.loc$rare & (annotations.loc$splicing | annotations.loc$lof | annotations.loc$non.syn) & !annotations.loc$remove.bad.transcripts , na.rm = TRUE)
+summary.frame$n.func.rare.calls[ sample ] <- sum(annotations.loc$rare & (annotations.loc$splicing | annotations.loc$lof | annotations.loc$non.syn) & !annotations.loc$remove.bad.transcripts , na.rm = TRUE)
     summary.frame$n.func.rare.hom.calls[ sample ] <- sum(annotations.loc$rare & (annotations.loc$splicing | annotations.loc$lof | annotations.loc$non.syn) & !annotations.loc$remove.bad.transcripts  & good.hom, na.rm = TRUE)
     summary.frame$n.lof.rare.calls[ sample ] <- sum(annotations.loc$rare & annotations.loc$lof, na.rm = TRUE)
     summary.frame$n.lof.rare.hom.calls[ sample ] <- sum(annotations.loc$rare & annotations.loc$lof & good.hom, na.rm = TRUE)
-    
     summary.frame$n.exonic.calls[ sample ] <- sum(annotations.loc$Func == 'exonic', na.rm = TRUE)
     summary.frame$n.rare.exonic.calls[ sample ] <- sum(annotations.loc$Func == 'exonic' & annotations.loc$rare, na.rm = TRUE)
     summary.frame$n.somewhat.rare.exonic.calls[ sample ] <- sum(annotations.loc$Func == 'exonic' & annotations.loc$somewhat.rare, na.rm = TRUE)
     summary.frame$frac.het.on.X[ sample ] <- sum( (annotations.loc$Chr == 'X') & calls.loc == 1, na.rm = TRUE)/ sum(annotations.loc$Chr == 'X' & calls.loc %in% c(1, 2), na.rm = TRUE)
-
 ######### preferred choice to print the labels
     my.block <- c('Samples', 'Func', 'ExonicFunc', 'HUGO', 'Description', 'non.ref.calls.cases', 'ncarriers.cases', 'missing.rate.cases', 'freq.controls', 'non.missing.controls', 'non.ref.calls.controls',
                   'non.missing.external.controls', 'freq.external.controls', 'AAChange', id, 'Depth', 'is.indel', 'QUAL')
@@ -470,33 +428,24 @@ for (folder in c(oFolder, chrX.folder, all.variants.folder, hom.variants.folder,
       write.csv(x = annotations.loc[, my.names2], file = output.all, row.names = FALSE)
       message('Outputting all variants in ', output.all, ', ncalls: ', nrow(annotations.loc))
     }
-
-    
 ############# Now the compound hets
     tab.genes <- table(subset(annotations.loc$HUGO.no.splice.info, annotations.loc$somewhat.rare & (annotations.loc$splicing | annotations.loc$non.syn | annotations.loc$lof) & !annotations.loc$remove.bad.transcripts ))
     potential.comp.het.genes <- subset(tab.genes, tab.genes >= 2)
     comp.het.frame <- subset( annotations.loc, HUGO.no.splice.info %in% names(potential.comp.het.genes) & somewhat.rare & (splicing | non.syn | lof) & !annotations.loc$remove.bad.transcripts )
     summary.frame$ngenes.comp.het.func[ sample ] <- length( potential.comp.het.genes )
-    
     tab.genes.lof <- table(subset(annotations.loc$HUGO.no.splice.info, annotations.loc$somewhat.rare & annotations.loc$lof & !annotations.loc$remove.bad.transcripts))
     potential.comp.het.genes.lof <- subset(tab.genes.lof, tab.genes.lof >= 2)
     summary.frame$ngenes.comp.het.lof[ sample ] <- length( potential.comp.het.genes.lof)
-
     output.comp.hets <- paste(compound.hets.folder, '/', id, '.csv', sep = '')
     write.csv(x = comp.het.frame[, my.names2], file = output.comp.hets, row.names = FALSE)
     message('Outputting all compound het functional variants in ', output.comp.hets, ', ncalls: ', nrow(comp.het.frame))
-  
     annotations$potential.comp.het <- annotations$potential.comp.het | annotations$signature %in% comp.het.frame$signature
-    
-    
 ######## homozygosity mapping
     if (hom.mapping) {
       output.pdf <- paste(hom.mapping.folder, '/', id, '.pdf', sep = '')
       pdf(output.pdf, width = 8, height = 14)
-      
       hzig.frame <- data.frame(Het = (calls.loc == 1), positions = annotations.loc$Start, chromosome = annotations.loc$Chr, depth = depth.loc, SegDup = annotations.loc$SegDup, is.indel = annotations.loc$is.indel)
       hzig.frame <- hzig.frame[ is.na(hzig.frame$SegDup) & ! hzig.frame$is.indel, ]
-      
       hzig.frame <- subset(hzig.frame, chromosome %in% as.character(1:22))
       hzig.frame <- subset(hzig.frame, ! ( !Het  & depth < 7) ) ##remove low depth homozygous calls
       hzig.frame <- hzig.frame[ order(as.numeric(hzig.frame$chromosome), hzig.frame$positions), ]
@@ -504,54 +453,42 @@ for (folder in c(oFolder, chrX.folder, all.variants.folder, hom.variants.folder,
       dev.off()
       message('Homozygosity mapping plot in ', output.pdf)
       regions <- my.homozyg[[2]]
-      
       if (nrow(regions) >= 1) {
         summary.frame$percent.homozyg[ sample ] <- sum (regions$end - regions$start) / (3*10^9)
       } else {summary.frame$percent.homozyg[ sample ] <- 0}
-        
       if (nrow(regions) >= 1) {
         hom.mapping.candidates <- data.frame()
         for (region in 1:nrow(regions)) {
           hmap.loc <- subset(annotations.loc, somewhat.rare & calls.loc > 0 & (non.syn | splicing | lof) & !remove.bad.transcripts & (Start > regions$start[region]) & (Start < regions$end[region]) & (Chr == regions$chromosome[region]))
           hom.mapping.candidates <- rbind.data.frame(hom.mapping.candidates, hmap.loc)
         }
-        
         hom.mapping.candidates <- hom.mapping.candidates[, my.names2]
         output.hmap <- paste(hom.mapping.folder, '/', id, '.csv', sep = '')
         write.csv(x = hom.mapping.candidates[, my.names2], file = output.hmap, row.names = FALSE)
         message('Outputting hom mapping variants in ', output.hmap, ', ncalls: ', nrow(hom.mapping.candidates))
-      
         output.regions <- paste(hom.mapping.folder, '/', id, '_regions.csv', sep = '')
         write.csv(x = regions, file = output.regions, row.names = FALSE)
         message('Outputting hom mapping regions in ', output.regions, ', nregions: ', nrow(regions))      
       }
     }
-
-
 ##### now the somewhat.rare homs- note that I exclude chrX calls for now in that list
     rare.homs <- subset(annotations.loc, (! Chr %in% c('X', 'Y'))  & somewhat.rare & calls.loc == 2 & (non.syn | splicing | lof) & !remove.bad.transcripts & (depth.loc >= depth.threshold.conf.homs))
     rare.homs <- rare.homs[, my.names2]
-
     output.homs <- paste(hom.variants.folder, '/', id, '.csv', sep = '')
     write.csv(x = rare.homs, file = output.homs, row.names = FALSE)
     message('Outputting all rare homozygous functional variants in ', output.homs, ', ncalls: ', nrow(rare.homs))
-    
-    
 ##### now the somewhat.rare hets
     rare.hets <- subset(annotations.loc, somewhat.rare & calls.loc >= 1 & (non.syn | splicing | lof) & !remove.bad.transcripts)
     rare.hets <- rare.hets[, my.names2]
-
     output.hets <- paste(all.rare.variants.folder, '/', id, '.csv', sep = '')
     write.csv(x = rare.hets, file = output.hets, row.names = FALSE)
     message('Outputting all rare heterozygous functional variants in ', output.hets, ', ncalls: ', nrow(rare.hets))
-
 ######## now the X linked stuff
     chrX <- subset( annotations.loc, Chr == 'X' & somewhat.rare & calls.loc >= 1 & (non.syn | splicing | lof) & !remove.bad.transcripts)
     chrX <- chrX[, my.names2]
     output.X <- paste(chrX.folder, '/', id, '.csv', sep = '')
     write.csv(x = chrX, file = output.X, row.names = FALSE)
     message('Outputting all rare X linked variants ', output.X, ', ncalls: ', nrow(chrX))
-    
 ##### now the variants in known genes, keep the wrong transcripts in this folder for now
     known.genes.calls <- subset(annotations.loc, somewhat.rare & calls.loc >= 1 & (non.syn | splicing | lof) 
                                 & (Gene %in% known.genes | gsub(pattern = '\\(.*', replacement = '', annotations.loc$HUGO) %in% known.genes | HUGO %in% known.genes))
@@ -560,49 +497,48 @@ for (folder in c(oFolder, chrX.folder, all.variants.folder, hom.variants.folder,
     write.csv(x = known.genes.calls, file = output.known, row.names = FALSE)
     message('Outputting all rare variants in known genes ', output.known, ', ncalls: ', nrow(known.genes.calls))
   }
-
-
-
-  
 ############################################################ preferred choice to print the labels
   my.block <- c('Samples', 'Func', 'ExonicFunc', 'HUGO', 'Description', 'non.missing.cases', 'non.ref.calls.cases', 'ncarriers.cases', 'maf.cases', 'n.cases.conf.homs', 'freq.controls', 'non.missing.controls', 'non.ref.calls.controls', 'non.missing.external.controls', 'freq.external.controls', 'pval.cc.single', 'AAChange', 'is.indel', 'QUAL')
-  my.names2 <-  c(subset(my.block, my.block %in% names(annotations)),
-                  subset(names(annotations), ! (names(annotations) %in% c(correct.ids, my.block, c('HomNames', 'HetNames')) ) ),
-                  correct.ids)
-
+  my.names2 <-  c(subset(my.block, my.block %in% names(annotations)), subset(names(annotations), ! (names(annotations) %in% c(correct.ids, my.block, c('HomNames', 'HetNames')) ) ), correct.ids)
   #### output all sorts of overall tables
   output.all.variants <- paste(oFolder, '/all_somewhat_rare_variants_cases.csv', sep = '')
   all.variants <- subset(annotations, non.missing.cases > 0 & somewhat.rare)
   write.csv(x = all.variants[, my.names2], file = output.all.variants, row.names = FALSE)
-
   ##known genes
-  known.genes.calls <- subset(annotations, (non.syn | splicing | lof) &
-                              (HUGO %in% known.genes | Gene %in% known.genes | gsub(pattern = '\\(.*', replacement = '', annotations$HUGO) %in% known.genes ) & somewhat.rare)
+  known.genes.calls <- subset(annotations, (non.syn | splicing | lof) & (HUGO %in% known.genes | Gene %in% known.genes | gsub(pattern = '\\(.*', replacement = '', annotations$HUGO) %in% known.genes ) & somewhat.rare)
   output.known.genes <- paste(oFolder, '/known_genes.csv', sep = '')
   write.csv(x = known.genes.calls[, my.names2], file = output.known.genes, row.names = FALSE)
-
   ##compound hets
   comp.hets <- subset(annotations, potential.comp.het)
   output.comp.hets<- paste(oFolder, '/comp_het_candidates.csv', sep = '')
   write.csv(x = comp.hets[, my.names2], file = output.comp.hets, row.names = FALSE)
-
   ##hom candidates
   is.hom.in.at.least.one <- apply(calls.num, MAR = 2, FUN = max, na.rm = TRUE)
   hom.candidates <- subset(annotations, is.hom.in.at.least.one == 2 & somewhat.rare & (lof | splicing | non.syn))
   output.homs <- paste(oFolder, '/hom_candidates.csv', sep = '')
   write.csv(x = hom.candidates[, my.names2], file = output.homs, row.names = FALSE)
-
   ##signatures
   signatures <- annotations[, c('freq.cases', 'non.missing.cases', 'signature')]
   write.csv(x = signatures, file = paste(oFolder, '/signatures.csv', sep = ''), row.names = FALSE)
-
   ###
-  write.csv(x = summary.frame,
-            file = paste(supportFolder, '/summary_frame.csv', sep = ''),
-            row.names = FALSE)
-
+  write.csv(x = summary.frame, file = paste(supportFolder, '/summary_frame.csv', sep = ''), row.names = FALSE)
   stamp.file <- paste(oFolder, '/time_stamp.txt', sep = '')
   cat(date(), file = stamp.file)
+}
+
+
+
+
+
+### MAIN
+
+options(stringsAsFactors = FALSE)
+
+getArgs <- function() {
+  myargs.list <- strsplit(grep("=",gsub("--","",commandArgs()),value=TRUE),"=")
+  myargs <- lapply(myargs.list,function(x) x[2] )
+  names(myargs) <- lapply(myargs.list,function(x) x[1])
+  return (myargs)
 }
 
 #### default arguments
@@ -625,7 +561,6 @@ control.names <- scan('data/controlKeywords.tab', what = character())
 first <- TRUE
 
 for (chr in  c(as.character(1:22), 'X')) {
-#for (chr in  c(as.character(16:16))) {
   message('Chromosome ', chr)
   #input.data <- paste(root, '_by_chr/chr', chr, '_snpStats.RData', sep = '')
   input.data <- paste0(root, '_snpStats/chr', chr, '_snpStats.RData')
