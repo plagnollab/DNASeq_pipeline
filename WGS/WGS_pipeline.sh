@@ -433,7 +433,8 @@ function mode_CombineGVCFs() {
        ##one job per chromosome to save time
        chrCleanCode=${cleanChr[ $chrCode ]}
        script=${mainScript%.sh}_chr${chrCleanCode}.sh
-       output=${outputdir}/data/chr${chrCleanCode}.gvcf.gz
+       #output=${outputdir}/data/chr${chrCleanCode}.gvcf.gz
+       output=/SAN/vyplab/UCLex/combinedGVCFs/chr${chrCleanCode}/${batchName}.gvcf.gz
        if [ ! -s $output ]
        then
            #add checks to see if file exists before adding to VARIANTS
