@@ -418,14 +418,13 @@ function mode_CombineGVCFs() {
     input=${projectID}/gvcf/data/
     batchFile=${batchFile-${supportFrame}}
     #batchName=${batchName-`basename ${supportFrame%%.*}`}
-    batchName=${batchName-CombineGVCFs}
-    outputdir=${projectID}/${batchName}/
+    outputdir=${projectID}/CombineGVCFs/
     mainScript=${outputdir}/scripts/CombineGVCFs.sh
-    mkdir -p $outputdir/data $outputdir/err $outputdir/out $outputdir/scripts
+    mkdir -p  $outputdir/err $outputdir/out $outputdir/scripts
     SGE_PARAMETERS="
 #$ -l scr=1G
-#$ -l tmem=10G,h_vmem=10G
-#$ -l h_rt=12:0:0
+#$ -l tmem=16G,h_vmem=16G
+#$ -l h_rt=240:0:0
 "
     rm -f ${outputdir}/scripts/*.sh
     for chrCode in `seq 1 $cleanChrLen`
@@ -433,7 +432,6 @@ function mode_CombineGVCFs() {
        ##one job per chromosome to save time
        chrCleanCode=${cleanChr[ $chrCode ]}
        script=${mainScript%.sh}_chr${chrCleanCode}.sh
-       #output=${outputdir}/data/chr${chrCleanCode}.gvcf.gz
        output=/SAN/vyplab/UCLex/combinedGVCFs/chr${chrCleanCode}/${batchName}.gvcf.gz
        if [ ! -s $output ]
        then
