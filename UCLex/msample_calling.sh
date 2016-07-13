@@ -11,8 +11,7 @@ fasta=${referenceFolder}/reference_datasets/human_reference_sequence/human_g1k_v
 bundle=${referenceFolder}/reference_datasets/GATK_bundle
 
 #Rscript=/share/apps/R-3.3.0/bin/Rscript
-#Rbin=/share/apps/R-3.3.0/bin/R
-
+#Rbin=/share/apps/R-3.3.0/bin/R 
 Rbin=/cluster/project8/vyp/vincent/Software/R-3.3.0/bin/R
 Rscript=/cluster/project8/vyp/vincent/Software/R-3.3.0/bin/Rscript
 
@@ -23,12 +22,12 @@ target=/cluster/project8/vyp/exome_sequencing_multisamples/target_region/data/me
 
 GATK=/cluster/project8/vyp/vincent/Software/GenomeAnalysisTK-3.5-0/GenomeAnalysisTK.jar
 
-baseFolder=/cluster/project8/vyp/vincent/Software/DNASeq_pipeline
-crunchpl=${baseFolder}/GATK_v2/crunch_controls.pl
+#baseFolder=/cluster/project8/vyp/vincent/Software/DNASeq_pipeline
+baseFolder="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+echo $baseFolder
+crunchpl=${baseFolder}/UCLex/crunch_controls.pl
 
-
-submit=no
-
+submit=no 
 force=no
 genotype=no
 Recal=no
@@ -40,41 +39,41 @@ numBad=1000
 #numBadIndels=1000
 GQ=20
 
-#output=${scratchFolder}/vincent/GATK/cardioset_${currentUCLex}/cardioset_${currentUCLex}
-
-until [ -z "$1" ]; do
+#output=${scratchFolder}/vincent/GATK/cardioset_${currentUCLex}/cardioset_${currentUCLex} 
+until [ -z "$1" ]
+do
     # use a case statement to test vars. we always test $1 and shift at the end of the for block.
     case $1 in
-	--force )
-	    shift
-	    force=$1;;
-	--target )
+    --force )
+        shift
+        force=$1;;
+    --target )
        shift
        target=$1;;
     --tmpDir )
-	    shift
-	    tmpDir=$1;;
-	--genotype )
-	    shift
-	    genotype=$1;;
-	--recal )
-	    shift
-	    recal=$1;;
-	--annovar )
-	    shift
-	    annovar=$1;;
-	--convertToR )
-	    shift
-	    convertToR=$1;;
-	--finalCrunch )
-	    shift
-	    finalCrunch=$1;;
-	--gVCFlist )
-	    shift
-	    gVCFlist=$1;;
-	--currentUCLex )
-	    shift
-	    currentUCLex=$1;;
+        shift
+        tmpDir=$1;;
+    --genotype )
+        shift
+        genotype=$1;;
+    --recal )
+        shift
+        recal=$1;;
+    --annovar )
+        shift
+        annovar=$1;;
+    --convertToR )
+        shift
+        convertToR=$1;;
+    --finalCrunch )
+        shift
+        finalCrunch=$1;;
+    --gVCFlist )
+        shift
+        gVCFlist=$1;;
+    --currentUCLex )
+        shift
+        currentUCLex=$1;;
         -* )
             echo "Unrecognized option: $1"
             exit 1;;
@@ -82,9 +81,6 @@ until [ -z "$1" ]; do
     shift
     if [ "$#" = "0" ]; then break; fi
 done
-
-
-
 
 ############## Now options are all set
 output=${scratchFolder}/mainset_${currentUCLex}/mainset_${currentUCLex}
@@ -100,7 +96,6 @@ if [[ "$mustBeId" != "id" ]]; then stop "The second column of the file $gVCFlist
 
 memoSmall=10
 memo=15
-
 if [[ "$convertToR" == "yes" || "$annovar" == "yes" ]]; then memo=21.9; fi
 
 mainScript=cluster/submission/calling.sh
@@ -143,9 +138,8 @@ then
     for chr in `seq 1 22` X
     do
 	script=cluster/submission/subscript_chr${chr}.sh
-	
-	if [ ! -e ${output}_chr${chr}.vcf.gz.tbi ]; then 
-
+	if [ ! -e ${output}_chr${chr}.vcf.gz.tbi ]
+    then 
 	    echo "
 $java -Djava.io.tmpdir=/scratch0/ -Xmx${memoSmall}g -jar $GATK \\
    -R $fasta \\
@@ -154,19 +148,16 @@ $java -Djava.io.tmpdir=/scratch0/ -Xmx${memoSmall}g -jar $GATK \\
    --annotation InbreedingCoeff --annotation QualByDepth --annotation HaplotypeScore \\
    --annotation MappingQualityRankSumTest --annotation ReadPosRankSumTest --annotation FisherStrand \\
    --dbsnp ${bundle}/dbsnp_137.b37.vcf \\" >> cluster/submission/subscript_chr${chr}.sh
-	    
-	    while read path id format; do
-		if [[ "$format" == "v1" ]]; then gVCF=${path}/chr${chr}/${id}.gvcf.gz; fi
-		if [[ "$format" == "v2" ]]; then gVCF=${path}/${id}-chr${chr}.gvcf.gz; fi
-		if [[ "$format" == "v3" ]]; then gVCF=${path}/chr${chr}.gvcf.gz; fi
-		if [[ "$format" == "v4" ]]; then gVCF=${path}/chr${chr}/${id}; fi
-
-		echo "Including $gVCF"
-		
-		if [ ! -s $gVCF ]; then stop "Cannot find $gVCF"; fi
-		if [ ! -s $gVCF.tbi ]; then stop "Cannot find $gVCF.tbi"; fi
-		
-		echo "   --variant $gVCF \\" >> $script
+	    while read path id format
+        do
+            if [[ "$format" == "v1" ]]; then gVCF=${path}/chr${chr}/${id}.gvcf.gz; fi
+            if [[ "$format" == "v2" ]]; then gVCF=${path}/${id}-chr${chr}.gvcf.gz; fi
+            if [[ "$format" == "v3" ]]; then gVCF=${path}/chr${chr}.gvcf.gz; fi
+            if [[ "$format" == "v4" ]]; then gVCF=${path}/chr${chr}/${id}; fi
+            echo "Including $gVCF"
+            if [ ! -s $gVCF ]; then stop "Cannot find $gVCF"; fi
+            if [ ! -s $gVCF.tbi ]; then stop "Cannot find $gVCF.tbi"; fi
+            echo "   --variant $gVCF \\" >> $script
 	    done < <(tail -n +2 $gVCFlist)
 	    echo "   -o ${output}_chr${chr}.vcf.gz" >> $script
 	fi
@@ -179,7 +170,6 @@ fi
 if [[ "$recal" == "yes" ]]
 then
     echo "Running the recalibration module"
-
     for chr in `seq 1 22` X
     do
         script=cluster/submission/subscript_chr${chr}.sh
@@ -189,9 +179,9 @@ then
             tmpDir=/scratch0/GATK_chr${chr}
             maxGauLoc=${maxGaussians}
             if [[ "$chr" == "14" ]]
-                then maxGauLoc=4
+            then
+                maxGauLoc=4
             fi
-
             echo "
 if [ ! -e $tmpDir ]; then mkdir $tmpDir; fi
 
@@ -213,7 +203,6 @@ $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
     --filterName \"FAIL\" \
     -o ${output}_chr${chr}_indels_filtered.vcf.gz
 
-
 #### extract the SNPs
 $java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
      -T SelectVariants \
@@ -221,8 +210,6 @@ $java  -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
      -V ${output}_chr${chr}.vcf.gz \
      -selectType SNP \
      -o ${output}_chr${chr}_SNPs.vcf.gz
-
-
 
 ####### first SNPs
 $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecalibrator -R $fasta -L $chr --input ${output}_chr${chr}_SNPs.vcf.gz --maxGaussians ${maxGauLoc} --mode SNP \
@@ -238,14 +225,12 @@ $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} -T VariantRecali
 
 ${Rscript} ${output}_chr${chr}_recal_plots_snps.R
 
-
 #apply_recal
 $java -Xmx${memoSmall}g -jar ${GATK} -T ApplyRecalibration -R $fasta \
        -o ${output}_chr${chr}_SNPs_filtered.vcf.gz \
        --ts_filter_level 99.5 \
        --recal_file ${output}_chr${chr}_SNPs_combrec.recal --tranches_file ${output}_chr${chr}_SNPs_combtranch --mode SNP \
        --input ${output}_chr${chr}_SNPs.vcf.gz
-
 
 #### Now we merge SNPs and indels
 $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
@@ -258,9 +243,7 @@ $java -Djava.io.tmpdir=${tmpDir} -Xmx${memoSmall}g -jar ${GATK} \
        -o ${output}_chr${chr}_filtered.vcf
 
 rm -rf $tmpDir
-
 rm ${output}_chr${chr}_indels.vcf.gz ${output}_chr${chr}_SNPs.vcf.gz ${output}_chr${chr}_SNPs_filtered.vcf.gz
-
 " >> $script
 	fi
 
@@ -271,83 +254,71 @@ fi
 
 if [[ "$annovar" == "yes" ]]
 then
-
     for chr in `seq 1 22` X
     do
-	
-	script=cluster/submission/subscript_chr${chr}.sh
-	
-	if [[ ! -e ${output}_snpStats/chr${chr}.done || ! -e ${output}_chr${chr}_exome_table.csv || "$force" == "yes" ]]
-    then  ## this is not quite right, needs fixing because it does not account for the last step
-	    
-	    echo "
-perl ${baseFolder}/GATK_v2/custom_filtering.pl ${output}_chr${chr}_filtered.vcf ${output}_chr${chr}_recal_filtered2.vcf ${GQ}
+        script=cluster/submission/subscript_chr${chr}.sh
+        ## this is not quite right, needs fixing because it does not account for the last step
+        if [[ ! -e ${output}_snpStats/chr${chr}.done || ! -e ${output}_chr${chr}_exome_table.csv || "$force" == "yes" ]]
+        then
+            echo "
+perl ${baseFolder}/UCLex/custom_filtering.pl ${output}_chr${chr}_filtered.vcf ${output}_chr${chr}_recal_filtered2.vcf ${GQ}
 
-if [ -e ${output}_snpStats/chr${chr}.done ]; then rm ${output}_snpStats/chr${chr}.done; fi  ## this is basically a log file, to make sure the job got finished
+ ## this is basically a log file, to make sure the job got finished
+if [ -e ${output}_snpStats/chr${chr}.done ]; then rm ${output}_snpStats/chr${chr}.done; fi
 
 cut -f1-8 ${output}_chr${chr}_filtered.vcf > ${output}_chr${chr}_for_annovar.vcf
 
 /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/convert2annovar.pl --allallele -format vcf4 --includeinfo ${output}_chr${chr}_for_annovar.vcf > ${output}_chr${chr}_db
 
-/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/summarize_annovar_VP.pl -ver1000g 1000g2012apr -verdbsnp 137 -veresp 6500si -alltranscript -buildver hg19 --genetype ensgene --remove ${output}_chr${chr}_db /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/humandb_hg19/
+/cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/summarize_annovar_VP.pl -ver1000g 1000g2012apr -verdbsnp 137 -veresp 6500si -alltranscript -buildver hg19 --genetype ensgene --remove ${output}_chr${chr}_db /cluster/project8/vyp/vincent/Software_heavy/annovar_Feb2013/humandb_hg19/ 
 
+python ${baseFolder}/UCLex/annovar_vcf_combine_VP.py ${output}_chr${chr}_recal_filtered2.vcf ${output}_chr${chr}_db.exome_summary.csv ${output}_chr${chr}_exome_table.csv
 
-python ${baseFolder}/GATK_v2/annovar_vcf_combine_VP.py ${output}_chr${chr}_recal_filtered2.vcf ${output}_chr${chr}_db.exome_summary.csv ${output}_chr${chr}_exome_table.csv
+perl ${baseFolder}/UCLex/make_matrix_calls.pl ${output}_chr${chr}_exome_table.csv ${output} $chr
 
-perl ${baseFolder}/msample_calling/make_matrix_calls.pl ${output}_chr${chr}_exome_table.csv ${output} $chr
-
-touch ${output}_snpStats/chr${chr}.done  ##here we mark that the scripts finished
-
+##here we mark that the scripts finished
+touch ${output}_snpStats/chr${chr}.done  
 " >> $script
-
-	fi
+      fi
     done
 fi
 
 
-if [[ "$convertToR" == "yes" ]]; then
-    
+
+if [[ "$convertToR" == "yes" ]]
+then
     if [ ! -e ${output}_snpStats ]; then mkdir ${output}_snpStats; echo "Created ${output}_snpStats"; fi
-
-    for chr in `seq 1 22` X; do
-	
-	script=cluster/submission/subscript_chr${chr}.sh
-	
-	if [[ ! -s ${output}_snpStats/chr${chr}_snpStats.RData || "$force" == "yes" ]]; then
-
-	    echo "
-#$Rbin CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} ${baseFolder}/msample_calling/convert_to_R.R cluster/R/convert_to_R_chr${chr}.out
-/share/apps/R/bin/R CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} ${baseFolder}/msample_calling/convert_to_R.R cluster/R/convert_to_R_chr${chr}.out
+    for chr in `seq 1 22` X
+    do
+        script=cluster/submission/subscript_chr${chr}.sh
+        if [[ ! -s ${output}_snpStats/chr${chr}_snpStats.RData || "$force" == "yes" ]]
+        then
+            echo "
+#/share/apps/R/bin/R CMD BATCH --no-save --no-restore --chromosome=${chr} --root=${output} ${baseFolder}/UCLex/convert_to_R.R cluster/R/convert_to_R_chr${chr}.out
+Rscript ${baseFolder}/UCLex/convert_to_R.R --chromosome ${chr} --root ${output} > cluster/R/convert_to_R_chr${chr}.out
 " >> $script
-
-	fi
-
+        fi
     done
 fi
 
 
 
-
-if [[ "$finalCrunch" == "yes" ]]; then
-
+if [[ "$finalCrunch" == "yes" ]]
+then
     keyWords=data/controlKeywords.tab
     casekeyWords=data/caseKeywords.tab
-
-    for chr in `seq 1 22` X; do
-	
-	script=cluster/submission/subscript_chr${chr}.sh
-	echo "
-
+    for chr in `seq 1 22` X
+    do
+        script=cluster/submission/subscript_chr${chr}.sh
+        echo "
 ${crunchpl} ${output}_chr${chr}_exome_table.csv $keyWords $casekeyWords ${output}_chr${chr}_exome_crunched.csv data/sampleList_exome.tab none no  ##include all samples
 
-#python /cluster/project8/vyp/vincent/Software/pipeline/GATK_v2/annovar_vcf_combine_VP.py ${output}_recal_filtered.vcf ${output}_db.genome_summary.csv ${output}_genome_table.csv
+#python /cluster/project8/vyp/vincent/Software/pipeline/UCLex/annovar_vcf_combine_VP.py ${output}_recal_filtered.vcf ${output}_db.genome_summary.csv ${output}_genome_table.csv
 
 #${crunchpl} ${output}_genome_table.csv $keyWords $casekeyWords ${output}_genome_crunched.csv data/sampleList_genome.tab none no  ##include all samples
-
 " >> $script
     done
 fi
-
 
 
 
@@ -357,3 +328,4 @@ do
     ls -ltrh cluster/submission/subscript_chr${chr}.sh
 done
 wc -l $mainScript
+
