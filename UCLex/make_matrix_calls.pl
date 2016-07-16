@@ -7,6 +7,7 @@ use strict;
 
 my $inputTable = $ARGV[0];
 my $output = $ARGV[1];
+my $chromosomeArg = $ARGV[2];
 
 print "Output file: $output\n";
 
@@ -15,12 +16,14 @@ my $outcsv = Text::CSV->new({ sep_char => ',' });
 
 open (INP, " < $inputTable") or die "Cannot open $inputTable";
 
+my $colnameFile = $output."_snpStats/colname_chr".$chromosomeArg.".tab";
 
-my $callFile = $output."_calls.tab";
-my $depthFile = $output."_depth.tab";
-my $colnameFile = $output."_colname.tab";
-my $rownameFile = $output."_rowname.tab";
-my $annotationFile = $output."_annotations.csv";
+
+### should not need the names below really
+my $callFile = $output."_snpStats/calls.tab";
+my $depthFile = $output."_snpStats/depth.tab";
+my $rownameFile = $output."_snpStats/rowname.tab";
+my $annotationFile = $output."_snpStats/annotations.csv";
 
 
 open (COL, " > $colnameFile");
@@ -68,10 +71,10 @@ if ($csv->parse($_)) {
 
 	    if ( $chromosome != $currentChr) {
 		print "Change of chromosome\n";
-		$callFile = $output."_by_chr/calls_chr".$chromosome.".tab";
-		$depthFile = $output."_by_chr/depth_chr".$chromosome.".tab";
-		$rownameFile = $output."_by_chr/rowname_chr".$chromosome.".tab";
-		$annotationFile = $output."_by_chr/annotations_chr".$chromosome.".csv";
+		$callFile = $output."_snpStats/calls_chr".$chromosome.".tab";
+		$depthFile = $output."_snpStats/depth_chr".$chromosome.".tab";
+		$rownameFile = $output."_snpStats/rowname_chr".$chromosome.".tab";
+		$annotationFile = $output."_snpStats/annotations_chr".$chromosome.".csv";
 		
 		if ($currentChr != -1) {
 		    close(OUT);
@@ -82,7 +85,7 @@ if ($csv->parse($_)) {
 		
 		print "Now writing the calls to $callFile\n";
 		open (OUT, " > $callFile") or die $callFile;
-		open (DEPTH, " > $depthFile") or die $depthFile;
+		open (DEPTH, " > $depthFile") or die;
 		open (ROW, " > $rownameFile") or die;
 		open (ANN, " > $annotationFile") or die;
 		
