@@ -55,7 +55,7 @@ case.control.analysis <- function(choice.cases = NULL, output = 'processed/suppo
       for.fisher <- as.matrix(interesting.variants[, c('non.missing.controls', 'non.ref.calls.controls', 'non.missing.cases', 'non.ref.calls.cases') ])
       interesting.variants$fisher.pvalue <- as.numeric(apply(for.fisher, MAR = 1, FUN = function(x) {fisher.test( matrix( data = c(2*x[1] - x[2], x[2], 2*x[3] - x[4], x[4]), nrow = 2, ncol = 2))$p.value}))
       interesting.variants <- subset(interesting.variants, fisher.pvalue < 0.01) 
-      my.names <- c('fisher.pvalue', 'dbSNP137', 'HUGO', 'ExonicFunc', 'Description', 'AAChange', 'clean.signature', 'freq.controls', 'freq.cases', 'rare', 'somewhat.rare', 'lof', 'non.syn', 'splicing', 'ESP6500si_ALL', 'X1000g2012apr_ALL', 'Chr', 'Start', 'End', 'Ref', 'Obs', 'FILTER', 'non.missing.controls', 'non.ref.calls.controls', 'non.missing.cases', 'non.ref.calls.cases')
+      my.names <- c('fisher.pvalue', 'dbSNP137', 'HUGO', 'ExonicFunc', 'Description', 'AAChange', 'clean.signature', 'freq.controls', 'freq.cases', 'rare', 'somewhat.rare', 'lof', 'non.syn', 'splicing', 'ESP6500si_ALL', '1000g2012apr_ALL', 'Chr', 'Start', 'End', 'Ref', 'Obs', 'FILTER', 'non.missing.controls', 'non.ref.calls.controls', 'non.missing.cases', 'non.ref.calls.cases')
       interesting.variants <- interesting.variants[, my.names ]
       final.single <- rbind.data.frame( final.single, interesting.variants ) 
 ########### Now the gene based tests
@@ -181,10 +181,9 @@ annotate.standard.annovar.output <- function(data,
                                              threshold.rare = 0.002,
                                              threshold.somewhat.rare = 0.005,
                                              bad.genes = c(),
-                                             freq.fields = c( 'X1000g2012apr_ALL', 'ESP6500si_ALL'),
+                                             freq.fields = c( '1000g2012apr_ALL', 'ESP6500si_ALL'),
                                              choice.transcripts = NULL,
                                              biomart.gene.description = '/cluster/project8/vyp/vincent/Software/RNASeq_pipeline/bundle/human/biomart/biomart_extra_annotations_human.tab') {
-
   data$Chr <- gsub(pattern = '^chr', replacement = '', data$Chr)
   data$signature <- paste(data$Chr, data$Start, data$Ref, data$Obs, sep = '_')
   data$is.indel <- nchar(as.character(data$Ref)) > 1 | nchar(as.character(data$Obs)) > 1 | data$Ref == '-' | data$Obs == '-'
@@ -246,6 +245,7 @@ annotate.standard.annovar.output <- function(data,
 }
 
 
+### 
 process.multiVCF <- function(calls,
                              depth,
                              annotations,
@@ -546,8 +546,7 @@ Prion.setup <- FALSE
 missing.depth.threshold <- 0
 root <- '/scratch2/vyp-scratch2/vincent/GATK/mainset_October2014/mainset_October2014'
 
-myArgs <- getArgs()
-
+myArgs <- getArgs() 
 if ('Prion.setup' %in% names(myArgs)) Prion.setup <- as.logical(myArgs[[ 'Prion.setup' ]])
 if ('minDepth' %in% names(myArgs)) missing.depth.threshold <- as.numeric(myArgs[[ 'minDepth' ]])
 if ('root' %in% names(myArgs)) root <- as.character(myArgs[[ 'root' ]])
