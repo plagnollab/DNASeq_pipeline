@@ -1,9 +1,9 @@
 
-# Overall UCLex pipeline
+# Building new UCLex release
 
 The current working directory is here:
 ```
-/cluster/project8/vyp/exome_sequencing_multisamples/mainset
+/SAN/vyplab/UCLex/
 ```
 
 
